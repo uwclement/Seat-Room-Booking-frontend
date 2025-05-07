@@ -161,7 +161,7 @@ const MyWaitlistPage = () => {
                 <tbody>
                   {waitlistItems.map(item => (
                     <tr key={item.id}>
-                      <td>{item.seat.seatNumber}</td>
+                      {/* <td>{item.seat.seatNumber}</td> */}
                       <td>{item.seat.zoneType}</td>
                       <td>{formatDate(item.requestedStartTime)}</td>
                       <td>

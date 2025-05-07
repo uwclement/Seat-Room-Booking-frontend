@@ -290,9 +290,9 @@ const isUserBooking = () => {
         <div className="modal-header">
           <h3 className="modal-title">
             Seat {seat.seatNumber}
-            {isUserSeat && <span className="user-booking-badge-small">Your Booking</span>}
+            {isUserSeat}
             <span className={`seat-status ${isAvailable ? 'available' : isUserSeat ? 'user-booked' : 'occupied'}`}>
-              {isAvailable ? 'Available' : isUserSeat ? 'Booked by You' : 'Occupied'}
+              {isAvailable ? 'Available' : isUserSeat ? 'Your Booking' : 'Occupied'}
             </span>
           </h3>
           <button className="modal-close" onClick={onClose}>&times;</button>
@@ -320,6 +320,22 @@ const isUserBooking = () => {
               </span>
             </div>
             
+            {/* {isUserSeat && userBooking(
+            <div className="seat-info-row">
+              <span className="seat-info-label">Start</span>
+              <span className="seat-info-value">
+              {formatDate(userBooking.startTime)}
+              </span>
+            </div>
+            )} */}
+            
+            <div className="seat-info-row">
+              <span className="seat-info-label">End</span>
+              <span className="seat-info-value">
+              {formatAvailabilityTime(availabilityTime)}
+              </span>
+            </div>
+            
             {seat.description && (
               <div className="seat-info-row">
                 <span className="seat-info-label">Description:</span>
@@ -327,12 +343,13 @@ const isUserBooking = () => {
               </div>
             )}
             
+            
             {/* Availability time for occupied seats */}
             {!isAvailable && availabilityTime && !isUserSeat && (
               <div className="seat-info-row availability-time-row">
                 <span className="seat-info-label">Available:</span>
                 <span className="seat-info-value availability-highlight">
-                  {formatAvailabilityTime(availabilityTime)}
+                {formatAvailabilityTime(availabilityTime)}
                 </span>
               </div>
             )}

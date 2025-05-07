@@ -107,7 +107,7 @@ const getAvailabilityTime = (seat) => {
       const seatId = seat.seatNumber;
       
       // Top row (T1, T2)
-      if (seatId.startsWith('C')) {
+      if (seatId.startsWith('T')) {
         topSeats.push(seat);
       }
       // Bottom row (B1, B2)
