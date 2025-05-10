@@ -36,7 +36,7 @@ const Navbar = () => {
         <div className="navbar-auth">
           {isAuthenticated() ? (
             <div className="navbar-user">
-              <span className="navbar-username">{user.fullName}</span>
+              <span className="navbar-username">{user.studentId}</span>
               <button onClick={handleLogout} className="navbar-logout">Logout</button>
             </div>
           ) : (

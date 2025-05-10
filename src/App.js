@@ -1,6 +1,8 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { AdminProvider } from './context/AdminContext';
+import { ScheduleProvider } from './context/ScheduleContext';
 import { useAuth } from './hooks/useAuth';
 import EmailVerification from './pages/auth/EmailVerification';
 import Navbar from './components/layout/Navbar';
@@ -15,16 +17,26 @@ import MyWaitlistPage from './pages/user/MyWaitlist';
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard';
+import SeatManagement from './pages/admin/SeatManagement';
+import ScheduleManagement from './pages/admin/ScheduleManagement';
 
 // Import global CSS
 import './assets/css/styles.css';
+import './assets/css/admin.css';
+import './assets/css/schedule.css';
+import './assets/css/seat-management.css';
 
 // Protected route component
 const ProtectedRoute = ({ children, requiredRole }) => {
   const { isAuthenticated, isAdmin, loading } = useAuth();
   
-  if (loading) {
-    return <div className="loading-container">Loading...</div>;
+   if (loading) {
+    return (
+      <div className="loading-container">
+        <div className="spinner"></div>
+        <p>Loading...</p>
+      </div>
+    );
   }
   
   if (!isAuthenticated()) {
@@ -101,6 +113,24 @@ const AppRoutes = () => {
         }
       />
       
+      <Route
+        path="/admin/seats"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <SeatManagement />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/admin/schedule"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <ScheduleManagement />
+          </ProtectedRoute>
+        }
+      />
+      
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
@@ -110,14 +140,18 @@ const AppRoutes = () => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <div className="app-container">
-          <Navbar />
-          <main className="main-content">
-            <AppRoutes />
-          </main>
-        </div>
-      </Router>
+      <AdminProvider>
+        <ScheduleProvider>
+          <Router>
+            <div className="app-container">
+              <Navbar />
+              <main className="main-content">
+                <AppRoutes />
+              </main>
+            </div>
+          </Router>
+        </ScheduleProvider>
+      </AdminProvider>
     </AuthProvider>
   );
 }

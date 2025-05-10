@@ -329,12 +329,12 @@ const isUserBooking = () => {
             </div>
             )} */}
             
-            <div className="seat-info-row">
+            {/* <div className="seat-info-row">
               <span className="seat-info-label">End</span>
               <span className="seat-info-value">
               {formatAvailabilityTime(availabilityTime)}
               </span>
-            </div>
+            </div> */}
             
             {seat.description && (
               <div className="seat-info-row">
