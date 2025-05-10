@@ -1,0 +1,344 @@
+/* Seat Management Styles */
+
+/* Seat Filters */
+.seat-filters {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .filter-title {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: #1f2937;
+    font-size: 1.125rem;
+  }
+  
+  .filters-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+  }
+  
+  .filter-item {
+    display: flex;
+    flex-direction: column;
+    min-width: 200px;
+  }
+  
+  .filter-item label {
+    font-size: 0.875rem;
+    margin-bottom: 0.25rem;
+    color: #4b5563;
+  }
+  
+  .filter-item select,
+  .filter-item input {
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    background-color: white;
+    font-size: 0.875rem;
+  }
+  
+  /* Seat Actions */
+  .seat-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 0.5rem;
+    border: 1px solid #e5e7eb;
+  }
+  
+  .selection-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .selection-count {
+    font-weight: 600;
+    color: #3b82f6;
+    padding: 0.25rem 0.5rem;
+    background-color: #eff6ff;
+    border-radius: 0.25rem;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 0.75rem;
+  }
+  
+  /* Seat List */
+  .seat-list {
+    margin-top: 1.5rem;
+  }
+  
+  .seat-zone-group {
+    margin-bottom: 2rem;
+  }
+  
+  .zone-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: #1f2937;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+  }
+  
+  .table th {
+    text-align: left;
+    padding: 0.75rem;
+    background-color: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+    font-weight: 600;
+    color: #4b5563;
+  }
+  
+  .table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .selected-row {
+    background-color: #eff6ff;
+  }
+  
+  .selected-row:hover {
+    background-color: #dbeafe;
+  }
+  
+  .table tr:hover {
+    background-color: #f9fafb;
+  }
+  
+  .hidden-checkbox {
+    visibility: hidden;
+  }
+  
+  /* Seat Status Badges */
+  .seat-status {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+  }
+  
+  .seat-status.available {
+    background-color: #d1fae5;
+    color: #047857;
+  }
+  
+  .seat-status.disabled {
+    background-color: #fee2e2;
+    color: #b91c1c;
+  }
+  
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+  }
+  
+  .seat-status.available .status-dot {
+    background-color: #10b981;
+  }
+  
+  .seat-status.disabled .status-dot {
+    background-color: #ef4444;
+  }
+  
+  /* Desktop Badge */
+  .desktop-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .desktop-badge.has-desktop {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+  }
+  
+  .desktop-badge.no-desktop {
+    background-color: #f3f4f6;
+    color: #6b7280;
+  }
+  
+  /* No Seats Message */
+  .no-seats {
+    text-align: center;
+    padding: 2rem;
+    background-color: #f9fafb;
+    border-radius: 0.5rem;
+    border: 1px dashed #e5e7eb;
+    color: #6b7280;
+  }
+  
+  /* Loading Indicator */
+  .loading {
+    text-align: center;
+    padding: 2rem;
+    color: #6b7280;
+  }
+  
+  /* Disable Seat Modal */
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+  }
+  
+  .modal-container {
+    background-color: white;
+    border-radius: 0.5rem;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .modal-header h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0;
+    color: #1f2937;
+  }
+  
+  .close-button {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    color: #6b7280;
+    transition: color 0.2s;
+  }
+  
+  .close-button:hover {
+    color: #1f2937;
+  }
+  
+  .modal-body {
+    padding: 1.5rem;
+  }
+  
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    margin-top: 1rem;
+    border-top: 1px solid #e5e7eb;
+  }
+  
+  .form-group {
+    margin-bottom: 1rem;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+    color: #374151;
+  }
+  
+  .form-control {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    background-color: white;
+    font-size: 0.875rem;
+  }
+  
+  textarea.form-control {
+    resize: vertical;
+    min-height: 80px;
+  }
+  
+  .form-text {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+  }
+  
+  /* Alert Messages */
+  .alert {
+    padding: 0.75rem 1rem;
+    border-radius: 0.375rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .alert.alert-info {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+  }
+  
+  .alert-content {
+    flex: 1;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .filters-container {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .filter-item {
+      width: 100%;
+      min-width: auto;
+    }
+    
+    .seat-actions {
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .selection-tools {
+      width: 100%;
+      justify-content: space-between;
+    }
+    
+    .action-buttons {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
