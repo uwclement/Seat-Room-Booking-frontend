@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import './Navbar.css';
+import NotificationComponent from './../../components/common/NotificationComponent';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated, isAdmin } = useAuth();
@@ -33,6 +34,11 @@ const Navbar = () => {
             <Link to="/admin" className="navbar-item">Admin</Link>
           )}
         </div>
+
+       <div className="header-right">
+          <NotificationComponent />
+       </div> 
+
         <div className="navbar-auth">
           {isAuthenticated() ? (
             <div className="navbar-user">
