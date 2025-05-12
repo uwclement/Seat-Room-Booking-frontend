@@ -1,0 +1,19 @@
+    /* NotificationComponent.css */
+.notification-button {
+  padding: 0 8px;
+}
+
+.notification-unread {
+  background-color: #f0f7ff;
+  cursor: pointer;
+}
+
+.notification-read {
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+.notification-time {
+  font-size: 12px;
+  color: #999;
+}
