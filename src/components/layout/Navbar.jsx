@@ -35,13 +35,12 @@ const Navbar = () => {
           )}
         </div>
 
-       <div className="header-right">
-          <NotificationComponent />
-       </div> 
-
         <div className="navbar-auth">
           {isAuthenticated() ? (
             <div className="navbar-user">
+              <div className="header-right">
+                 <NotificationComponent />
+              </div> 
               <span className="navbar-username">{user.studentId}</span>
               <button onClick={handleLogout} className="navbar-logout">Logout</button>
             </div>
