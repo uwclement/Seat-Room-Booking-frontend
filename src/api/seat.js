@@ -29,3 +29,4 @@ export const getFavoriteSeats = async () => {
   const response = await api.get('/seats/favorites');
   return response.data;
 };
+

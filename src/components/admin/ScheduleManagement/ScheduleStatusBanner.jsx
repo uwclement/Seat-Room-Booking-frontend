@@ -1,81 +1,66 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSchedule } from '../../../hooks/useSchedule';
+import { format } from 'date-fns';
+import '../../../assets/css/statusBanner.css';
 
 const ScheduleStatusBanner = () => {
   const { libraryStatus } = useSchedule();
-  
-  // Format the next change time if it exists
-  const formatChangeTime = (timeString) => {
-    if (!timeString) return '';
+  const [isVisible, setIsVisible] = useState(true);
+
+  // Handle visibility timing
+  useEffect(() => {
+    // If no status or the library is open/closed, keep banner visible
+    if (!libraryStatus || libraryStatus.open || !libraryStatus.open) {
+      return;
+    }
     
-    const changeTime = new Date(timeString);
-    return changeTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    // Only hide banner after 10 seconds for non-status notifications
+    const timer = setTimeout(() => {
+      setIsVisible(false);
+    }, 10000);
+    
+    return () => clearTimeout(timer);
+  }, [libraryStatus]);
+
+  if (!libraryStatus || !isVisible) {
+    return null;
+  }
+
+  const statusClass = libraryStatus.open ? 'success' : 'danger';
+  const statusText = libraryStatus.open ? 'Open Now' : 'Closed Now';
+
+  const formatTime = (dateTimeString) => {
+    if (!dateTimeString) return '';
+    const date = new Date(dateTimeString);
+    return format(date, 'h:mm a');
   };
-  
-  // Determine banner styling based on status
-  const getBannerClass = () => {
-    if (!libraryStatus.isOpen) {
-      return 'status-banner closed';
-    }
-    
-    // Check if closing soon (within 2 hours)
-    if (libraryStatus.nextChangeTime) {
-      const nextChange = new Date(libraryStatus.nextChangeTime);
-      const now = new Date();
-      const hoursUntilChange = (nextChange - now) / (1000 * 60 * 60);
-      
-      if (hoursUntilChange <= 2) {
-        return 'status-banner closing-soon';
-      }
-    }
-    
-    return 'status-banner open';
-  };
-  
-  // Get appropriate text for the current status
-  const getStatusText = () => {
-    if (!libraryStatus.isOpen) {
-      return 'Library is currently CLOSED';
-    }
-    
-    if (libraryStatus.nextChangeTime) {
-      const nextChange = new Date(libraryStatus.nextChangeTime);
-      const now = new Date();
-      const hoursUntilChange = (nextChange - now) / (1000 * 60 * 60);
-      
-      if (hoursUntilChange <= 2) {
-        return `Library is CLOSING SOON: at ${formatChangeTime(libraryStatus.nextChangeTime)}`;
-      }
-    }
-    
-    return 'Library is currently OPEN';
-  };
-  
+
   return (
-    <div className={getBannerClass()}>
-      <div className="status-icon">
-        {libraryStatus.isOpen ? (
-          <i className="fas fa-door-open"></i>
-        ) : (
-          <i className="fas fa-door-closed"></i>
-        )}
+    <div className={`library-status-banner status-${statusClass}`}>
+      <div className="status-indicator">
+        <span className={`status-dot ${statusClass}`}></span>
+        <span className="status-text">{statusText}</span>
       </div>
       
-      <div className="status-info">
-        <div className="status-text">
-          {getStatusText()}
-        </div>
-        
-        {libraryStatus.message && (
-          <div className="status-message">
-            {libraryStatus.message}
-          </div>
+      <div className="status-details">
+        {libraryStatus.currentHours && (
+          <span className="hours">
+            Hours: {libraryStatus.currentHours}
+          </span>
         )}
         
-        {!libraryStatus.isOpen && libraryStatus.nextChangeTime && (
-          <div className="reopening-info">
-            Reopening at {formatChangeTime(libraryStatus.nextChangeTime)}
-          </div>
+        {libraryStatus.message && (
+          <span className="message">
+            {libraryStatus.message}
+          </span>
+        )}
+        
+        {libraryStatus.nextStatusChange && (
+          <span className="next-change">
+            {libraryStatus.open 
+              ? `Closes: ${formatTime(libraryStatus.nextStatusChange)}` 
+              : `Opens: ${formatTime(libraryStatus.nextStatusChange)}`}
+          </span>
         )}
       </div>
     </div>

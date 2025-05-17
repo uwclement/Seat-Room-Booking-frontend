@@ -1,50 +1,57 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../hooks/useAuth'; // Import auth hook
+import { useAuth } from '../hooks/useAuth';
 import {
-  getLibrarySchedule,
-  updateDaySchedule,
-  getClosureExceptions,
+  getAllSchedules,
+  updateSchedule,
+  setDayClosed,
+  setSpecialClosingTime,
+  removeSpecialClosingTime,
+  getLibraryStatus,
+  getAllClosureExceptions,
+  getClosureExceptionsInRange,
   createClosureException,
+  updateClosureException,
   deleteClosureException,
   createRecurringClosures,
   setScheduleMessage,
-  getScheduleMessage,
-  getCurrentLibraryStatus
+  getScheduleMessage
 } from '../api/schedule';
+
+import {
+  getAllAnnouncements,
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement
+} from '../api/announcements';
 
 export const ScheduleContext = createContext();
 
 export const ScheduleProvider = ({ children }) => {
-  const { isAuthenticated, isAdmin } = useAuth(); // Get auth state
+  const { isAuthenticated, isAdmin } = useAuth();
 
-  // State for schedule
-  const [regularSchedule, setRegularSchedule] = useState([]);
+  // State for schedules
+  const [schedules, setSchedules] = useState([]);
   const [closureExceptions, setClosureExceptions] = useState([]);
-  const [scheduleMessage, setMessage] = useState('');
-  const [libraryStatus, setLibraryStatus] = useState({ 
-    isOpen: true, 
-    message: '', 
-    nextChangeTime: null 
-  });
-  
-  // State for loading and errors
+  const [libraryStatus, setLibraryStatus] = useState(null);
+  const [scheduleMessage, setScheduleMessageState] = useState('');
+  const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Fetch regular schedule
-  const fetchRegularSchedule = useCallback(async () => {
-    if (!isAuthenticated() || !isAdmin()) return; // Skip if not authenticated admin
+  // Fetch all schedules
+  const fetchSchedules = useCallback(async () => {
+    if (!isAuthenticated() || !isAdmin()) return;
     
     setLoading(true);
     setError('');
     try {
-      const data = await getLibrarySchedule();
-      setRegularSchedule(data);
+      const data = await getAllSchedules();
+      setSchedules(data);
     } catch (err) {
-      // Only set error if it's not a 401 (which is expected when not logged in)
+      // Only set error if it's not a 401
       if (err.response && err.response.status !== 401) {
-        setError('Failed to fetch library schedule. Please try again later.');
+        setError('Failed to fetch schedules. Please try again later.');
         console.error(err);
       }
     } finally {
@@ -54,12 +61,12 @@ export const ScheduleProvider = ({ children }) => {
 
   // Fetch closure exceptions
   const fetchClosureExceptions = useCallback(async () => {
-    if (!isAuthenticated() || !isAdmin()) return; // Skip if not authenticated admin
+    if (!isAuthenticated() || !isAdmin()) return;
     
     setLoading(true);
     setError('');
     try {
-      const data = await getClosureExceptions();
+      const data = await getAllClosureExceptions();
       setClosureExceptions(data);
     } catch (err) {
       // Only set error if it's not a 401
@@ -72,107 +79,176 @@ export const ScheduleProvider = ({ children }) => {
     }
   }, [isAuthenticated, isAdmin]);
 
-  // Fetch schedule message
-  const fetchScheduleMessage = useCallback(async () => {
-    if (!isAuthenticated() || !isAdmin()) return; // Skip if not authenticated admin
-    
-    try {
-      const data = await getScheduleMessage();
-      setMessage(data.message || '');
-    } catch (err) {
-      // No need to set error for this one, as it's not critical
-      if (err.response && err.response.status !== 401) {
-        console.error('Failed to fetch schedule message:', err);
-      }
-    }
-  }, [isAuthenticated, isAdmin]);
-
-  // Fetch current library status
+  // Fetch library status
   const fetchLibraryStatus = useCallback(async () => {
-    if (!isAuthenticated() || !isAdmin()) return; // Skip if not authenticated admin
+    if (!isAuthenticated() ) return;
     
-    try {
-      const data = await getCurrentLibraryStatus();
-      setLibraryStatus(data);
-    } catch (err) {
-      // No need to set error for this one, as it's not critical
-      if (err.response && err.response.status !== 401) {
-        console.error('Failed to fetch library status:', err);
-      }
-    }
-  }, [isAuthenticated, isAdmin]);
-
-  // Update a day's schedule
-  const handleUpdateDaySchedule = async (id, scheduleData) => {
     setLoading(true);
     setError('');
     try {
-      await updateDaySchedule(id, scheduleData);
+      const data = await getLibraryStatus();
+      setLibraryStatus(data);
+    } catch (err) {
+      // Only set error if it's not a 401
+      if (err.response && err.response.status !== 401) {
+        setError('Failed to fetch library status. Please try again later.');
+        console.error(err);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated ]);
+
+  // Fetch schedule message
+  const fetchScheduleMessage = useCallback(async () => {
+    if (!isAuthenticated() ) return;
+    
+    setLoading(true);
+    setError('');
+    try {
+      const response = await getScheduleMessage();
+      setScheduleMessageState(response.message);
+    } catch (err) {
+      // Only set error if it's not a 401
+      if (err.response && err.response.status !== 401) {
+        setError('Failed to fetch schedule message. Please try again later.');
+        console.error(err);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated ]);
+
+  // Fetch announcements
+  const fetchAnnouncements = useCallback(async () => {
+    if (!isAuthenticated() || !isAdmin()) return;
+    
+    setLoading(true);
+    setError('');
+    try {
+      const data = await getAllAnnouncements();
+      setAnnouncements(data);
+    } catch (err) {
+      // Only set error if it's not a 401
+      if (err.response && err.response.status !== 401) {
+        setError('Failed to fetch announcements. Please try again later.');
+        console.error(err);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, isAdmin]);
+
+  // Update a schedule
+  const handleUpdateSchedule = async (id, scheduleData) => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      await updateSchedule(id, scheduleData);
+      await fetchSchedules();
+      await fetchLibraryStatus();
       setSuccess('Schedule updated successfully');
-      await fetchRegularSchedule();
     } catch (err) {
       setError('Failed to update schedule. Please try again later.');
       console.error(err);
     } finally {
       setLoading(false);
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     }
   };
 
-  // Create a closure exception
-  const handleCreateClosureException = async (closureData) => {
+  // Mark a day as closed
+  const handleSetDayClosed = async (id, message) => {
     setLoading(true);
     setError('');
+    setSuccess('');
     try {
-      await createClosureException(closureData);
-      setSuccess('Closure created successfully');
-      await fetchClosureExceptions();
+      await setDayClosed(id, message);
+      await fetchSchedules();
       await fetchLibraryStatus();
+      setSuccess('Day marked as closed successfully');
     } catch (err) {
-      setError('Failed to create closure. Please try again later.');
+      setError('Failed to mark day as closed. Please try again later.');
       console.error(err);
     } finally {
       setLoading(false);
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     }
   };
 
-  // Delete a closure exception
-  const handleDeleteClosureException = async (id) => {
+  // Set special closing time
+  const handleSetSpecialClosingTime = async (id, specialCloseTime, message) => {
     setLoading(true);
     setError('');
+    setSuccess('');
     try {
-      await deleteClosureException(id);
-      setSuccess('Closure deleted successfully');
-      await fetchClosureExceptions();
+      await setSpecialClosingTime(id, specialCloseTime, message);
+      await fetchSchedules();
       await fetchLibraryStatus();
+      setSuccess('Special closing time set successfully');
     } catch (err) {
-      setError('Failed to delete closure. Please try again later.');
+      setError('Failed to set special closing time. Please try again later.');
       console.error(err);
     } finally {
       setLoading(false);
-      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(''), 3000);
+    }
+  };
+
+  // Remove special closing time
+  const handleRemoveSpecialClosingTime = async (id) => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      await removeSpecialClosingTime(id);
+      await fetchSchedules();
+      await fetchLibraryStatus();
+      setSuccess('Special closing time removed successfully');
+    } catch (err) {
+      setError('Failed to remove special closing time. Please try again later.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccess(''), 3000);
+    }
+  };
+
+  // Create a new closure exception
+  const handleCreateClosureException = async (exceptionData) => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      await createClosureException(exceptionData);
+      await fetchClosureExceptions();
+      await fetchLibraryStatus();
+      setSuccess('Closure exception created successfully');
+    } catch (err) {
+      setError('Failed to create closure exception. Please try again later.');
+      console.error(err);
+    } finally {
+      setLoading(false);
       setTimeout(() => setSuccess(''), 3000);
     }
   };
 
   // Create recurring closures
-  const handleCreateRecurringClosures = async (recurringData) => {
+  const handleCreateRecurringClosures = async (recurringClosureData) => {
     setLoading(true);
     setError('');
+    setSuccess('');
     try {
-      await createRecurringClosures(recurringData);
-      setSuccess('Recurring closures created successfully');
+      await createRecurringClosures(recurringClosureData);
       await fetchClosureExceptions();
       await fetchLibraryStatus();
+      setSuccess('Recurring closures created successfully');
     } catch (err) {
       setError('Failed to create recurring closures. Please try again later.');
       console.error(err);
     } finally {
       setLoading(false);
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     }
   };
@@ -181,63 +257,93 @@ export const ScheduleProvider = ({ children }) => {
   const handleSetScheduleMessage = async (message) => {
     setLoading(true);
     setError('');
+    setSuccess('');
     try {
       await setScheduleMessage(message);
-      setSuccess('Message set successfully');
-      await fetchScheduleMessage();
+      setScheduleMessageState(message);
+      setSuccess('Schedule message updated successfully');
     } catch (err) {
-      setError('Failed to set message. Please try again later.');
+      setError('Failed to update schedule message. Please try again later.');
       console.error(err);
     } finally {
       setLoading(false);
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     }
   };
 
-  // Load schedule data when authentication status changes
+  // Create a new announcement
+  const handleCreateAnnouncement = async (announcementData) => {
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      await createAnnouncement(announcementData);
+      await fetchAnnouncements();
+      setSuccess('Announcement created successfully');
+    } catch (err) {
+      setError('Failed to create announcement. Please try again later.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccess(''), 3000);
+    }
+  };
+
+  // Load data when authentication status changes
   useEffect(() => {
     if (isAuthenticated() && isAdmin()) {
-      fetchRegularSchedule();
+      fetchSchedules();
       fetchClosureExceptions();
-      fetchScheduleMessage();
       fetchLibraryStatus();
-
-      // Set up interval to refresh library status every minute
-      const statusInterval = setInterval(fetchLibraryStatus, 60000);
-      
-      // Clean up interval on unmount
-      return () => clearInterval(statusInterval);
+      fetchScheduleMessage();
+      fetchAnnouncements();
     }
   }, [
     isAuthenticated, 
     isAdmin, 
-    fetchRegularSchedule, 
+    fetchSchedules, 
     fetchClosureExceptions, 
-    fetchScheduleMessage, 
-    fetchLibraryStatus
+    fetchLibraryStatus,
+    fetchScheduleMessage,
+    fetchAnnouncements
   ]);
+
+  // Refresh library status every 5 minutes
+  useEffect(() => {
+    if (!isAuthenticated() || !isAdmin()) return;
+    
+    const intervalId = setInterval(() => {
+      fetchLibraryStatus();
+    }, 300000); // 5 minutes
+    
+    return () => clearInterval(intervalId);
+  }, [isAuthenticated, isAdmin, fetchLibraryStatus]);
 
   const contextValue = {
     // State
-    regularSchedule,
+    schedules,
     closureExceptions,
-    scheduleMessage,
     libraryStatus,
+    scheduleMessage,
+    announcements,
     loading,
     error,
     success,
     
     // Functions
-    fetchRegularSchedule,
+    fetchSchedules,
     fetchClosureExceptions,
-    fetchScheduleMessage,
     fetchLibraryStatus,
-    handleUpdateDaySchedule,
+    fetchScheduleMessage,
+    fetchAnnouncements,
+    handleUpdateSchedule,
+    handleSetDayClosed,
+    handleSetSpecialClosingTime,
+    handleRemoveSpecialClosingTime,
     handleCreateClosureException,
-    handleDeleteClosureException,
     handleCreateRecurringClosures,
     handleSetScheduleMessage,
+    handleCreateAnnouncement,
     setError
   };
 

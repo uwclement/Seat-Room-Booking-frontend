@@ -2,12 +2,14 @@
     background-color: white;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     padding: 0.75rem 0;
+    
   }
   
   .navbar-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    
   }
   
   .navbar-brand {
@@ -77,4 +79,9 @@
     .navbar-menu {
       display: flex;
     }
+  }
+
+.navbar-notification{
+margin-right: 15px;   
+
   }

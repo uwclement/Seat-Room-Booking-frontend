@@ -1,0 +1,171 @@
+.library-status-banner {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 15px;
+  margin-bottom: 15px;
+  border-radius: 6px;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.08);
+  animation: fadeIn 0.5s ease-out, fadeOut 0.5s ease-out 9.5s forwards;
+  opacity: 0;
+}
+
+/* Keep banner visible when library is open or closed */
+.library-status-banner.status-success,
+.library-status-banner.status-danger {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+/* Animation to fade in */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Animation to fade out */
+@keyframes fadeOut {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    display: none;
+  }
+}
+
+/* Status colors */
+.library-status-banner.status-success {
+  background-color: #38a169;
+  border-left: 3px solid #2f855a;
+}
+
+.library-status-banner.status-danger {
+  background-color: #e53e3e;
+  border-left: 3px solid #c53030;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  position: relative;
+}
+
+/* Pulsing effect for status dot */
+.status-dot:after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  opacity: 0.6;
+}
+
+.status-dot.success {
+  background-color: #fff;
+}
+
+.status-dot.success:after {
+  border: 2px solid #fff;
+}
+
+.status-dot.danger {
+  background-color: #fff;
+}
+
+.status-dot.danger:after {
+  border: 2px solid #fff;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  70% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+}
+
+.status-details {
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 13px;
+  gap: 12px;
+}
+
+.hours, .message, .special-message, .next-change {
+  position: relative;
+  padding-right: 16px;
+}
+
+.hours:after, .message:after, .special-message:after {
+  content: '•';
+  position: absolute;
+  right: 0;
+  opacity: 0.7;
+}
+
+.next-change {
+  font-weight: 500;
+}
+
+/* Special message styling */
+.special-message {
+  font-style: italic;
+}
+
+/* Media query for mobile devices */
+@media (max-width: 768px) {
+  .library-status-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 8px 12px;
+  }
+  
+  .status-details {
+    margin-top: 4px;
+    font-size: 12px;
+    width: 100%;
+  }
+  
+  .status-indicator {
+    margin-bottom: 2px;
+  }
+}
+
+/* For extremely small screens */
+@media (max-width: 480px) {
+  .status-details {
+    flex-direction: column;
+    gap: 4px;
+  }
+  
+  .hours:after, .message:after, .special-message:after {
+    content: '';
+  }
+}
