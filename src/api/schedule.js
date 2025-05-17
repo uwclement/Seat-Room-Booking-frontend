@@ -12,36 +12,69 @@ const safeApiCall = async (apiCall) => {
   }
 };
 
-// Get regular schedule
-export const getLibrarySchedule = async () => {
+// Get all library schedules
+export const getAllSchedules = async () => {
   return safeApiCall(() => api.get('/admin/schedule'));
 };
 
-// Update regular day schedule
-export const updateDaySchedule = async (id, scheduleData) => {
+// Update a schedule
+export const updateSchedule = async (id, scheduleData) => {
   return safeApiCall(() => api.put(`/admin/schedule/${id}`, scheduleData));
 };
 
+// Mark a day as closed
+export const setDayClosed = async (id, message) => {
+  return safeApiCall(() => api.put(`/admin/schedule/${id}/close`, { message }));
+};
+
+// Set special closing time
+export const setSpecialClosingTime = async (id, specialCloseTime, message) => {
+  return safeApiCall(() => api.put(`/admin/schedule/${id}/special-close`, { 
+    specialCloseTime, 
+    message 
+  }));
+};
+
+// Remove special closing time
+export const removeSpecialClosingTime = async (id) => {
+  return safeApiCall(() => api.delete(`/admin/schedule/${id}/special-close`));
+};
+
+// // Get current library status
+// export const getLibraryStatus = async () => {
+//   return safeApiCall(() => api.get('/admin/schedule/status'));
+// };
+
+// // Get public library status
+// export const getPublicLibraryStatus = async () => {
+//   return safeApiCall(() => api.get('/library/status'));
+// };
+
+//Admin and users get Status
+export const getLibraryStatus = async () => {
+  return safeApiCall(() => api.get('/library/status'));
+ };
+
 // Get all closure exceptions
-export const getClosureExceptions = async () => {
+export const getAllClosureExceptions = async () => {
   return safeApiCall(() => api.get('/admin/schedule/exceptions'));
 };
 
-// Get closure exceptions for a date range
-export const getClosureExceptionsInRange = async (startDate, endDate) => {
+// Get closure exceptions in a date range
+export const getClosureExceptionsInRange = async (start, end) => {
   return safeApiCall(() => api.get('/admin/schedule/exceptions/range', {
-    params: { startDate, endDate }
+    params: { start, end }
   }));
 };
 
 // Create a new closure exception
-export const createClosureException = async (closureData) => {
-  return safeApiCall(() => api.post('/admin/schedule/exceptions', closureData));
+export const createClosureException = async (exceptionData) => {
+  return safeApiCall(() => api.post('/admin/schedule/exceptions', exceptionData));
 };
 
 // Update a closure exception
-export const updateClosureException = async (id, closureData) => {
-  return safeApiCall(() => api.put(`/admin/schedule/exceptions/${id}`, closureData));
+export const updateClosureException = async (id, exceptionData) => {
+  return safeApiCall(() => api.put(`/admin/schedule/exceptions/${id}`, exceptionData));
 };
 
 // Delete a closure exception
@@ -50,34 +83,16 @@ export const deleteClosureException = async (id) => {
 };
 
 // Create recurring closures
-export const createRecurringClosures = async (recurringData) => {
-  return safeApiCall(() => api.post('/admin/schedule/exceptions/recurring', recurringData));
+export const createRecurringClosures = async (recurringClosureData) => {
+  return safeApiCall(() => api.post('/admin/schedule/exceptions/recurring', recurringClosureData));
 };
 
-// Set early closing message
+// Set schedule message
 export const setScheduleMessage = async (message) => {
   return safeApiCall(() => api.put('/admin/schedule/message', { message }));
 };
 
-// Get current schedule message
+// Get schedule message
 export const getScheduleMessage = async () => {
   return safeApiCall(() => api.get('/admin/schedule/message'));
-};
-
-// Check current library status
-export const getCurrentLibraryStatus = async () => {
-  return safeApiCall(() => api.get('/admin/schedule/status'));
-};
-
-// Preview closure message
-export const previewClosureMessage = async (closureData) => {
-  return safeApiCall(() => api.post('/admin/schedule/preview-message', closureData));
-};
-
-// Export schedule data
-export const exportScheduleData = async (startDate, endDate, format = 'csv') => {
-  return safeApiCall(() => api.get('/admin/export/schedule', {
-    params: { startDate, endDate, format },
-    responseType: 'blob'
-  }));
 };

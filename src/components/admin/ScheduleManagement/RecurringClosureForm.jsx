@@ -1,193 +1,208 @@
 import React, { useState } from 'react';
 import { useSchedule } from '../../../hooks/useSchedule';
+import DatePicker from '../../common/DatePicker';
+import TimePicker from '../../common/TimePicker';
 
-const RecurringClosureForm = () => {
-  const { handleCreateRecurringClosures, loading } = useSchedule();
-
-  const [formData, setFormData] = useState({
-    dayOfWeek: 6, // Saturday by default
-    startDate: '',
-    endDate: '',
-    startTime: '17:00',
-    endTime: '09:00',
-    reason: 'Weekend Closure',
-    isFullDay: false
-  });
-
-  const handleChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
-  };
+const RecurringClosureForm = ({ onPreview }) => {
+  const { handleCreateRecurringClosures } = useSchedule();
+  
+  const [recurrenceType, setRecurrenceType] = useState('weekly');
+  const [dayOfWeek, setDayOfWeek] = useState('MONDAY');
+  const [dayOfMonth, setDayOfMonth] = useState('1');
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date(new Date().setMonth(new Date().getMonth() + 1)));
+  const [closedAllDay, setClosedAllDay] = useState(true);
+  const [openTime, setOpenTime] = useState('09:00:00');
+  const [closeTime, setCloseTime] = useState('17:00:00');
+  const [reason, setReason] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    handleCreateRecurringClosures({
-      ...formData,
-      endDayOfWeek: (formData.dayOfWeek === 6) ? 0 : parseInt(formData.dayOfWeek) + 1 // Next day by default
-    });
+    const recurringClosureData = {
+      startDate,
+      endDate,
+      closedAllDay,
+      reason
+    };
     
-    // Reset form to default values
-    setFormData({
-      dayOfWeek: 6,
-      startDate: '',
-      endDate: '',
-      startTime: '17:00',
-      endTime: '09:00',
-      reason: 'Weekend Closure',
-      isFullDay: false
-    });
+    if (recurrenceType === 'weekly') {
+      recurringClosureData.dayOfWeek = dayOfWeek;
+    } else if (recurrenceType === 'monthly') {
+      recurringClosureData.dayOfMonth = parseInt(dayOfMonth);
+    }
+    
+    if (!closedAllDay) {
+      recurringClosureData.openTime = openTime;
+      recurringClosureData.closeTime = closeTime;
+    }
+    
+    handleCreateRecurringClosures(recurringClosureData);
   };
 
-  const daysOfWeek = [
-    { value: 0, label: 'Sunday' },
-    { value: 1, label: 'Monday' },
-    { value: 2, label: 'Tuesday' },
-    { value: 3, label: 'Wednesday' },
-    { value: 4, label: 'Thursday' },
-    { value: 5, label: 'Friday' },
-    { value: 6, label: 'Saturday' }
-  ];
-
-  // Calculate minimum date (today)
-  const today = new Date();
-  const minDate = today.toISOString().split('T')[0];
+  const handlePreviewClick = () => {
+    if (onPreview) {
+      const previewData = {
+        recurrenceType,
+        dayOfWeek: recurrenceType === 'weekly' ? dayOfWeek : null,
+        dayOfMonth: recurrenceType === 'monthly' ? dayOfMonth : null,
+        startDate,
+        endDate,
+        closedAllDay,
+        openTime: !closedAllDay ? openTime : null,
+        closeTime: !closedAllDay ? closeTime : null,
+        reason
+      };
+      
+      onPreview(previewData);
+    }
+  };
 
   return (
     <div className="recurring-closure-form">
-      <div className="card">
-        <div className="card-header">
-          <h3>Create Recurring Closures</h3>
+      <form onSubmit={handleSubmit}>
+        <div className="form-group">
+          <label>Recurrence Type:</label>
+          <div className="form-check">
+            <input
+              type="radio"
+              className="form-check-input"
+              id="recurrenceWeekly"
+              checked={recurrenceType === 'weekly'}
+              onChange={() => setRecurrenceType('weekly')}
+            />
+            <label className="form-check-label" htmlFor="recurrenceWeekly">
+              Weekly (e.g., every Monday)
+            </label>
+          </div>
+          <div className="form-check">
+            <input
+              type="radio"
+              className="form-check-input"
+              id="recurrenceMonthly"
+              checked={recurrenceType === 'monthly'}
+              onChange={() => setRecurrenceType('monthly')}
+            />
+            <label className="form-check-label" htmlFor="recurrenceMonthly">
+              Monthly (e.g., 15th of each month)
+            </label>
+          </div>
         </div>
-        <div className="card-body">
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label htmlFor="dayOfWeek">Day of Week:</label>
-              <select
-                id="dayOfWeek"
-                name="dayOfWeek"
-                className="form-control"
-                value={formData.dayOfWeek}
-                onChange={handleChange}
-              >
-                {daysOfWeek.map(day => (
-                  <option key={day.value} value={day.value}>
-                    {day.label}
-                  </option>
-                ))}
-              </select>
-              <small className="form-text text-muted">
-                The day when the closure begins. For overnight closures, the end will be the next day.
-              </small>
-            </div>
 
-            <div className="form-group">
-              <label htmlFor="startDate">Start Date:</label>
-              <input
-                type="date"
-                id="startDate"
-                name="startDate"
-                className="form-control"
-                value={formData.startDate}
-                onChange={handleChange}
-                min={minDate}
-                required
-              />
-              <small className="form-text text-muted">
-                First occurrence of this recurring closure
-              </small>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="endDate">End Date:</label>
-              <input
-                type="date"
-                id="endDate"
-                name="endDate"
-                className="form-control"
-                value={formData.endDate}
-                onChange={handleChange}
-                min={formData.startDate || minDate}
-              />
-              <small className="form-text text-muted">
-                Last occurrence of this recurring closure (leave blank for indefinite)
-              </small>
-            </div>
-
-            <div className="form-check mb-3">
-              <input
-                type="checkbox"
-                id="isFullDay"
-                name="isFullDay"
-                className="form-check-input"
-                checked={formData.isFullDay}
-                onChange={handleChange}
-              />
-              <label className="form-check-label" htmlFor="isFullDay">
-                Full Day Closure
-              </label>
-            </div>
-
-            {!formData.isFullDay && (
-              <div className="row">
-                <div className="col">
-                  <div className="form-group">
-                    <label htmlFor="startTime">Closing Time:</label>
-                    <input
-                      type="time"
-                      id="startTime"
-                      name="startTime"
-                      className="form-control"
-                      value={formData.startTime}
-                      onChange={handleChange}
-                      required={!formData.isFullDay}
-                    />
-                  </div>
-                </div>
-                <div className="col">
-                  <div className="form-group">
-                    <label htmlFor="endTime">Reopening Time:</label>
-                    <input
-                      type="time"
-                      id="endTime"
-                      name="endTime"
-                      className="form-control"
-                      value={formData.endTime}
-                      onChange={handleChange}
-                      required={!formData.isFullDay}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="form-group">
-              <label htmlFor="reason">Closure Reason:</label>
-              <input
-                type="text"
-                id="reason"
-                name="reason"
-                className="form-control"
-                value={formData.reason}
-                onChange={handleChange}
-                required
-                placeholder="Why is the library closed during this time?"
-              />
-            </div>
-
-            <button 
-              type="submit" 
-              className="btn btn-primary" 
-              disabled={loading}
+        {recurrenceType === 'weekly' && (
+          <div className="form-group">
+            <label>Day of Week:</label>
+            <select 
+              className="form-control"
+              value={dayOfWeek}
+              onChange={(e) => setDayOfWeek(e.target.value)}
             >
-              {loading ? 'Creating...' : 'Create Recurring Closures'}
-            </button>
-          </form>
+              <option value="MONDAY">Monday</option>
+              <option value="TUESDAY">Tuesday</option>
+              <option value="WEDNESDAY">Wednesday</option>
+              <option value="THURSDAY">Thursday</option>
+              <option value="FRIDAY">Friday</option>
+              <option value="SATURDAY">Saturday</option>
+              <option value="SUNDAY">Sunday</option>
+            </select>
+          </div>
+        )}
+
+        {recurrenceType === 'monthly' && (
+          <div className="form-group">
+            <label>Day of Month:</label>
+            <select 
+              className="form-control"
+              value={dayOfMonth}
+              onChange={(e) => setDayOfMonth(e.target.value)}
+            >
+              {[...Array(31)].map((_, i) => (
+                <option key={i + 1} value={i + 1}>
+                  {i + 1}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="form-group">
+          <label>Date Range:</label>
+          <div className="row">
+            <div className="col-md-6">
+              <label>Start Date:</label>
+              <DatePicker
+                selectedDate={startDate}
+                onChange={setStartDate}
+              />
+            </div>
+            <div className="col-md-6">
+              <label>End Date:</label>
+              <DatePicker
+                selectedDate={endDate}
+                onChange={setEndDate}
+              />
+            </div>
+          </div>
         </div>
-      </div>
+
+        <div className="form-group">
+          <div className="form-check">
+            <input
+              type="checkbox"
+              className="form-check-input"
+              id="closedAllDay"
+              checked={closedAllDay}
+              onChange={(e) => setClosedAllDay(e.target.checked)}
+            />
+            <label className="form-check-label" htmlFor="closedAllDay">
+              Closed All Day
+            </label>
+          </div>
+        </div>
+
+        {!closedAllDay && (
+          <div className="row">
+            <div className="col-md-6">
+              <div className="form-group">
+                <label>Opening Time:</label>
+                <TimePicker 
+                  value={openTime}
+                  onChange={setOpenTime}
+                />
+              </div>
+            </div>
+            <div className="col-md-6">
+              <div className="form-group">
+                <label>Closing Time:</label>
+                <TimePicker 
+                  value={closeTime}
+                  onChange={setCloseTime}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="form-group">
+          <label>Reason for Closure:</label>
+          <textarea
+            className="form-control"
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            placeholder="E.g., Holiday break, Maintenance period"
+            rows="2"
+          />
+        </div>
+
+        <div className="button-group">
+          <button type="button" className="btn btn-secondary mr-2" onClick={handlePreviewClick}>
+            Preview
+          </button>
+          <button type="submit" className="btn btn-primary">
+            Create Recurring Closures
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

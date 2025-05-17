@@ -20,28 +20,26 @@ const Navbar = () => {
           <Link to="/" className="navbar-brand">AUCA Library</Link>
         </div>
         <div className="navbar-menu">
-          <Link to="/" className="navbar-item">Home</Link>
           
-          {isAuthenticated() && (
+          
+          {isAuthenticated() && !isAdmin() && (
             <>
+              <Link to="/" className="navbar-item">Home</Link>
               <Link to="/seats" className="navbar-item">Seats</Link>
               <Link to="/bookings" className="navbar-item">My Bookings</Link>
               <Link to="/waitlist" className="navbar-item">My Waitlist</Link>
             </>
           )}
-          
-          {isAdmin() && (
-            <Link to="/admin" className="navbar-item">Admin</Link>
-          )}
         </div>
-
-       <div className="header-right">
-          <NotificationComponent />
-       </div> 
 
         <div className="navbar-auth">
           {isAuthenticated() ? (
             <div className="navbar-user">
+              {!isAdmin() && (
+              <div className="navbar-notification">
+                 <NotificationComponent />
+              </div> 
+              )}
               <span className="navbar-username">{user.studentId}</span>
               <button onClick={handleLogout} className="navbar-logout">Logout</button>
             </div>

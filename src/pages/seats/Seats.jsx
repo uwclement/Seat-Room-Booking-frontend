@@ -8,6 +8,7 @@ import Button from '../../components/common/Button';
 import SeatGrid from '../../components/seats/SeatGrid';
 import CollaborationArea from '../../components/seats/CollaborationArea';
 import SeatDetailsModal from '../../components/seats/SeatDetailsModal';
+import ScheduleStatusBanner from '../../components/admin/ScheduleManagement/ScheduleStatusBanner';
 import './Seats.css';
 
 const SeatsPage = () => {
@@ -266,7 +267,9 @@ const SeatsPage = () => {
       const updatedSeats = await getAllSeats();
       setSeats(updatedSeats);
       setFilteredSeats(updatedSeats);
-      
+
+     
+
       return { success: true, message: 'Booking successful!' };
     } catch (err) {
       console.error('Error booking seat:', err);
@@ -297,6 +300,7 @@ const SeatsPage = () => {
       <div className="container">
         <div className="content-header">
           <h2>Available Seats</h2>
+           <ScheduleStatusBanner />
           <div className="filters">
             <select 
               className="filter-select"
@@ -384,10 +388,6 @@ const SeatsPage = () => {
               <div className="legend-item">
                 <div className="seat-icon occupied"></div>
                 <span>Occupied</span>
-              </div>
-              <div className="legend-item">
-                <div className="seat-icon user-booked"></div>
-                <span>Your Booking</span>
               </div>
               <div className="legend-item">
                 <div className="seat-icon favorite"></div>
