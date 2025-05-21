@@ -291,33 +291,37 @@ export const ScheduleProvider = ({ children }) => {
 
   // Load data when authentication status changes
   useEffect(() => {
-    if (isAuthenticated() && isAdmin()) {
-      fetchSchedules();
-      fetchClosureExceptions();
-      fetchLibraryStatus();
-      fetchScheduleMessage();
-      fetchAnnouncements();
-    }
-  }, [
-    isAuthenticated, 
-    isAdmin, 
-    fetchSchedules, 
-    fetchClosureExceptions, 
-    fetchLibraryStatus,
-    fetchScheduleMessage,
-    fetchAnnouncements
-  ]);
+  if (!isAuthenticated()) return;
+
+  fetchLibraryStatus();        // For all users
+  fetchScheduleMessage();      // For all users
+
+  if (isAdmin()) {
+    fetchSchedules();
+    fetchClosureExceptions();
+    fetchAnnouncements();
+  }
+}, [
+  isAuthenticated,
+  isAdmin,
+  fetchSchedules,
+  fetchClosureExceptions,
+  fetchLibraryStatus,
+  fetchScheduleMessage,
+  fetchAnnouncements
+]);
+
 
   // Refresh library status every 5 minutes
   useEffect(() => {
-    if (!isAuthenticated() || !isAdmin()) return;
+    if (!isAuthenticated() ) return;
     
     const intervalId = setInterval(() => {
       fetchLibraryStatus();
     }, 300000); // 5 minutes
     
     return () => clearInterval(intervalId);
-  }, [isAuthenticated, isAdmin, fetchLibraryStatus]);
+  }, [isAuthenticated, fetchLibraryStatus]);
 
   const contextValue = {
     // State

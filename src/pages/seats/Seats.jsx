@@ -298,9 +298,9 @@ const SeatsPage = () => {
   return (
     <div className="seat-page-container">
       <div className="container">
+        <ScheduleStatusBanner />
         <div className="content-header">
           <h2>Available Seats</h2>
-           <ScheduleStatusBanner />
           <div className="filters">
             <select 
               className="filter-select"

@@ -28,9 +28,9 @@ const Login = () => {
         
         // Check if the user has admin role
         if (userData && userData.roles && userData.roles.includes('ROLE_ADMIN')) {
-          navigate('/admin');
+          navigate('/admin/seats');
         } else {
-          navigate('/');
+          navigate('/seats');
         }
       } else {
         setError(result.message);
