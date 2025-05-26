@@ -8,6 +8,8 @@ const AdminSidebar = ({ activePage }) => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt', path: '/admin' },
     { id: 'seats', label: 'Seat Management', icon: 'fa-chair', path: '/admin/seats' },
+    { id: 'rooms', label: 'Room Management', icon: 'fa-door-open', path: '/admin/rooms' },
+    { id: 'equipment', label: 'Equipment', icon: 'fa-tools', path: '/admin/equipment' },
     { id: 'schedule', label: 'Schedule Management', icon: 'fa-calendar-alt', path: '/admin/schedule' },
     { id: 'bookings', label: 'Booking Management', icon: 'fa-bookmark', path: '/admin/bookings' },
     { id: 'users', label: 'User Management', icon: 'fa-users', path: '/admin/users' },
