@@ -8,6 +8,9 @@ import EmailVerification from './pages/auth/EmailVerification';
 import Navbar from './components/layout/Navbar';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import { RoomProvider } from './context/RoomContext'; 
+// In src/index.js
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 // User pages
 import UserDashboard from './pages/user/Dashboard';
@@ -19,12 +22,17 @@ import MyWaitlistPage from './pages/user/MyWaitlist';
 import AdminDashboard from './pages/admin/Dashboard';
 import SeatManagement from './pages/admin/SeatManagement';
 import ScheduleManagement from './pages/admin/ScheduleManagement';
+import AdminRoomManagement from './components/admin/RoomManagement/AdminRoomManagement';
+import AdminSidebar from './components/common/AdminSidebar';
+import EquipmentDashboard from './components/admin/RoomManagement/EquipmentDashboard';
+
 
 // Import global CSS
 import './assets/css/styles.css';
 import './assets/css/admin.css';
 import './assets/css/schedule.css';
 import './assets/css/seat-management.css';
+import './assets/css/RoomManagementStyle.css';
 
 // Protected route component
 const ProtectedRoute = ({ children, requiredRole }) => {
@@ -130,12 +138,39 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
+       {/*ROUTES FOR ROOM MANAGEMENT */}
+      <Route
+        path="/admin/rooms"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminRoomManagement />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/admin/equipment"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <RoomProvider>
+              <div className="admin-page-container">
+                <AdminSidebar activePage="equipment" />
+                <EquipmentDashboard />
+              </div>
+            </RoomProvider>
+          </ProtectedRoute>
+        }
+      />
       
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };
+
+
+
 
 function App() {
   return (
