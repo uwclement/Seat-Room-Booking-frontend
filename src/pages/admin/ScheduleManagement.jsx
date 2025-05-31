@@ -10,6 +10,7 @@ import Alert from '../../components/common/Alert';
 import AdminSidebar from '../../components/common/AdminSidebar';
 import ActionButton from '../../components/common/ActionButton';
 import '../../assets/css/admin.css';
+import '../admin/ScheduleManagement.css'
 
 const ScheduleManagement = () => {
   const { error, success, setError, handleSetScheduleMessage, scheduleMessage } = useSchedule();

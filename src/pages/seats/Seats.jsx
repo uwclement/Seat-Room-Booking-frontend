@@ -390,7 +390,7 @@ const SeatsPage = () => {
                 <span>Occupied</span>
               </div>
               <div className="legend-item">
-                <div className="seat-icon favorite"></div>
+                <div className="seat-icon fas fa-bookmark "></div>
                 <span>Favorite</span>
               </div>
             </div>
