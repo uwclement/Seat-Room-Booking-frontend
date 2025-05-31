@@ -207,7 +207,7 @@ const SeatGrid = ({seats, onSeatSelect, favoriteSeats, userBookings = [] }) => {
         
         {/* Favorite indicator */}
         {isFavorite && (
-          <i className="favorite-icon fa-solid fa-star"></i>
+          <i className="favorite-icon fa-solid fa-bookmark"></i>
         )}
         
         {/* Available at time indicator for occupied seats */}
