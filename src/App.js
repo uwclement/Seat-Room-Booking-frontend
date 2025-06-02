@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import { AdminProvider } from './context/AdminContext';
 import { ScheduleProvider } from './context/ScheduleContext';
+import { RoomBoookingProvider } from './context/RoomBookingContext'
 import { useAuth } from './hooks/useAuth';
 import EmailVerification from './pages/auth/EmailVerification';
 import Navbar from './components/layout/Navbar';
@@ -26,6 +27,12 @@ import AdminRoomManagement from './components/admin/RoomManagement/AdminRoomMana
 import AdminSidebar from './components/common/AdminSidebar';
 import EquipmentDashboard from './components/admin/RoomManagement/EquipmentDashboard';
 
+// Room booking pages
+import RoomBrowserPage from './pages/rooms/RoomBrowserPage';
+import BookRoomPage from './pages/rooms/BookRoomPage';
+import MyRoomBookingsPage from './pages/rooms/MyRoomBookingsPage';
+import RoomBookingDetailsPage from './pages/rooms/RoomBookingDetailsPage';
+import JoinableBookingsPage from './pages/rooms/JoinableBookingsPage';
 
 // Import global CSS
 import './assets/css/styles.css';
@@ -107,6 +114,63 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <MyWaitlistPage />
+          </ProtectedRoute>
+        }
+      />
+
+
+       {/* ========== NEW ROOM BOOKING ROUTES ========== */}
+      <Route
+        path="/rooms"
+        element={
+          <ProtectedRoute>
+            <RoomProvider>
+              <RoomBrowserPage />
+            </RoomProvider>
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/book-room/:roomId"
+        element={
+          <ProtectedRoute>
+            <RoomProvider>
+              <BookRoomPage />
+            </RoomProvider>
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/room-bookings"
+        element={
+          <ProtectedRoute>
+            <RoomProvider>
+              <MyRoomBookingsPage />
+            </RoomProvider>
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/room-booking/:bookingId"
+        element={
+          <ProtectedRoute>
+            <RoomProvider>
+              <RoomBookingDetailsPage />
+            </RoomProvider>
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/join-bookings"
+        element={
+          <ProtectedRoute>
+            <RoomProvider>
+              <JoinableBookingsPage />
+            </RoomProvider>
           </ProtectedRoute>
         }
       />
