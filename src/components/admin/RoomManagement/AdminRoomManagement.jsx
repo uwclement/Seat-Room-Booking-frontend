@@ -1,6 +1,6 @@
 import React from 'react';
 import { RoomProvider } from '../../../context/RoomContext';
-import RoomDashboard from '../../rooms/RoomDashboard';
+import RoomDashboard from '../rooms/RoomDashboard';
 import AdminSidebar from '../../common/AdminSidebar';
 
 const AdminRoomManagement = () => {

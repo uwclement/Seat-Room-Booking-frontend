@@ -25,9 +25,29 @@ const Navbar = () => {
           {isAuthenticated() && !isAdmin() && (
             <>
               <Link to="/" className="navbar-item">Home</Link>
-              <Link to="/seats" className="navbar-item">Seats</Link>
-              <Link to="/bookings" className="navbar-item">My Bookings</Link>
-              <Link to="/waitlist" className="navbar-item">My Waitlist</Link>
+              {/* Seat Booking Section */}
+              <div className="navbar-dropdown">
+                <span className="navbar-item navbar-dropdown-trigger">
+                  Seats <i className="fas fa-chevron-down"></i>
+                </span>
+                <div className="navbar-dropdown-menu">
+                  <Link to="/seats" className="navbar-dropdown-item">Browse Seats</Link>
+                  <Link to="/bookings" className="navbar-dropdown-item">My Seat Bookings</Link>
+                  <Link to="/waitlist" className="navbar-dropdown-item">My Waitlist</Link>
+                </div>
+              </div>
+              
+              {/* Room Booking Section */}
+              <div className="navbar-dropdown">
+                <span className="navbar-item navbar-dropdown-trigger">
+                  Rooms <i className="fas fa-chevron-down"></i>
+                </span>
+                <div className="navbar-dropdown-menu">
+                  <Link to="/rooms" className="navbar-dropdown-item">Browse Rooms</Link>
+                  <Link to="/room-bookings" className="navbar-dropdown-item">My Room Bookings</Link>
+                  <Link to="/join-bookings" className="navbar-dropdown-item">Join Public Bookings</Link>
+                </div>
+              </div>
             </>
           )}
         </div>

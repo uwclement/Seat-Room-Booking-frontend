@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { RoomContext } from '../../context/RoomContext';
+import { RoomContext } from '../../../context/RoomContext';
 import { 
   RoomCard, 
   RoomList, 
@@ -12,9 +12,9 @@ import {
   BulkOperationModal, 
   TemplateModal, 
 } from './RoomModals';
-import Alert from '../common/Alert';
-import LoadingSpinner from '../common/LoadingSpinner';
-import ToastNotification from '../common/ToastNotification';
+import Alert from '../../common/Alert';
+import LoadingSpinner from '../../common/LoadingSpinner';
+import ToastNotification from '../../common/ToastNotification';
 import MaintenanceCalendar  from './MaintenanceCalendar'
 
 const RoomDashboard = () => {
