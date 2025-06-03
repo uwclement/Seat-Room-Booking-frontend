@@ -17,7 +17,7 @@ export const useRoom = () => {
   return context;
 };
 
-export const RoomProvider = ({ children }) => {
+export const RoomBookProvider = ({ children }) => {
   // Room discovery state
   const [rooms, setRooms] = useState([]);
   const [roomCategories, setRoomCategories] = useState([]);
