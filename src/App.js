@@ -3,13 +3,14 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import { AdminProvider } from './context/AdminContext';
 import { ScheduleProvider } from './context/ScheduleContext';
-import { RoomBoookingProvider } from './context/RoomBookingContext'
+// import { RoomBoookingProvider } from './context/RoomBookingContext'
 import { useAuth } from './hooks/useAuth';
 import EmailVerification from './pages/auth/EmailVerification';
 import Navbar from './components/layout/Navbar';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import { RoomProvider } from './context/RoomContext'; 
+import { RoomBookProvider } from './context/RoomBookingContext'; 
 // In src/index.js
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
@@ -28,6 +29,12 @@ import AdminSidebar from './components/common/AdminSidebar';
 import EquipmentDashboard from './components/admin/RoomManagement/EquipmentDashboard';
 
 // Room booking pages
+// import RoomBrowserPage from './pages/rooms/RoomBrowserPage';
+// import BookRoomPage from './pages/rooms/BookRoomPage';
+// import MyRoomBookingsPage from './pages/rooms/MyRoomBookingsPage';
+// import RoomBookingDetailsPage from './pages/rooms/RoomBookingDetailsPage';
+// import JoinableBookingsPage from './pages/rooms/JoinableBookingsPage';
+
 import RoomBrowserPage from './pages/rooms/RoomBrowserPage';
 import BookRoomPage from './pages/rooms/BookRoomPage';
 import MyRoomBookingsPage from './pages/rooms/MyRoomBookingsPage';
@@ -124,9 +131,9 @@ const AppRoutes = () => {
         path="/rooms"
         element={
           <ProtectedRoute>
-            <RoomProvider>
+            <RoomBookProvider>
               <RoomBrowserPage />
-            </RoomProvider>
+            </RoomBookProvider>
           </ProtectedRoute>
         }
       />
@@ -135,9 +142,9 @@ const AppRoutes = () => {
         path="/book-room/:roomId"
         element={
           <ProtectedRoute>
-            <RoomProvider>
+            <RoomBookProvider>
               <BookRoomPage />
-            </RoomProvider>
+            </RoomBookProvider>
           </ProtectedRoute>
         }
       />
@@ -146,9 +153,9 @@ const AppRoutes = () => {
         path="/room-bookings"
         element={
           <ProtectedRoute>
-            <RoomProvider>
+            <RoomBookProvider>
               <MyRoomBookingsPage />
-            </RoomProvider>
+            </RoomBookProvider>
           </ProtectedRoute>
         }
       />
@@ -157,9 +164,9 @@ const AppRoutes = () => {
         path="/room-booking/:bookingId"
         element={
           <ProtectedRoute>
-            <RoomProvider>
+            <RoomBookProvider>
               <RoomBookingDetailsPage />
-            </RoomProvider>
+            </RoomBookProvider>
           </ProtectedRoute>
         }
       />
@@ -168,9 +175,9 @@ const AppRoutes = () => {
         path="/join-bookings"
         element={
           <ProtectedRoute>
-            <RoomProvider>
+            <RoomBookProvider>
               <JoinableBookingsPage />
-            </RoomProvider>
+            </RoomBookProvider>
           </ProtectedRoute>
         }
       />
