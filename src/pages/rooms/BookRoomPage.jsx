@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useRoom } from '../../context/RoomBookingContext';
-import { createRoomBooking, getRoomById, getRoomAvailability } from '../../api/roomBooking';
+import { createRoomBooking, getRoomById } from '../../api/roomBooking'; // Removed getRoomAvailability
 // import './BookRoom.css';
 
 const BookRoom = () => {
@@ -11,7 +11,7 @@ const BookRoom = () => {
   const { addBooking } = useRoom();
   
   const [room, setRoom] = useState(null);
-  const [availability, setAvailability] = useState(null);
+  // Removed availability state since we're not using it
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -61,13 +61,10 @@ const BookRoom = () => {
   const loadRoomData = async () => {
     try {
       setLoading(true);
-      const [roomData, availabilityData] = await Promise.all([
-        getRoomById(roomId),
-        getRoomAvailability(roomId)
-      ]);
+      // Only load room data, removed availability call
+      const roomData = await getRoomById(roomId);
       
       setRoom(roomData);
-      setAvailability(availabilityData);
       
       // Set max participants to room capacity
       setFormData(prev => ({
@@ -315,7 +312,7 @@ const BookRoom = () => {
           </div>
         </div>
 
-        {/* Booking Form */}
+        {/* Rest of the component remains the same - booking form, etc. */}
         <div className="booking-form-container">
           <form onSubmit={handleSubmit} className="booking-form">
             {error && (

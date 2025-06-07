@@ -2,8 +2,6 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import {
   getAllRooms,
   getMyRoomBookings,
-  getRoomCategories,
-  getBuildings,
   getJoinableBookings
 } from '../api/roomBooking';
 
@@ -32,6 +30,9 @@ export const RoomBookProvider = ({ children }) => {
   const [joinableBookings, setJoinableBookings] = useState([]);
   const [loadingJoinable, setLoadingJoinable] = useState(false);
   
+  // Error state - THIS WAS MISSING
+  const [error, setError] = useState(null);
+  
   // Filter state
   const [roomFilters, setRoomFilters] = useState({
     category: '',
@@ -40,29 +41,6 @@ export const RoomBookProvider = ({ children }) => {
     maxCapacity: '',
     keyword: ''
   });
-  
-  // Error state
-  const [error, setError] = useState(null);
-
-  // Load initial data
-  useEffect(() => {
-    loadRoomData();
-  }, []);
-
-  const loadRoomData = async () => {
-    try {
-      const [categoriesData, buildingsData] = await Promise.all([
-        getRoomCategories(),
-        getBuildings()
-      ]);
-      
-      setRoomCategories(categoriesData);
-      setBuildings(buildingsData);
-    } catch (err) {
-      console.error('Error loading room data:', err);
-      setError('Failed to load room information');
-    }
-  };
 
   // ========== ROOM DISCOVERY FUNCTIONS ==========
 

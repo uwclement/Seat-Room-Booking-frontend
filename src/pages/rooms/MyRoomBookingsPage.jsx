@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRoom } from '../../context/RoomBookingContext';
-import { cancelRoomBooking, checkInToRoomBooking, getUserBookingStats } from '../../api/roomBooking';
+import { 
+  cancelRoomBooking, 
+  checkInToRoomBooking, 
+  getUserBookingStats,
+  getMyPendingInvitations,
+  respondToInvitation
+} from '../../api/roomBooking';
 // import './MyRoomBookings.css';
 
 const MyRoomBookings = () => {
@@ -18,12 +24,17 @@ const MyRoomBookings = () => {
   } = useRoom();
 
   const [stats, setStats] = useState(null);
-  const [filter, setFilter] = useState('all'); // all, upcoming, past, pending
+  const [filter, setFilter] = useState('all'); // all, upcoming, past, pending, invitations
   const [searchTerm, setSearchTerm] = useState('');
   const [actionLoading, setActionLoading] = useState({});
+  
+  // NEW: Invitation state
+  const [invitations, setInvitations] = useState([]);
+  const [loadingInvitations, setLoadingInvitations] = useState(false);
 
   useEffect(() => {
     loadMyBookings();
+    loadMyInvitations(); // NEW: Load invitations
     loadUserStats();
   }, []);
 
@@ -33,6 +44,19 @@ const MyRoomBookings = () => {
       setStats(statsData);
     } catch (err) {
       console.error('Error loading user stats:', err);
+    }
+  };
+
+  // NEW: Load invitations function
+  const loadMyInvitations = async () => {
+    setLoadingInvitations(true);
+    try {
+      const invitationsData = await getMyPendingInvitations();
+      setInvitations(invitationsData);
+    } catch (err) {
+      console.error('Error loading invitations:', err);
+    } finally {
+      setLoadingInvitations(false);
     }
   };
 
@@ -71,32 +95,74 @@ const MyRoomBookings = () => {
     }
   };
 
-  const getFilteredBookings = () => {
-    let filtered = myBookings;
+  // NEW: Accept invitation function
+  const handleAcceptInvitation = async (bookingId, participantId) => {
+    setActionLoading(prev => ({ ...prev, [`accept_${participantId}`]: true }));
+    
+    try {
+      await respondToInvitation(bookingId, participantId, true);
+      // Remove from invitations list
+      setInvitations(prev => prev.filter(inv => inv.participantId !== participantId));
+      // Reload bookings to show newly accepted booking
+      loadMyBookings();
+    } catch (err) {
+      console.error('Error accepting invitation:', err);
+      alert('Failed to accept invitation');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [`accept_${participantId}`]: false }));
+    }
+  };
 
-    // Apply status filter
-    const now = new Date();
-    switch (filter) {
-      case 'upcoming':
-        filtered = filtered.filter(booking => 
-          new Date(booking.startTime) > now && 
-          ['PENDING', 'CONFIRMED'].includes(booking.status)
-        );
-        break;
-      case 'past':
-        filtered = filtered.filter(booking => 
-          new Date(booking.endTime) < now || 
-          ['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(booking.status)
-        );
-        break;
-      case 'pending':
-        filtered = filtered.filter(booking => booking.status === 'PENDING');
-        break;
-      // 'all' shows everything
+  // NEW: Decline invitation function
+  const handleDeclineInvitation = async (bookingId, participantId) => {
+    setActionLoading(prev => ({ ...prev, [`decline_${participantId}`]: true }));
+    
+    try {
+      await respondToInvitation(bookingId, participantId, false);
+      // Remove from invitations list
+      setInvitations(prev => prev.filter(inv => inv.participantId !== participantId));
+    } catch (err) {
+      console.error('Error declining invitation:', err);
+      alert('Failed to decline invitation');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [`decline_${participantId}`]: false }));
+    }
+  };
+
+  // UPDATED: Get filtered items (bookings or invitations)
+  const getFilteredItems = () => {
+    let filtered = [];
+
+    if (filter === 'invitations') {
+      // Show invitations
+      filtered = invitations;
+    } else {
+      // Show bookings with existing filter logic
+      filtered = myBookings;
+      
+      const now = new Date();
+      switch (filter) {
+        case 'upcoming':
+          filtered = filtered.filter(booking => 
+            new Date(booking.startTime) > now && 
+            ['PENDING', 'CONFIRMED'].includes(booking.status)
+          );
+          break;
+        case 'past':
+          filtered = filtered.filter(booking => 
+            new Date(booking.endTime) < now || 
+            ['COMPLETED', 'CANCELLED', 'NO_SHOW'].includes(booking.status)
+          );
+          break;
+        case 'pending':
+          filtered = filtered.filter(booking => booking.status === 'PENDING');
+          break;
+        // 'all' shows everything
+      }
     }
 
     // Apply search filter
-    if (searchTerm) {
+    if (searchTerm && filter !== 'invitations') {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(booking =>
         booking.title.toLowerCase().includes(term) ||
@@ -104,10 +170,22 @@ const MyRoomBookings = () => {
         booking.room?.roomNumber.toLowerCase().includes(term) ||
         booking.room?.building.toLowerCase().includes(term)
       );
+    } else if (searchTerm && filter === 'invitations') {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(invitation =>
+        invitation.booking.title.toLowerCase().includes(term) ||
+        invitation.booking.room?.name.toLowerCase().includes(term) ||
+        invitation.booking.room?.roomNumber.toLowerCase().includes(term) ||
+        invitation.booking.room?.building.toLowerCase().includes(term)
+      );
     }
 
     // Sort by start time (upcoming first)
-    return filtered.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+    if (filter === 'invitations') {
+      return filtered.sort((a, b) => new Date(a.booking.startTime) - new Date(b.booking.startTime));
+    } else {
+      return filtered.sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
+    }
   };
 
   const getBookingStatusInfo = (booking) => {
@@ -208,6 +286,205 @@ const MyRoomBookings = () => {
     return hours < 1 ? `${Math.round(hours * 60)} min` : `${hours} hr`;
   };
 
+  // NEW: Get invitation stats
+  const getInvitationStats = () => {
+    return {
+      pending: invitations.length,
+      total: invitations.length
+    };
+  };
+
+  // UPDATED: Render booking or invitation card
+  const renderCard = (item) => {
+    const isInvitation = filter === 'invitations';
+    const booking = isInvitation ? item.booking : item;
+    const participantId = isInvitation ? item.participantId : null;
+    const cardKey = isInvitation ? `inv_${item.participantId}` : booking.id;
+
+    const statusInfo = isInvitation ? null : getBookingStatusInfo(booking);
+    const startDateTime = formatDateTime(booking.startTime);
+    const endDateTime = formatDateTime(booking.endTime);
+    const duration = getDuration(booking.startTime, booking.endTime);
+    const isLoading = actionLoading[booking.id] || actionLoading[`accept_${participantId}`] || actionLoading[`decline_${participantId}`];
+
+    return (
+      <div key={cardKey} className="booking-card">
+        <div className="booking-header">
+          <div className="booking-title">
+            <h3>{booking.title}</h3>
+            {isInvitation ? (
+              <span className="status-badge invitation-badge" style={{ backgroundColor: '#17a2b8' }}>
+                <i className="fas fa-envelope"></i>
+                Invitation
+              </span>
+            ) : (
+              <span 
+                className="status-badge"
+                style={{ backgroundColor: statusInfo.color }}
+              >
+                <i className={`fas ${statusInfo.icon}`}></i>
+                {statusInfo.text}
+              </span>
+            )}
+          </div>
+          
+          <div className="booking-actions">
+            {isInvitation ? (
+              // NEW: Invitation action buttons
+              <>
+                <button
+                  onClick={() => handleAcceptInvitation(booking.id, participantId)}
+                  className="btn btn-success btn-sm"
+                  disabled={isLoading}
+                >
+                  {actionLoading[`accept_${participantId}`] ? (
+                    <><i className="fas fa-spinner fa-spin"></i> Accepting...</>
+                  ) : (
+                    <><i className="fas fa-check"></i> Accept</>
+                  )}
+                </button>
+                
+                <button
+                  onClick={() => handleDeclineInvitation(booking.id, participantId)}
+                  className="btn btn-danger btn-sm"
+                  disabled={isLoading}
+                >
+                  {actionLoading[`decline_${participantId}`] ? (
+                    <><i className="fas fa-spinner fa-spin"></i> Declining...</>
+                  ) : (
+                    <><i className="fas fa-times"></i> Decline</>
+                  )}
+                </button>
+              </>
+            ) : (
+              // Existing booking action buttons
+              <>
+                {statusInfo.canCheckIn && (
+                  <button
+                    onClick={() => handleCheckIn(booking.id)}
+                    className="btn btn-success btn-sm"
+                    disabled={isLoading}
+                  >
+                    {actionLoading[booking.id] === 'checking-in' ? (
+                      <><i className="fas fa-spinner fa-spin"></i> Checking In...</>
+                    ) : (
+                      <><i className="fas fa-user-check"></i> Check In</>
+                    )}
+                  </button>
+                )}
+                
+                {statusInfo.canCancel && (
+                  <button
+                    onClick={() => handleCancelBooking(booking.id)}
+                    className="btn btn-danger btn-sm"
+                    disabled={isLoading}
+                  >
+                    {actionLoading[booking.id] === 'cancelling' ? (
+                      <><i className="fas fa-spinner fa-spin"></i> Cancelling...</>
+                    ) : (
+                      <><i className="fas fa-times"></i> Cancel</>
+                    )}
+                  </button>
+                )}
+              </>
+            )}
+            
+            <button
+              onClick={() => navigate(`/room-booking/${booking.id}`)}
+              className="btn btn-outline btn-sm"
+            >
+              <i className="fas fa-eye"></i>
+              Details
+            </button>
+          </div>
+        </div>
+
+        <div className="booking-details">
+          <div className="booking-info">
+            <div className="info-item">
+              <i className="fas fa-door-open"></i>
+              <span>
+                <strong>{booking.room?.name}</strong> ({booking.room?.roomNumber})
+              </span>
+            </div>
+            
+            <div className="info-item">
+              <i className="fas fa-map-marker-alt"></i>
+              <span>{booking.room?.building} - {booking.room?.floor}</span>
+            </div>
+            
+            <div className="info-item">
+              <i className="fas fa-calendar"></i>
+              <span>{startDateTime.date}</span>
+            </div>
+            
+            <div className="info-item">
+              <i className="fas fa-clock"></i>
+              <span>
+                {startDateTime.time} - {endDateTime.time} ({duration})
+              </span>
+            </div>
+            
+            <div className="info-item">
+              <i className="fas fa-users"></i>
+              <span>
+                {booking.participants?.length + 1 || 1} / {booking.maxParticipants} participants
+              </span>
+            </div>
+
+            {isInvitation && (
+              <div className="info-item">
+                <i className="fas fa-user-crown"></i>
+                <span>
+                  Invited by <strong>{booking.user?.fullName}</strong>
+                </span>
+              </div>
+            )}
+          </div>
+
+          {booking.description && (
+            <div className="booking-description">
+              <p>{booking.description}</p>
+            </div>
+          )}
+
+          {booking.participants && booking.participants.length > 0 && (
+            <div className="booking-participants">
+              <span className="participants-label">Participants:</span>
+              <div className="participants-list">
+                {booking.participants.slice(0, 3).map(participant => (
+                  <span key={participant.id} className="participant-tag">
+                    {participant.user?.fullName}
+                  </span>
+                ))}
+                {booking.participants.length > 3 && (
+                  <span className="participants-more">
+                    +{booking.participants.length - 3} more
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+
+          {booking.isPublic && (
+            <div className="booking-badges">
+              <span className="badge badge-info">
+                <i className="fas fa-globe"></i>
+                Public
+              </span>
+              {booking.allowJoining && (
+                <span className="badge badge-success">
+                  <i className="fas fa-user-plus"></i>
+                  Joinable
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   if (error) {
     return (
       <div className="my-bookings-container">
@@ -220,8 +497,9 @@ const MyRoomBookings = () => {
     );
   }
 
-  const filteredBookings = getFilteredBookings();
+  const filteredItems = getFilteredItems();
   const bookingStats = getBookingStats();
+  const invitationStats = getInvitationStats();
 
   return (
     <div className="my-bookings-container">
@@ -271,11 +549,11 @@ const MyRoomBookings = () => {
         
         <div className="stat-card">
           <div className="stat-icon">
-            <i className="fas fa-hourglass-half"></i>
+            <i className="fas fa-envelope"></i>
           </div>
           <div className="stat-content">
-            <h3>{bookingStats.pending}</h3>
-            <p>Pending</p>
+            <h3>{invitationStats.pending}</h3>
+            <p>Invitations</p>
           </div>
         </div>
       </div>
@@ -287,6 +565,7 @@ const MyRoomBookings = () => {
             { key: 'all', label: 'All Bookings', count: bookingStats.total },
             { key: 'upcoming', label: 'Upcoming', count: bookingStats.upcoming },
             { key: 'pending', label: 'Pending', count: bookingStats.pending },
+            { key: 'invitations', label: 'Invitations', count: invitationStats.pending }, // NEW
             { key: 'past', label: 'Past', count: null }
           ].map(tab => (
             <button
@@ -313,160 +592,29 @@ const MyRoomBookings = () => {
         </div>
       </div>
 
-      {/* Bookings List */}
-      {loadingBookings ? (
+      {/* Items List */}
+      {(loadingBookings || loadingInvitations) ? (
         <div className="loading-container">
           <div className="spinner"></div>
-          <p>Loading your bookings...</p>
+          <p>Loading your {filter === 'invitations' ? 'invitations' : 'bookings'}...</p>
         </div>
       ) : (
         <div className="bookings-list">
-          {filteredBookings.length > 0 ? (
-            filteredBookings.map(booking => {
-              const statusInfo = getBookingStatusInfo(booking);
-              const startDateTime = formatDateTime(booking.startTime);
-              const endDateTime = formatDateTime(booking.endTime);
-              const duration = getDuration(booking.startTime, booking.endTime);
-              const isLoading = actionLoading[booking.id];
-
-              return (
-                <div key={booking.id} className="booking-card">
-                  <div className="booking-header">
-                    <div className="booking-title">
-                      <h3>{booking.title}</h3>
-                      <span 
-                        className="status-badge"
-                        style={{ backgroundColor: statusInfo.color }}
-                      >
-                        <i className={`fas ${statusInfo.icon}`}></i>
-                        {statusInfo.text}
-                      </span>
-                    </div>
-                    
-                    <div className="booking-actions">
-                      {statusInfo.canCheckIn && (
-                        <button
-                          onClick={() => handleCheckIn(booking.id)}
-                          className="btn btn-success btn-sm"
-                          disabled={isLoading}
-                        >
-                          {isLoading === 'checking-in' ? (
-                            <><i className="fas fa-spinner fa-spin"></i> Checking In...</>
-                          ) : (
-                            <><i className="fas fa-user-check"></i> Check In</>
-                          )}
-                        </button>
-                      )}
-                      
-                      <button
-                        onClick={() => navigate(`/room-booking/${booking.id}`)}
-                        className="btn btn-outline btn-sm"
-                      >
-                        <i className="fas fa-eye"></i>
-                        Details
-                      </button>
-                      
-                      {statusInfo.canCancel && (
-                        <button
-                          onClick={() => handleCancelBooking(booking.id)}
-                          className="btn btn-danger btn-sm"
-                          disabled={isLoading}
-                        >
-                          {isLoading === 'cancelling' ? (
-                            <><i className="fas fa-spinner fa-spin"></i> Cancelling...</>
-                          ) : (
-                            <><i className="fas fa-times"></i> Cancel</>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="booking-details">
-                    <div className="booking-info">
-                      <div className="info-item">
-                        <i className="fas fa-door-open"></i>
-                        <span>
-                          <strong>{booking.room?.name}</strong> ({booking.room?.roomNumber})
-                        </span>
-                      </div>
-                      
-                      <div className="info-item">
-                        <i className="fas fa-map-marker-alt"></i>
-                        <span>{booking.room?.building} - {booking.room?.floor}</span>
-                      </div>
-                      
-                      <div className="info-item">
-                        <i className="fas fa-calendar"></i>
-                        <span>{startDateTime.date}</span>
-                      </div>
-                      
-                      <div className="info-item">
-                        <i className="fas fa-clock"></i>
-                        <span>
-                          {startDateTime.time} - {endDateTime.time} ({duration})
-                        </span>
-                      </div>
-                      
-                      <div className="info-item">
-                        <i className="fas fa-users"></i>
-                        <span>
-                          {booking.participants?.length + 1 || 1} / {booking.maxParticipants} participants
-                        </span>
-                      </div>
-                    </div>
-
-                    {booking.description && (
-                      <div className="booking-description">
-                        <p>{booking.description}</p>
-                      </div>
-                    )}
-
-                    {booking.participants && booking.participants.length > 0 && (
-                      <div className="booking-participants">
-                        <span className="participants-label">Participants:</span>
-                        <div className="participants-list">
-                          {booking.participants.slice(0, 3).map(participant => (
-                            <span key={participant.id} className="participant-tag">
-                              {participant.user?.fullName}
-                            </span>
-                          ))}
-                          {booking.participants.length > 3 && (
-                            <span className="participants-more">
-                              +{booking.participants.length - 3} more
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {booking.isPublic && (
-                      <div className="booking-badges">
-                        <span className="badge badge-info">
-                          <i className="fas fa-globe"></i>
-                          Public
-                        </span>
-                        {booking.allowJoining && (
-                          <span className="badge badge-success">
-                            <i className="fas fa-user-plus"></i>
-                            Joinable
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })
+          {filteredItems.length > 0 ? (
+            filteredItems.map(item => renderCard(item))
           ) : (
             <div className="no-bookings">
               <div className="no-bookings-content">
-                <i className="fas fa-calendar-times"></i>
-                <h3>No bookings found</h3>
+                <i className={`fas ${filter === 'invitations' ? 'fa-envelope-open' : 'fa-calendar-times'}`}></i>
+                <h3>
+                  {filter === 'invitations' ? 'No pending invitations' : 'No bookings found'}
+                </h3>
                 <p>
-                  {searchTerm ? 
-                    'No bookings match your search criteria.' : 
-                    'You haven\'t made any room bookings yet.'
+                  {filter === 'invitations' ? 
+                    'You don\'t have any pending room booking invitations.' :
+                    searchTerm ? 
+                      'No bookings match your search criteria.' : 
+                      'You haven\'t made any room bookings yet.'
                   }
                 </p>
                 <button 

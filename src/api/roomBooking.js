@@ -12,27 +12,28 @@ export const getRoomById = async (roomId) => {
   return response.data;
 };
 
-export const getRoomsByCategory = async (category) => {
-  const response = await api.get(`/Roombookings/rooms/category/${category}`);
-  return response.data;
-};
+// export const getRoomsByCategory = async (category) => {
 
-export const searchRooms = async (filters) => {
-  const params = new URLSearchParams();
+//   const response = await api.get(`/Roombookings/rooms/category/${category}`);
+//   return response.data;
+// };
+
+// export const searchRooms = async (filters) => {
+//   const params = new URLSearchParams();
   
-  if (filters.keyword) params.append('keyword', filters.keyword);
-  if (filters.category) params.append('category', filters.category);
-  if (filters.minCapacity) params.append('minCapacity', filters.minCapacity);
-  if (filters.maxCapacity) params.append('maxCapacity', filters.maxCapacity);
-  if (filters.building) params.append('building', filters.building);
-  if (filters.floor) params.append('floor', filters.floor);
-  if (filters.equipmentIds) params.append('equipmentIds', filters.equipmentIds.join(','));
-  if (filters.startTime) params.append('startTime', filters.startTime);
-  if (filters.endTime) params.append('endTime', filters.endTime);
+//   if (filters.keyword) params.append('keyword', filters.keyword);
+//   if (filters.category) params.append('category', filters.category);
+//   if (filters.minCapacity) params.append('minCapacity', filters.minCapacity);
+//   if (filters.maxCapacity) params.append('maxCapacity', filters.maxCapacity);
+//   if (filters.building) params.append('building', filters.building);
+//   if (filters.floor) params.append('floor', filters.floor);
+//   if (filters.equipmentIds) params.append('equipmentIds', filters.equipmentIds.join(','));
+//   if (filters.startTime) params.append('startTime', filters.startTime);
+//   if (filters.endTime) params.append('endTime', filters.endTime);
   
-  const response = await api.get(`/Roombookings/rooms/search?${params}`);
-  return response.data;
-};
+//   const response = await api.get(`/Roombookings/rooms/search?${params}`);
+//   return response.data;
+// };
 
 // Map inviteUsersToBooking to your existing inviteParticipants function
 export const inviteUsersToBooking = async (bookingId, inviteData) => {
@@ -48,22 +49,23 @@ export const removeUserFromBooking = async (bookingId, participantId) => {
 export const requestToJoinBooking = async (bookingId) => {
   return await joinRoomBooking(bookingId);
 };
-export const getRoomCategories = async () => {
-  const response = await api.get('/Roombookings/rooms/categories');
-  return response.data;
-};
 
-export const getBuildings = async () => {
-  const response = await api.get('/Roombookings/rooms/buildings');
-  return response.data;
-};
+// export const getRoomCategories = async () => {
+//   const response = await api.get('/Roombookings/rooms/categories');
+//   return response.data;
+// };
+
+// export const getBuildings = async () => {
+//   const response = await api.get('/Roombookings/rooms/buildings');
+//   return response.data;
+// };
 
 // ========== ROOM AVAILABILITY ==========
 
-export const getRoomAvailability = async (roomId) => {
-  const response = await api.get(`/Roombookings/rooms/${roomId}/availability`);
-  return response.data;
-};
+// export const getRoomAvailability = async (roomId) => {
+//   const response = await api.get(`/Roombookings/rooms/${roomId}/availability`);
+//   return response.data;
+// };
 
 export const getWeeklyAvailability = async (roomId, weekStart) => {
   const params = weekStart ? `?weekStart=${weekStart}` : '';
@@ -71,10 +73,10 @@ export const getWeeklyAvailability = async (roomId, weekStart) => {
   return response.data;
 };
 
-export const getRoomsAvailableNow = async (durationHours = 1) => {
-  const response = await api.get(`/Roombookings/rooms/available-now?durationHours=${durationHours}`);
-  return response.data;
-};
+// export const getRoomsAvailableNow = async (durationHours = 1) => {
+//   const response = await api.get(`/Roombookings/rooms/available-now?durationHours=${durationHours}`);
+//   return response.data;
+// };
 
 // ========== ROOM BOOKING OPERATIONS ==========
 
@@ -150,6 +152,11 @@ export const respondToInvitation = async (bookingId, participantId, accepted) =>
 
 export const removeParticipant = async (bookingId, participantId) => {
   const response = await api.delete(`/Roombookings/${bookingId}/participants/${participantId}`);
+  return response.data;
+};
+
+export const getMyPendingInvitations = async () => {
+  const response = await api.get('/Roombookings/my-invitations');
   return response.data;
 };
 
