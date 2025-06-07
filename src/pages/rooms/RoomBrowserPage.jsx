@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRoom } from '../../context/RoomBookingContext';
-import { getRoomAvailability } from '../../api/roomBooking';
+// Removed getRoomAvailability import
 // import './RoomBrowser.css';
 
 const RoomBrowser = () => {
@@ -19,39 +19,17 @@ const RoomBrowser = () => {
     clearError
   } = useRoom();
 
-  const [roomAvailability, setRoomAvailability] = useState({});
-  const [loadingAvailability, setLoadingAvailability] = useState({});
+  // Removed all availability-related state
+  // const [roomAvailability, setRoomAvailability] = useState({});
+  // const [loadingAvailability, setLoadingAvailability] = useState({});
 
   useEffect(() => {
     loadRooms();
   }, []);
 
-  // Load availability for visible rooms
-  useEffect(() => {
-    if (rooms.length > 0) {
-      rooms.slice(0, 6).forEach(room => {
-        loadRoomAvailability(room.id);
-      });
-    }
-  }, [rooms]);
+  // Removed availability loading useEffect
 
-  const loadRoomAvailability = async (roomId) => {
-    if (roomAvailability[roomId] || loadingAvailability[roomId]) return;
-    
-    setLoadingAvailability(prev => ({ ...prev, [roomId]: true }));
-    
-    try {
-      const availability = await getRoomAvailability(roomId);
-      setRoomAvailability(prev => ({ 
-        ...prev, 
-        [roomId]: availability 
-      }));
-    } catch (err) {
-      console.error(`Error loading availability for room ${roomId}:`, err);
-    } finally {
-      setLoadingAvailability(prev => ({ ...prev, [roomId]: false }));
-    }
-  };
+  // Removed loadRoomAvailability function
 
   const handleFilterChange = (filterName, value) => {
     updateRoomFilters({ [filterName]: value });
@@ -70,33 +48,14 @@ const RoomBrowser = () => {
     }
   };
 
+  // Simplified room status - no real-time availability checking
   const getRoomStatusInfo = (room) => {
-    const availability = roomAvailability[room.id];
-    
-    if (!availability) {
-      return { status: 'unknown', message: 'Loading...', color: '#6c757d' };
-    }
-
-    if (availability.currentlyOccupied) {
-      return {
-        status: 'occupied',
-        message: `Occupied until ${new Date(availability.occupiedUntil).toLocaleTimeString()}`,
-        color: '#dc3545'
-      };
-    }
-
-    if (availability.availableSlots && availability.availableSlots.length > 0) {
-      return {
-        status: 'available',
-        message: 'Available now',
-        color: '#28a745'
-      };
-    }
-
+    // You can add basic logic here based on room properties
+    // For now, we'll show all rooms as available
     return {
-      status: 'busy',
-      message: 'Busy today',
-      color: '#ffc107'
+      status: 'available',
+      message: 'Available for booking',
+      color: '#28a745'
     };
   };
 
@@ -257,7 +216,7 @@ const RoomBrowser = () => {
                           </span>
                         )}
                       </div>
-                    </div>
+                  </div>
                   )}
                 </div>
 
@@ -278,25 +237,18 @@ const RoomBrowser = () => {
                     Book Room
                   </button>
                   
-                  {statusInfo.status === 'available' && (
-                    <button
-                      onClick={() => handleQuickBook(room.id)}
-                      className="btn btn-secondary"
-                    >
-                      Quick Book
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleQuickBook(room.id)}
+                    className="btn btn-secondary"
+                  >
+                    Quick Book
+                  </button>
                   
                   <button
-                    onClick={() => loadRoomAvailability(room.id)}
+                    onClick={() => navigate(`/rooms/${room.id}`)}
                     className="btn btn-outline"
-                    disabled={loadingAvailability[room.id]}
                   >
-                    {loadingAvailability[room.id] ? (
-                      <span><i className="fas fa-spinner fa-spin"></i> Loading</span>
-                    ) : (
-                      <span><i className="fas fa-calendar"></i> View Schedule</span>
-                    )}
+                    <span><i className="fas fa-calendar"></i> View Details</span>
                   </button>
                 </div>
               </div>
