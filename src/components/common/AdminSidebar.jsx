@@ -11,7 +11,7 @@ const AdminSidebar = ({ activePage }) => {
     { id: 'rooms', label: 'Room Management', icon: 'fa-door-open', path: '/admin/rooms' },
     { id: 'equipment', label: 'Equipment', icon: 'fa-tools', path: '/admin/equipment' },
     { id: 'schedule', label: 'Schedule Management', icon: 'fa-calendar-alt', path: '/admin/schedule' },
-    { id: 'bookings', label: 'Booking Management', icon: 'fa-bookmark', path: '/admin/bookings' },
+    { id: 'bookings', label: 'Booking Management', icon: 'fa-bookmark', path: '/admin/Roombookings' },
     { id: 'users', label: 'User Management', icon: 'fa-users', path: '/admin/users' },
     { id: 'analytics', label: 'Analytics', icon: 'fa-chart-line', path: '/admin/analytics' },
     { id: 'logs', label: 'Admin Logs', icon: 'fa-history', path: '/admin/logs' }

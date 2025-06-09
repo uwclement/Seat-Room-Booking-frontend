@@ -11,6 +11,7 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import { RoomProvider } from './context/RoomContext'; 
 import { RoomBookProvider } from './context/RoomBookingContext'; 
+import { AdminRoomBookingProvider } from './context/AdminRoomBookingContext';
 // In src/index.js
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
@@ -27,14 +28,9 @@ import ScheduleManagement from './pages/admin/ScheduleManagement';
 import AdminRoomManagement from './components/admin/RoomManagement/AdminRoomManagement';
 import AdminSidebar from './components/common/AdminSidebar';
 import EquipmentDashboard from './components/admin/RoomManagement/EquipmentDashboard';
+import AdminRoomBookingManagement from './components/admin/RoomManagement/AdminRoomBookingManagement';
 
-// Room booking pages
-// import RoomBrowserPage from './pages/rooms/RoomBrowserPage';
-// import BookRoomPage from './pages/rooms/BookRoomPage';
-// import MyRoomBookingsPage from './pages/rooms/MyRoomBookingsPage';
-// import RoomBookingDetailsPage from './pages/rooms/RoomBookingDetailsPage';
-// import JoinableBookingsPage from './pages/rooms/JoinableBookingsPage';
-
+//user room management
 import RoomBrowserPage from './pages/rooms/RoomBrowserPage';
 import BookRoomPage from './pages/rooms/BookRoomPage';
 import MyRoomBookingsPage from './pages/rooms/MyRoomBookingsPage';
@@ -47,6 +43,7 @@ import './assets/css/admin.css';
 import './assets/css/schedule.css';
 import './assets/css/seat-management.css';
 import './assets/css/RoomManagementStyle.css';
+import './assets/css/admin-room-booking.css';
 
 // Protected route component
 const ProtectedRoute = ({ children, requiredRole }) => {
@@ -230,6 +227,49 @@ const AppRoutes = () => {
                 <EquipmentDashboard />
               </div>
             </RoomProvider>
+          </ProtectedRoute>
+        }
+      />
+
+     < Route
+        path="/admin/Roombookings"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminRoomBookingProvider>
+              <div className="admin-page-container">
+                <AdminSidebar activePage="bookings" />
+                <AdminRoomBookingManagement />
+              </div>
+            </AdminRoomBookingProvider>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Additional admin booking sub-routes if needed */}
+      <Route
+        path="/admin/Roombookings/pending"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminRoomBookingProvider>
+              <div className="admin-page-container">
+                <AdminSidebar activePage="bookings" />
+                <AdminRoomBookingManagement initialView="pending" />
+              </div>
+            </AdminRoomBookingProvider>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/Roombookings/warnings"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminRoomBookingProvider>
+              <div className="admin-page-container">
+                <AdminSidebar activePage="bookings" />
+                <AdminRoomBookingManagement initialView="warnings" />
+              </div>
+            </AdminRoomBookingProvider>
           </ProtectedRoute>
         }
       />

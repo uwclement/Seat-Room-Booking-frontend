@@ -1,0 +1,142 @@
+/* Simple Admin Room Booking CSS - Placeholder */
+
+/* Fix for admin page layout */
+.admin-page-container {
+  display: flex;
+  min-height: 100vh;
+}
+
+.admin-page-container .main-content,
+.admin-page-container > div:not(.admin-sidebar) {
+  margin-left: 280px; /* Match sidebar width */
+  flex: 1;
+  width: calc(100vw - 280px);
+  overflow-x: hidden;
+}
+
+.admin-room-booking-management {
+  padding: 24px;
+  background-color: #f8f9fa;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.coming-soon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  text-align: center;
+  background: white;
+  border-radius: 8px;
+  margin: 24px;
+  padding: 40px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  max-width: 800px;
+  margin: 24px auto;
+}
+
+.coming-soon h2 {
+  color: #2c3e50;
+  margin-bottom: 16px;
+  font-size: 2rem;
+}
+
+.coming-soon p {
+  color: #7f8c8d;
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+/* Fix for any content that might be interfering */
+.admin-sidebar + * {
+  margin-left: 280px !important;
+  width: calc(100% - 280px) !important;
+}
+
+/* Ensure proper layout for admin pages */
+.admin-page-container > *:not(.admin-sidebar) {
+  flex: 1;
+  min-height: 100vh;
+  background-color: #f8f9fa;
+}
+
+/* Modal placeholder styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 8px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  padding: 20px;
+  border-bottom: 1px solid #ecf0f1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-body {
+  padding: 20px;
+}
+
+.modal-footer {
+  padding: 20px;
+  border-top: 1px solid #ecf0f1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.btn-primary { background-color: #3498db; color: white; }
+.btn-success { background-color: #27ae60; color: white; }
+.btn-danger { background-color: #e74c3c; color: white; }
+.btn-secondary { background-color: #95a5a6; color: white; }
+
+.form-control {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .admin-page-container .main-content,
+  .admin-page-container > div:not(.admin-sidebar) {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+  
+  .admin-sidebar + * {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+}
