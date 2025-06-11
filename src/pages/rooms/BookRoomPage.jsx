@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useRoom } from '../../context/RoomBookingContext';
 import { createRoomBooking, getRoomById } from '../../api/roomBooking'; // Removed getRoomAvailability
-// import './BookRoom.css';
+import './BookRoom.css';
 
 const BookRoom = () => {
   const { roomId } = useParams();
