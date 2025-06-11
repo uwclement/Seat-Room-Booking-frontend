@@ -24,7 +24,7 @@ const Navbar = () => {
           
           {isAuthenticated() && !isAdmin() && (
             <>
-              <Link to="/" className="navbar-item">Home</Link>
+              <Link to="seats" className="navbar-item">Home</Link>
               {/* Seat Booking Section */}
               <div className="navbar-dropdown">
                 <span className="navbar-item navbar-dropdown-trigger">

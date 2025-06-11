@@ -8,7 +8,7 @@ import {
   getMyPendingInvitations,
   respondToInvitation
 } from '../../api/roomBooking';
-// import './MyRoomBookings.css';
+import './MyRoomBookings.css';
 
 const MyRoomBookings = () => {
   const navigate = useNavigate();

@@ -11,7 +11,7 @@ import {
   removeUserFromBooking,
   requestToJoinBooking
 } from '../../api/roomBooking';
-// import './BookingDetails.css';
+ import './BookingDetails.css';
 
 const BookingDetails = () => {
   const { bookingId } = useParams();

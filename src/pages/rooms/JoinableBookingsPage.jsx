@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRoom } from '../../context/RoomBookingContext';
 import { getJoinableBookings, requestToJoinBooking } from '../../api/roomBooking';
-// import './JoinableBookings.css';
+import './JoinableBookings.css';
 
 const JoinableBookings = () => {
   const navigate = useNavigate();

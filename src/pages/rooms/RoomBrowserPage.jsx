@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRoom } from '../../context/RoomBookingContext';
 // Removed getRoomAvailability import
-// import './RoomBrowser.css';
+ import './RoomBrowser.css';
 
 const RoomBrowser = () => {
   const navigate = useNavigate();
@@ -19,17 +19,11 @@ const RoomBrowser = () => {
     clearError
   } = useRoom();
 
-  // Removed all availability-related state
-  // const [roomAvailability, setRoomAvailability] = useState({});
-  // const [loadingAvailability, setLoadingAvailability] = useState({});
 
   useEffect(() => {
     loadRooms();
   }, []);
 
-  // Removed availability loading useEffect
-
-  // Removed loadRoomAvailability function
 
   const handleFilterChange = (filterName, value) => {
     updateRoomFilters({ [filterName]: value });
@@ -75,8 +69,8 @@ const RoomBrowser = () => {
     <div className="room-browser-container">
       {/* Header */}
       <div className="room-browser-header">
-        <h1>Browse Rooms</h1>
-        <p>Find and book the perfect room for your needs</p>
+        {/* <h1>Browse Rooms</h1>
+        <p>Find and book the perfect room for your needs</p> */}
       </div>
 
       {/* Filters */}
