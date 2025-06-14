@@ -72,7 +72,7 @@ const MyRoomBookings = () => {
       removeBooking(bookingId);
     } catch (err) {
       console.error('Error cancelling booking:', err);
-      alert('Failed to cancel booking');
+      alert('User cannot cancel this booking');
     } finally {
       setActionLoading(prev => ({ ...prev, [bookingId]: null }));
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { getAllUsers } from '../../api/user';
 import Alert from '../../components/common/Alert';
+import AdminSidebar from '../../components/common/AdminSidebar';
 import '../../assets/css/dashboard.css';
 
 const AdminDashboard = () => {
@@ -28,6 +29,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="dashboard-container">
+     <AdminSidebar activePage="dashboard" /> 
       <div className="container">
         <div className="dashboard-header">
           <h1 className="dashboard-title">Admin Dashboard</h1>

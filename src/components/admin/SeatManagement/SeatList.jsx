@@ -84,8 +84,8 @@ const SeatList = () => {
                         <SeatStatusBadge seatId={seat.id} />
                       </td>
                       <td>
-                        <span className={`desktop-badge ${seat.isDesktop ? 'has-desktop' : 'no-desktop'}`}>
-                          {seat.isDesktop ? 'Yes' : 'No'}
+                        <span className={`desktop-badge ${seat.hasDesktop ? 'has-desktop' : 'no-desktop'}`}>
+                          {seat.hasDesktop ? 'Yes' : 'No'}
                         </span>
                       </td>
                       <td>{seat.description || '-'}</td>
