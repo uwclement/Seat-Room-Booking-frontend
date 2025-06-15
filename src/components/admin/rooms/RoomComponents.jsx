@@ -1,7 +1,7 @@
 import React from 'react';
+import QRCodeButton from '../qr/QRCodeButton';
 
-// RoomCard Component
-const RoomCard = ({ room, isSelected, onSelect, onEdit, onToggleStatus, onSetMaintenance, onDuplicate, onCalendar, onDelete }) => {
+const RoomCard = ({ room, isSelected, onSelect, onEdit, onToggleStatus, onSetMaintenance, onDuplicate, onCalendar, onDelete, onQRUpdated }) => {
   const getCategoryColor = (category) => {
     switch (category) {
       case 'LIBRARY_ROOM': return 'blue';
@@ -30,6 +30,17 @@ const RoomCard = ({ room, isSelected, onSelect, onEdit, onToggleStatus, onSetMai
     if (room.underMaintenance) return 'Under Maintenance';
     if (!room.available) return 'Disabled';
     return 'Available';
+  };
+
+   const handleQRGenerated = (response) => {
+    if (onQRUpdated) {
+      onQRUpdated(room.id, {
+        qrCodeUrl: response.qrCodeUrl,
+        qrImageUrl: response.imagePath,
+        hasQRCode: true,
+        qrGeneratedAt: response.generatedAt
+      });
+    }
   };
 
   return (
@@ -120,7 +131,22 @@ const RoomCard = ({ room, isSelected, onSelect, onEdit, onToggleStatus, onSetMai
               </span>
             </div>
           )}
+
+        <div className="room-qr-section">
+          <QRCodeButton
+            type="room"
+            resourceId={room.id}
+            resourceName={room.roomNumber}
+            hasQR={room.hasQRCode}
+            onGenerated={handleQRGenerated}
+          />
+          {room.qrGeneratedAt && (
+            <small className="qr-info">
+              QR generated: {new Date(room.qrGeneratedAt).toLocaleDateString()}
+            </small>
+          )}
         </div>
+      </div>
 
         <div className="room-actions">
           <button 
@@ -181,7 +207,14 @@ const RoomCard = ({ room, isSelected, onSelect, onEdit, onToggleStatus, onSetMai
 };
 
 // RoomList Component
-const RoomList = ({ rooms, selectedRooms, onSelect, onSelectAll, onEdit, onToggleStatus, onSetMaintenance, onDuplicate, onCalendar, onDelete }) => {
+const RoomList = ({ rooms, selectedRooms, onSelect, onSelectAll, onEdit, onToggleStatus, onSetMaintenance, onDuplicate, onCalendar, onDelete, onQRUpdated }) => {
+  
+  const handleQRGenerated = (roomId, qrData) => {
+    if (onQRUpdated) {
+      onQRUpdated(roomId, qrData);
+    }
+  };
+
   return (
     <div className="room-list">
       <div className="table-container">
@@ -192,7 +225,13 @@ const RoomList = ({ rooms, selectedRooms, onSelect, onSelectAll, onEdit, onToggl
                 <input
                   type="checkbox"
                   checked={selectedRooms.length === rooms.length && rooms.length > 0}
-                  onChange={onSelectAll}
+                  onChange={(e) => {
+                     if (e.target.checked) {
+                      onSelectAll();
+                    } else {
+                      selectedRooms.forEach(id => onSelect(id));
+                    }
+                  }}
                 />
               </th>
               <th>Room</th>
@@ -200,6 +239,7 @@ const RoomList = ({ rooms, selectedRooms, onSelect, onSelectAll, onEdit, onToggl
               <th>Capacity</th>
               <th>Status</th>
               <th>Equipment</th>
+              <th>QR Code</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -237,6 +277,22 @@ const RoomList = ({ rooms, selectedRooms, onSelect, onSelectAll, onEdit, onToggl
                     {room.equipment?.length || 0} items
                   </div>
                 </td>
+
+                <td>
+                  <QRCodeButton
+                    type="room"
+                    resourceId={room.id}
+                    resourceName={room.roomNumber}
+                    hasQR={room.hasQRCode}
+                    onGenerated={(response) => handleQRGenerated(room.id, {
+                      qrCodeUrl: response.qrCodeUrl,
+                      qrImageUrl: response.imagePath,
+                      hasQRCode: true,
+                      qrGeneratedAt: response.generatedAt
+                    })}
+                  />
+                </td>
+
                 <td>
                   <div className="action-buttons">
                     <button 

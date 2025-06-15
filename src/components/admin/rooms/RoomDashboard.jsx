@@ -38,6 +38,11 @@ const RoomDashboard = () => {
     roomDraft,
     isDraftSaved,
     
+    // QR Code state
+    qrProcessing,
+    qrError,
+    qrSuccess,
+    
     // Functions
     handleCreateRoom,
     handleUpdateRoom,
@@ -66,7 +71,14 @@ const RoomDashboard = () => {
     setSuccess,
     
     saveDraft,
-    clearDraft
+    clearDraft,
+    
+    // QR Code functions
+    handleQRUpdate,
+    handleBulkQRUpdate,
+    setQRError,
+    setQRSuccess,
+    clearQRMessages
   } = useContext(RoomContext);
 
   const [showCalendar, setShowCalendar] = useState(false);
@@ -80,7 +92,9 @@ const RoomDashboard = () => {
     maintenance: rooms.filter(room => room.underMaintenance).length,
     libraryRooms: rooms.filter(room => room.category === 'LIBRARY_ROOM').length,
     studyRooms: rooms.filter(room => room.category === 'STUDY_ROOM').length,
-    classRooms: rooms.filter(room => room.category === 'CLASS_ROOM').length
+    classRooms: rooms.filter(room => room.category === 'CLASS_ROOM').length,
+    withQR: rooms.filter(room => room.qrCodeToken).length,
+    withoutQR: rooms.filter(room => !room.qrCodeToken).length
   };
 
   const handleEditRoom = (room) => {
@@ -111,6 +125,36 @@ const RoomDashboard = () => {
   const handleDraftRestore = () => {
     if (roomDraft) {
       setShowCreateModal(true);
+    }
+  };
+
+  // QR Code event handlers
+  const handleQRUpdated = (roomId, qrData) => {
+    handleQRUpdate(roomId, qrData);
+    setQRSuccess('QR code updated successfully');
+  };
+
+  const handleQRGenerated = (roomId, qrData) => {
+    handleQRUpdate(roomId, qrData);
+    setQRSuccess('QR code generated successfully');
+  };
+
+  const handleQRError = (error) => {
+    setQRError(error);
+  };
+
+  const handleBulkQRGeneration = (results) => {
+    if (results && results.length > 0) {
+      handleBulkQRUpdate(results);
+      const successCount = results.filter(r => r.success).length;
+      const failureCount = results.filter(r => !r.success).length;
+      
+      if (successCount > 0) {
+        setQRSuccess(`${successCount} QR codes generated successfully`);
+      }
+      if (failureCount > 0) {
+        setQRError(`${failureCount} QR codes failed to generate`);
+      }
     }
   };
 
@@ -170,12 +214,30 @@ const RoomDashboard = () => {
         />
       )}
 
+      {/* QR Error Alert */}
+      {qrError && (
+        <Alert
+          type="danger"
+          message={qrError}
+          onClose={() => clearQRMessages()}
+        />
+      )}
+
       {/* Toast Notifications */}
       {success && (
         <ToastNotification
           type="success"
           message={success}
           onClose={() => setSuccess('')}
+        />
+      )}
+
+      {/* QR Success Toast */}
+      {qrSuccess && (
+        <ToastNotification
+          type="success"
+          message={qrSuccess}
+          onClose={() => clearQRMessages()}
         />
       )}
 
@@ -213,6 +275,14 @@ const RoomDashboard = () => {
             <div className="stat-item class">
               <div className="stat-value">{roomStats.classRooms}</div>
               <div className="stat-label">Class Rooms</div>
+            </div>
+            <div className="stat-item qr-enabled">
+              <div className="stat-value">{roomStats.withQR}</div>
+              <div className="stat-label">With QR Code</div>
+            </div>
+            <div className="stat-item qr-missing">
+              <div className="stat-value">{roomStats.withoutQR}</div>
+              <div className="stat-label">Missing QR Code</div>
             </div>
           </div>
         </div>
@@ -252,6 +322,12 @@ const RoomDashboard = () => {
           
           <div className="results-info">
             Showing {rooms.length} room{rooms.length !== 1 ? 's' : ''}
+            {qrProcessing && (
+              <span className="qr-status">
+                <i className="fas fa-qrcode fa-spin"></i>
+                Processing QR codes...
+              </span>
+            )}
           </div>
         </div>
 
@@ -260,6 +336,7 @@ const RoomDashboard = () => {
           onBulkEnable={() => setShowBulkModal(true)}
           onBulkDisable={() => setShowBulkModal(true)}
           onBulkMaintenance={() => setShowBulkModal(true)}
+          onBulkQRGeneration={handleBulkQRGeneration}
           onBulkDelete={() => {
             if (window.confirm(`Are you sure you want to delete ${selectedRooms.length} rooms? This action cannot be undone.`)) {
               handleBulkOperation('delete');
@@ -303,6 +380,10 @@ const RoomDashboard = () => {
                     onDuplicate={handleDuplicateRoom}
                     onCalendar={handleCalendarClick}
                     onDelete={handleDeleteConfirm}
+                    onQRUpdated={handleQRUpdated}
+                    onQRGenerated={handleQRGenerated}
+                    onQRError={handleQRError}
+                    qrProcessing={qrProcessing}
                   />
                 ))}
               </div>
@@ -318,6 +399,10 @@ const RoomDashboard = () => {
                 onDuplicate={handleDuplicateRoom}
                 onCalendar={handleCalendarClick}
                 onDelete={handleDeleteConfirm}
+                onQRUpdated={handleQRUpdated}
+                onQRGenerated={handleQRGenerated}
+                onQRError={handleQRError}
+                qrProcessing={qrProcessing}
               />
             )}
           </div>
@@ -369,6 +454,7 @@ const RoomDashboard = () => {
         onSubmit={handleBulkOperationSubmit}
         selectedCount={selectedRooms.length}
         loading={loading}
+        onBulkQRGeneration={handleBulkQRGeneration}
       />
 
       <TemplateModal

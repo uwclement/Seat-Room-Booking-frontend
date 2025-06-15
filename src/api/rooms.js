@@ -10,6 +10,13 @@ const safeApiCall = async (apiCall) => {
   }
 };
 
+// qr code fields 
+const mapRoomResponse = (room) => ({
+  ...room,
+  hasQRCode: !!room.qrCodeToken,
+  qrImageUrl: room.qrImagePath ? `/api/qr/image/${room.qrImagePath}` : null,
+});
+
 // Room Management API calls
 export const getAllRooms = async () => {
   return safeApiCall(() => api.get('/admin/rooms'));
