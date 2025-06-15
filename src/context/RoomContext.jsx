@@ -64,6 +64,11 @@ export const RoomProvider = ({ children }) => {
   const [roomDraft, setRoomDraft] = useState(null);
   const [isDraftSaved, setIsDraftSaved] = useState(true);
 
+  // QR Code related state
+  const [qrProcessing, setQrProcessing] = useState(false);
+  const [qrError, setQrError] = useState('');
+  const [qrSuccess, setQrSuccess] = useState('');
+
   // Fetch all data
   const fetchAllData = useCallback(async () => {
     if (!isAuthenticated() || !isAdmin()) return;
@@ -411,6 +416,48 @@ export const RoomProvider = ({ children }) => {
     localStorage.removeItem('roomDraft');
   };
 
+  // QR Code Update handler - Enhanced version
+  const handleQRUpdate = (roomId, qrData) => {
+    setRooms(prevRooms => 
+      prevRooms.map(room => 
+        room.id === roomId 
+          ? { ...room, ...qrData }
+          : room
+      )
+    );
+  };
+
+  // QR Code batch update handler
+  const handleBulkQRUpdate = (qrUpdates) => {
+    setRooms(prevRooms => 
+      prevRooms.map(room => {
+        const update = qrUpdates.find(update => update.roomId === room.id);
+        return update ? { ...room, ...update.qrData } : room;
+      })
+    );
+  };
+
+  // QR Code processing state handlers
+  const setQRProcessing = (processing) => {
+    setQrProcessing(processing);
+  };
+
+  const setQRError = (error) => {
+    setQrError(error);
+    setTimeout(() => setQrError(''), 5000);
+  };
+
+  const setQRSuccess = (message) => {
+    setQrSuccess(message);
+    setTimeout(() => setQrSuccess(''), 3000);
+  };
+
+  // Clear QR messages
+  const clearQRMessages = () => {
+    setQrError('');
+    setQrSuccess('');
+  };
+
   // Load data when authentication status changes
   useEffect(() => {
     if (isAuthenticated() && isAdmin()) {
@@ -444,6 +491,11 @@ export const RoomProvider = ({ children }) => {
     viewMode,
     roomDraft,
     isDraftSaved,
+    
+    // QR Code state
+    qrProcessing,
+    qrError,
+    qrSuccess,
     
     // Room operations
     handleCreateRoom,
@@ -493,7 +545,15 @@ export const RoomProvider = ({ children }) => {
     
     // Data refresh
     fetchAllData,
-    fetchFilteredRooms
+    fetchFilteredRooms,
+
+    // QR code operations
+    handleQRUpdate,
+    handleBulkQRUpdate,
+    setQRProcessing,
+    setQRError,
+    setQRSuccess,
+    clearQRMessages
   };
 
   return (

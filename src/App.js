@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import { AdminProvider } from './context/AdminContext';
 import { ScheduleProvider } from './context/ScheduleContext';
-// import { RoomBoookingProvider } from './context/RoomBookingContext'
 import { useAuth } from './hooks/useAuth';
 import EmailVerification from './pages/auth/EmailVerification';
 import Navbar from './components/layout/Navbar';
@@ -12,7 +11,9 @@ import Register from './pages/auth/Register';
 import { RoomProvider } from './context/RoomContext'; 
 import { RoomBookProvider } from './context/RoomBookingContext'; 
 import { AdminRoomBookingProvider } from './context/AdminRoomBookingContext';
-// In src/index.js
+import { QRCodeProvider } from './context/QRCodeContext';
+
+// FontAwesome CSS
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
 // User pages
@@ -30,12 +31,18 @@ import AdminSidebar from './components/common/AdminSidebar';
 import EquipmentDashboard from './components/admin/RoomManagement/EquipmentDashboard';
 import AdminRoomBookingManagement from './components/admin/RoomManagement/AdminRoomBookingManagement';
 
-//user room management
+// User room management
 import RoomBrowserPage from './pages/rooms/RoomBrowserPage';
 import BookRoomPage from './pages/rooms/BookRoomPage';
-import MyRoomBookingsPage from './pages/rooms/MyRoomBookingsPage';
+import MyRoomBookingsPage from './pages/rooms/MyRoomBookingsPage'; 
+import MyRoomBookings from './pages/rooms/MyRoomBookingsPage'; 
 import RoomBookingDetailsPage from './pages/rooms/RoomBookingDetailsPage';
 import JoinableBookingsPage from './pages/rooms/JoinableBookingsPage';
+
+// QR Code related imports
+import AdminSeatManagement from './pages/admin/AdminSeatManagement';
+import QRManagementPage from './pages/admin/QRManagementPage'; 
+import QRScanner from './components/admin/qr/QRScanner';
 
 // Import global CSS
 import './assets/css/styles.css';
@@ -44,6 +51,9 @@ import './assets/css/schedule.css';
 import './assets/css/seat-management.css';
 import './assets/css/RoomManagementStyle.css';
 import './assets/css/admin-room-booking.css';
+import './assets/css/qr-scanner.css'; 
+// import './assets/css/seat-list.css';
+// import './assets/css/seat-actions.css';
 
 // Protected route component
 const ProtectedRoute = ({ children, requiredRole }) => {
@@ -84,6 +94,9 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/verify" element={<EmailVerification />} />
       
+      {/* QR Scanner - Public route */}
+      <Route path="/scan" element={<QRScanner />} />
+      
       {/* Protected routes - User & Admin with automatic redirect */}
       <Route
         path="/"
@@ -122,8 +135,7 @@ const AppRoutes = () => {
         }
       />
 
-
-       {/* ========== NEW ROOM BOOKING ROUTES ========== */}
+      {/* ========== ROOM BOOKING ROUTES ========== */}
       <Route
         path="/rooms"
         element={
@@ -158,6 +170,19 @@ const AppRoutes = () => {
       />
       
       <Route
+       path="/my-room-bookings" 
+       element={
+      <ProtectedRoute>
+      <RoomBookProvider>
+        <QRCodeProvider>
+          <MyRoomBookings />
+        </QRCodeProvider>
+      </RoomBookProvider>
+    </ProtectedRoute>
+  }
+/>
+      
+      <Route
         path="/room-booking/:bookingId"
         element={
           <ProtectedRoute>
@@ -179,7 +204,7 @@ const AppRoutes = () => {
         }
       />
       
-      {/* Protected routes - Admin only */}
+      {/* ========== ADMIN ROUTES ========== */}
       <Route
         path="/admin"
         element={
@@ -199,6 +224,15 @@ const AppRoutes = () => {
       />
       
       <Route
+        path="/admin/seat-management"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <AdminSeatManagement />
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
         path="/admin/schedule"
         element={
           <ProtectedRoute requiredRole="admin">
@@ -207,7 +241,17 @@ const AppRoutes = () => {
         }
       />
 
-       {/*ROUTES FOR ROOM MANAGEMENT */}
+      {/* QR Management Route */}
+      <Route
+        path="/admin/qr"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <QRManagementPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ROUTES FOR ROOM MANAGEMENT */}
       <Route
         path="/admin/rooms"
         element={
@@ -231,7 +275,7 @@ const AppRoutes = () => {
         }
       />
 
-     < Route
+      <Route
         path="/admin/Roombookings"
         element={
           <ProtectedRoute requiredRole="admin">
@@ -245,7 +289,7 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Additional admin booking sub-routes if needed */}
+      {/* Additional admin booking sub-routes */}
       <Route
         path="/admin/Roombookings/pending"
         element={
@@ -280,22 +324,21 @@ const AppRoutes = () => {
   );
 };
 
-
-
-
 function App() {
   return (
     <AuthProvider>
       <AdminProvider>
         <ScheduleProvider>
-          <Router>
-            <div className="app-container">
-              <Navbar />
-              <main className="main-content">
-                <AppRoutes />
-              </main>
-            </div>
-          </Router>
+          <QRCodeProvider>
+            <Router>
+              <div className="app-container">
+                <Navbar />
+                <main className="main-content">
+                  <AppRoutes />
+                </main>
+              </div>
+            </Router>
+          </QRCodeProvider>
         </ScheduleProvider>
       </AdminProvider>
     </AuthProvider>

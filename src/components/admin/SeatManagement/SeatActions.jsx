@@ -1,6 +1,9 @@
+// components/admin/seats/SeatActions.js
 import React, { useState } from 'react';
 import { useAdmin } from '../../../hooks/useAdmin';
+import { useQRCode } from '../../../context/QRCodeContext';
 import DisableSeatModal from './DisableSeatModal';
+import BulkQRModal from '../qr/BulkQRModal';
 
 const SeatActions = () => {
   const { 
@@ -13,9 +16,14 @@ const SeatActions = () => {
   } = useAdmin();
 
   const [showDisableModal, setShowDisableModal] = useState(false);
+  const [showQRModal, setShowQRModal] = useState(false);
 
   const handleToggleDesktopBulk = () => {
     handleBulkUpdate({ toggleDesktop: true });
+  };
+
+  const handleBulkQRGeneration = () => {
+    setShowQRModal(true);
   };
 
   return (
@@ -49,6 +57,12 @@ const SeatActions = () => {
             Toggle Desktop
           </button>
           <button 
+            className="btn btn-primary"
+            onClick={handleBulkQRGeneration}
+          >
+            <i className="fas fa-qrcode"></i> Generate QR Codes
+          </button>
+          <button 
             className="btn btn-warning"
             onClick={() => setShowDisableModal(true)}
           >
@@ -66,6 +80,13 @@ const SeatActions = () => {
       <DisableSeatModal 
         isOpen={showDisableModal} 
         onClose={() => setShowDisableModal(false)} 
+      />
+
+      <BulkQRModal
+        show={showQRModal}
+        onClose={() => setShowQRModal(false)}
+        type="seats"
+        selectedIds={selectedSeats}
       />
     </div>
   );

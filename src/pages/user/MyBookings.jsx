@@ -4,6 +4,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { getUserActiveBookings, getUserPastBookings, checkInBooking, checkOutBooking, cancelBooking } from '../../api/booking';
 import Alert from '../../components/common/Alert';
 import Button from '../../components/common/Button';
+import QRScannerModal from '../../components/admin/qr/QRScannerModal';
+import QRValidationModal from '../../components/admin/qr/QRValidationModal';
 import '../../assets/css/dashboard.css';
 
 const MyBookingsPage = () => {
@@ -14,6 +16,11 @@ const MyBookingsPage = () => {
   const [error, setError] = useState('');
   const [actionInProgress, setActionInProgress] = useState(null);
   const [alert, setAlert] = useState({ type: '', message: '' });
+  
+  // QR Scanner states
+  const [showQRScanner, setShowQRScanner] = useState(false);
+  const [showQRValidation, setShowQRValidation] = useState(false);
+  const [scanningBookingId, setScanningBookingId] = useState(null);
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -165,6 +172,50 @@ const MyBookingsPage = () => {
     }
   };
 
+  // QR Scanner handlers
+  const handleQRScan = (bookingId) => {
+    setScanningBookingId(bookingId);
+    setShowQRScanner(true);
+  };
+
+  const handleQRValidation = (bookingId) => {
+    setScanningBookingId(bookingId);
+    setShowQRValidation(true);
+  };
+
+  const handleScanSuccess = async (scanResult) => {
+    if (scanResult.canCheckIn) {
+      await handleCheckIn(scanningBookingId);
+      setShowQRScanner(false);
+      setScanningBookingId(null);
+    } else {
+      setAlert({
+        type: 'warning',
+        message: scanResult.message || 'Unable to check in at this time'
+      });
+    }
+  };
+
+  const handleValidationSuccess = async (validationResult) => {
+    if (validationResult.canCheckIn) {
+      await handleCheckIn(scanningBookingId);
+      setShowQRValidation(false);
+      setScanningBookingId(null);
+    } else {
+      setAlert({
+        type: 'info',
+        message: 'QR code validated but check-in not available yet'
+      });
+    }
+  };
+
+  const handleValidationError = (errorResult) => {
+    setAlert({
+      type: 'danger',
+      message: errorResult.message || 'QR code validation failed'
+    });
+  };
+
   // Safe data access function to handle potential undefined values
   const getSafeValue = (booking, path) => {
     if (!booking) return null;
@@ -179,6 +230,17 @@ const MyBookingsPage = () => {
     }
     
     return value;
+  };
+
+  // Check if booking can be checked in via QR
+  const canUseQRCheckIn = (booking) => {
+    if (booking.status !== 'RESERVED') return false;
+    
+    const now = new Date();
+    const startTime = new Date(booking.startTime);
+    const checkInWindow = 15; // minutes before start time
+    
+    return now >= new Date(startTime.getTime() - checkInWindow * 60000);
   };
 
   return (
@@ -252,38 +314,64 @@ const MyBookingsPage = () => {
                         </span>
                       </td>
                       <td>
-                        {booking.status === 'RESERVED' && (
-                          <Button
-                            variant="secondary"
-                            onClick={() => handleCheckIn(booking.id)}
-                            disabled={actionInProgress === booking.id}
-                            className="action-btn"
-                          >
-                            {actionInProgress === booking.id ? 'Processing...' : 'Check In'}
-                          </Button>
-                        )}
-                        
-                        {booking.status === 'CHECKED_IN' && (
-                          <Button
-                            variant="secondary"
-                            onClick={() => handleCheckOut(booking.id)}
-                            disabled={actionInProgress === booking.id}
-                            className="action-btn"
-                          >
-                            {actionInProgress === booking.id ? 'Processing...' : 'Check Out'}
-                          </Button>
-                        )}
-                        
-                        {(booking.status === 'RESERVED' || booking.status === 'CHECKED_IN') && (
-                          <Button
-                            variant="danger"
-                            onClick={() => handleCancel(booking.id)}
-                            disabled={actionInProgress === booking.id}
-                            className="action-btn"
-                          >
-                            Cancel
-                          </Button>
-                        )}
+                        <div className="booking-actions">
+                          {booking.status === 'RESERVED' && (
+                            <>
+                              <Button
+                                variant="secondary"
+                                onClick={() => handleCheckIn(booking.id)}
+                                disabled={actionInProgress === booking.id}
+                                className="action-btn"
+                              >
+                                {actionInProgress === booking.id ? 'Processing...' : 'Check In'}
+                              </Button>
+
+                              {canUseQRCheckIn(booking) && (
+                                <>
+                                  <Button
+                                    variant="primary"
+                                    onClick={() => handleQRScan(booking.id)}
+                                    className="action-btn qr-btn"
+                                    title="Scan QR code to check in"
+                                  >
+                                    <i className="fas fa-qrcode"></i> Scan QR
+                                  </Button>
+
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => handleQRValidation(booking.id)}
+                                    className="action-btn"
+                                    title="Validate QR code"
+                                  >
+                                    <i className="fas fa-shield-alt"></i> Validate
+                                  </Button>
+                                </>
+                              )}
+                            </>
+                          )}
+                          
+                          {booking.status === 'CHECKED_IN' && (
+                            <Button
+                              variant="secondary"
+                              onClick={() => handleCheckOut(booking.id)}
+                              disabled={actionInProgress === booking.id}
+                              className="action-btn"
+                            >
+                              {actionInProgress === booking.id ? 'Processing...' : 'Check Out'}
+                            </Button>
+                          )}
+                          
+                          {(booking.status === 'RESERVED' || booking.status === 'CHECKED_IN') && (
+                            <Button
+                              variant="danger"
+                              onClick={() => handleCancel(booking.id)}
+                              disabled={actionInProgress === booking.id}
+                              className="action-btn"
+                            >
+                              Cancel
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -341,6 +429,30 @@ const MyBookingsPage = () => {
             </div>
           )}
         </div>
+
+        {/* QR Scanner Modal */}
+        <QRScannerModal
+          show={showQRScanner}
+          onClose={() => {
+            setShowQRScanner(false);
+            setScanningBookingId(null);
+          }}
+          expectedBookingId={scanningBookingId}
+          onScanSuccess={handleScanSuccess}
+        />
+
+        {/* QR Validation Modal */}
+        <QRValidationModal
+          show={showQRValidation}
+          onClose={() => {
+            setShowQRValidation(false);
+            setScanningBookingId(null);
+          }}
+          expectedBookingId={scanningBookingId}
+          onValidationSuccess={handleValidationSuccess}
+          onValidationError={handleValidationError}
+          title="Validate Booking QR Code"
+        />
       </div>
     </div>
   );

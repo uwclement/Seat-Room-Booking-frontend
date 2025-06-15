@@ -2,7 +2,9 @@ import React from 'react';
 import { useAdmin } from '../../../hooks/useAdmin';
 
 const SeatStatusBadge = ({ seatId }) => {
-  const { disabledSeats } = useAdmin();
+  const { seats, handleDisableSeat, handleEnableSeat, disabledSeats } = useAdmin();
+
+
   
   const isDisabled = disabledSeats.some(seat => seat.id === seatId);
   
@@ -12,6 +14,8 @@ const SeatStatusBadge = ({ seatId }) => {
     const formattedDate = endDate ? 
       `${endDate.toLocaleDateString()} at ${endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : 
       'Indefinite';
+    
+
     
     return (
       <div className="seat-status disabled" title={`Maintenance until ${formattedDate}`}>

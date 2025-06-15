@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAdmin } from '../../../hooks/useAdmin';
 import SeatStatusBadge from './SeatStatusBadge';
+import QRCodeButton from '../qr/QRCodeButton';
 
 const SeatList = () => {
   const { 
@@ -10,7 +11,8 @@ const SeatList = () => {
     applyFilters, 
     selectedSeats,
     toggleSeatSelection,
-    handleToggleDesktop
+    handleToggleDesktop,
+    updateSeat
   } = useAdmin();
 
   if (loading) {
@@ -39,6 +41,16 @@ const SeatList = () => {
     'COLLABORATION': 'Collaboration Zone',
   };
 
+  const handleQRGenerated = (seatId, qrData) => {
+    // Update seat data with QR info
+    updateSeat(seatId, {
+      hasQRCode: true,
+      qrCodeUrl: qrData.qrCodeUrl,
+      qrImageUrl: qrData.imagePath,
+      qrGeneratedAt: qrData.generatedAt
+    });
+  };
+
   return (
     <div className="seat-list">
       {Object.keys(groupedSeats).length === 0 ? (
@@ -63,6 +75,7 @@ const SeatList = () => {
                     <th>Status</th>
                     <th>Desktop</th>
                     <th>Description</th>
+                    <th>QR Code</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -89,6 +102,15 @@ const SeatList = () => {
                         </span>
                       </td>
                       <td>{seat.description || '-'}</td>
+                      <td>
+                        <QRCodeButton
+                          type="seat"
+                          resourceId={seat.id}
+                          resourceName={seat.seatNumber}
+                          hasQR={seat.hasQRCode}
+                          onGenerated={(response) => handleQRGenerated(seat.id, response)}
+                        />
+                      </td>
                       <td>
                         <div className="action-buttons">
                           <button
