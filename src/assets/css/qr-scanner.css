@@ -526,14 +526,6 @@
   }
 }
 
-/* Camera Permission Styles */
-.camera-permission-request {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 300px;
-  padding: 20px;
-}
 
 .permission-card {
   background: white;
@@ -771,4 +763,44 @@
     transform: translateY(0);
     opacity: 1;
   }
+}
+
+.camera-initializing,
+.camera-permission-request {
+  text-align: center;
+  padding: 2rem;
+}
+
+.permission-card {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 2rem;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+.permission-icon {
+  font-size: 3rem;
+  color: #007bff;
+  margin-bottom: 1rem;
+}
+
+.camera-help {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fff3cd;
+  border-radius: 4px;
+}
+
+.camera-help ol {
+  text-align: left;
+  margin: 0.5rem 0;
+}
+
+.qr-reader {
+  width: 100%;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  overflow: hidden;
 }

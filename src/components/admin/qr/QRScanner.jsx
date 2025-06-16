@@ -18,58 +18,80 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
   const [cameraPermission, setCameraPermission] = useState('unknown');
   const [availableCameras, setAvailableCameras] = useState([]);
   const [selectedCamera, setSelectedCamera] = useState('');
+  const [isInitializing, setIsInitializing] = useState(false);
   
   const scannerRef = useRef(null);
   const html5QrCodeScannerRef = useRef(null);
+  const initTimeoutRef = useRef(null);
 
-  // Check camera permissions on component mount
+  // Check camera permissions and initialize on component mount
   useEffect(() => {
-    checkCameraPermissions();
+    initializeQRScanner();
+    
     return () => {
       cleanupScanner();
+      if (initTimeoutRef.current) {
+        clearTimeout(initTimeoutRef.current);
+      }
     };
   }, []);
 
-  // Initialize scanner when camera permission is granted
-  useEffect(() => {
-    if (isScanning && !manualEntry && cameraPermission === 'granted') {
-      initializeScanner();
-    }
-  }, [isScanning, manualEntry, cameraPermission]);
-
-  const checkCameraPermissions = async () => {
+  const initializeQRScanner = async () => {
     try {
-      // First, check if getUserMedia is supported
+      setIsInitializing(true);
+      setCameraError('');
+      
+      // Check if browser supports camera
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setCameraError('Camera not supported on this device/browser');
-        setManualEntry(true);
-        return;
+        throw new Error('Camera not supported on this device/browser');
       }
 
-      // Check existing permissions
-      if ('permissions' in navigator) {
-        const permission = await navigator.permissions.query({ name: 'camera' });
-        setCameraPermission(permission.state);
-        
-        if (permission.state === 'denied') {
-          setCameraError('Camera permission denied. Please enable camera access in browser settings.');
-          setManualEntry(true);
-          return;
-        }
-      }
-
+      // Request camera permission immediately
+      await requestCameraAccess();
+      
       // Get available cameras
       await getCameraDevices();
       
-      // Auto-start scanning if permission is granted
-      if (cameraPermission !== 'denied') {
-        setIsScanning(true);
-      }
+      // Start scanning automatically
+      setIsScanning(true);
       
     } catch (error) {
-      console.error('Permission check failed:', error);
-      setCameraError('Unable to access camera. Please try manual entry.');
-      setManualEntry(true);
+      console.error('Failed to initialize QR scanner:', error);
+      handleCameraError(error);
+    } finally {
+      setIsInitializing(false);
+    }
+  };
+
+  const requestCameraAccess = async () => {
+    try {
+      // Request camera permission with specific constraints
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { 
+          facingMode: 'environment', // Prefer back camera
+          width: { ideal: 640 },
+          height: { ideal: 480 }
+        } 
+      });
+      
+      // Permission granted, stop the test stream
+      stream.getTracks().forEach(track => track.stop());
+      setCameraPermission('granted');
+      return true;
+      
+    } catch (error) {
+      console.error('Camera access failed:', error);
+      
+      if (error.name === 'NotAllowedError') {
+        setCameraPermission('denied');
+        throw new Error('Camera permission denied. Please enable camera access in your browser settings.');
+      } else if (error.name === 'NotFoundError') {
+        throw new Error('No camera found on this device.');
+      } else if (error.name === 'NotSupportedError') {
+        throw new Error('Camera not supported on this device.');
+      } else {
+        throw new Error('Failed to access camera. Please try again.');
+      }
     }
   };
 
@@ -82,59 +104,71 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
         // Prefer back camera for QR scanning
         const backCamera = devices.find(device => 
           device.label.toLowerCase().includes('back') || 
-          device.label.toLowerCase().includes('rear')
+          device.label.toLowerCase().includes('rear') ||
+          device.label.toLowerCase().includes('environment')
         );
         setSelectedCamera(backCamera ? backCamera.id : devices[0].id);
+      } else {
+        throw new Error('No cameras available');
       }
     } catch (error) {
       console.error('Failed to get camera devices:', error);
-      setCameraError('No cameras found on this device');
-      setManualEntry(true);
+      throw new Error('Failed to detect cameras on this device');
     }
   };
 
-  const requestCameraPermission = async () => {
-    try {
-      setCameraError('');
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          facingMode: 'environment' // Prefer back camera
-        } 
-      });
-      
-      // Permission granted, stop the test stream
-      stream.getTracks().forEach(track => track.stop());
-      setCameraPermission('granted');
-      setIsScanning(true);
-      setManualEntry(false);
-      
-    } catch (error) {
-      console.error('Camera permission denied:', error);
-      setCameraPermission('denied');
-      setCameraError('Camera permission denied. Using manual entry mode.');
-      setManualEntry(true);
-    }
+  const handleCameraError = (error) => {
+    setCameraError(error.message || 'Camera access failed');
+    setCameraPermission('denied');
+    setManualEntry(true);
+    setIsScanning(false);
   };
 
-  const initializeScanner = () => {
+  // Initialize scanner when scanning starts
+  useEffect(() => {
+    if (isScanning && !manualEntry && cameraPermission === 'granted' && !isInitializing) {
+      // Add a small delay to ensure DOM is ready
+      initTimeoutRef.current = setTimeout(() => {
+        initializeScanner();
+      }, 100);
+    }
+    
+    return () => {
+      if (initTimeoutRef.current) {
+        clearTimeout(initTimeoutRef.current);
+      }
+    };
+  }, [isScanning, manualEntry, cameraPermission, isInitializing, selectedCamera]);
+
+  const initializeScanner = async () => {
     try {
       // Clear any existing scanner
       cleanupScanner();
 
+      // Ensure the container exists
+      const container = document.getElementById('qr-reader');
+      if (!container) {
+        console.error('QR reader container not found');
+        return;
+      }
+
       const config = {
         fps: 10,
-        qrbox: isModal ? 250 : 300,
+        qrbox: { width: isModal ? 250 : 300, height: isModal ? 250 : 300 },
         aspectRatio: 1.0,
         rememberLastUsedCamera: true,
         supportedScanTypes: [Html5QrcodeScanner.SCAN_TYPE_CAMERA],
         showTorchButtonIfSupported: true,
         showZoomSliderIfSupported: true,
         defaultZoomValueIfSupported: 2,
-        // Camera selection
-        videoConstraints: selectedCamera ? {
-          deviceId: { exact: selectedCamera }
-        } : {
-          facingMode: "environment" // Use back camera
+        // Improved camera configuration
+        videoConstraints: {
+          facingMode: 'environment',
+          ...(selectedCamera && { deviceId: { exact: selectedCamera } })
+        },
+        // Additional configuration for better performance
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true
         }
       };
 
@@ -150,6 +184,7 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
       console.error('Failed to initialize scanner:', err);
       setCameraError('Failed to start camera. Please try manual entry.');
       setManualEntry(true);
+      setIsScanning(false);
     }
   };
 
@@ -157,9 +192,10 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
     if (html5QrCodeScannerRef.current) {
       try {
         html5QrCodeScannerRef.current.clear();
-        html5QrCodeScannerRef.current = null;
       } catch (err) {
         console.error('Error cleaning up scanner:', err);
+      } finally {
+        html5QrCodeScannerRef.current = null;
       }
     }
   };
@@ -171,7 +207,7 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
   };
 
   const onScanError = (error) => {
-    // Only handle specific errors that require user action
+    // Only handle critical errors that require user action
     if (error.includes('Permission') || error.includes('NotAllowed')) {
       setCameraError('Camera permission denied. Please enable camera access.');
       setManualEntry(true);
@@ -199,15 +235,18 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
             expectedBookingId
           );
           
-          setScanResult({
+          const result = {
             success: true,
             action: 'CHECKED_IN',
             message: checkInResult.message,
-            bookingId: expectedBookingId
-          });
+            bookingId: expectedBookingId,
+            canCheckIn: true
+          };
+          
+          setScanResult(result);
           
           if (onSuccess) {
-            onSuccess(validationResult);
+            onSuccess(result);
           }
         } else {
           setScanResult({
@@ -298,16 +337,18 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
     }
   };
 
-  const handleRescan = () => {
+  const handleRescan = async () => {
     setScanResult(null);
     setCameraError('');
+    setManualToken('');
+    
     if (cameraPermission === 'granted') {
       setIsScanning(true);
       setManualEntry(false);
     } else {
-      checkCameraPermissions();
+      // Re-initialize camera access
+      await initializeQRScanner();
     }
-    setManualToken('');
   };
 
   const toggleManualEntry = () => {
@@ -322,6 +363,12 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
         setIsScanning(true);
       }
     }
+  };
+
+  const retryCamera = async () => {
+    setCameraError('');
+    setManualEntry(false);
+    await initializeQRScanner();
   };
 
   return (
@@ -344,25 +391,36 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
           <i className="fas fa-camera"></i> {cameraError}
           {cameraPermission === 'denied' && (
             <div className="camera-help">
-              <p>To enable camera:</p>
-              <ul>
+              <p><strong>To enable camera access:</strong></p>
+              <ol>
                 <li>Click the camera icon in your browser's address bar</li>
                 <li>Select "Always allow" for camera access</li>
-                <li>Refresh this page</li>
-              </ul>
+                <li>Refresh this page or click "Retry Camera" below</li>
+              </ol>
+              <button className="btn btn-primary btn-sm" onClick={retryCamera}>
+                <i className="fas fa-redo"></i> Retry Camera
+              </button>
             </div>
           )}
         </div>
       )}
 
+      {/* Initialization Loading */}
+      {isInitializing && (
+        <div className="camera-initializing">
+          <div className="spinner"></div>
+          <p>Initializing camera...</p>
+        </div>
+      )}
+
       {/* Camera Permission Request */}
-      {cameraPermission === 'prompt' && !manualEntry && (
+      {cameraPermission === 'unknown' && !isInitializing && !manualEntry && (
         <div className="camera-permission-request">
           <div className="permission-card">
             <i className="fas fa-camera permission-icon"></i>
             <h3>Camera Access Required</h3>
             <p>To scan QR codes, we need access to your camera.</p>
-            <button className="btn btn-primary" onClick={requestCameraPermission}>
+            <button className="btn btn-primary" onClick={initializeQRScanner}>
               <i className="fas fa-camera"></i> Enable Camera
             </button>
             <button className="btn btn-outline" onClick={() => setManualEntry(true)}>
@@ -373,24 +431,33 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
       )}
 
       {/* Scanner Controls */}
-      <div className="scanner-controls">
-        <button
-          className={`btn btn-sm ${!manualEntry && isScanning ? 'btn-primary' : 'btn-outline'}`}
-          onClick={() => !manualEntry && cameraPermission === 'granted' ? null : requestCameraPermission()}
-          disabled={cameraPermission === 'denied'}
-        >
-          <i className="fas fa-camera"></i> Camera Scan
-        </button>
-        <button
-          className={`btn btn-sm ${manualEntry ? 'btn-primary' : 'btn-outline'}`}
-          onClick={toggleManualEntry}
-        >
-          <i className="fas fa-keyboard"></i> Manual Entry
-        </button>
-      </div>
+      {!isInitializing && (
+        <div className="scanner-controls">
+          <button
+            className={`btn btn-sm ${!manualEntry && (isScanning || cameraPermission === 'granted') ? 'btn-primary' : 'btn-outline'}`}
+            onClick={() => {
+              if (cameraPermission === 'granted' && !isScanning) {
+                setManualEntry(false);
+                setIsScanning(true);
+              } else if (cameraPermission !== 'granted') {
+                initializeQRScanner();
+              }
+            }}
+            disabled={cameraPermission === 'denied' && cameraError}
+          >
+            <i className="fas fa-camera"></i> Camera Scan
+          </button>
+          <button
+            className={`btn btn-sm ${manualEntry ? 'btn-primary' : 'btn-outline'}`}
+            onClick={toggleManualEntry}
+          >
+            <i className="fas fa-keyboard"></i> Manual Entry
+          </button>
+        </div>
+      )}
 
       {/* Camera Scanner */}
-      {isScanning && !manualEntry && !scanResult && cameraPermission === 'granted' && (
+      {isScanning && !manualEntry && !scanResult && cameraPermission === 'granted' && !isInitializing && (
         <div className="camera-scanner">
           <div id="qr-reader" className="qr-reader"></div>
           <div className="scanner-instructions">
