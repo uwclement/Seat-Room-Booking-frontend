@@ -43,6 +43,7 @@ import JoinableBookingsPage from './pages/rooms/JoinableBookingsPage';
 import AdminSeatManagement from './pages/admin/AdminSeatManagement';
 import QRManagementPage from './pages/admin/QRManagementPage'; 
 import QRScanner from './components/admin/qr/QRScanner';
+import QRScanProcessor from './components/admin/qr/QRScanProcessor';
 
 // Import global CSS
 import './assets/css/styles.css';
@@ -79,6 +80,17 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   return children;
 };
 
+// QR Scanner Page Component (for manual access)
+const QRScannerPage = () => {
+  return (
+    <QRCodeProvider>
+      <div className="qr-scanner-page">
+        <QRScanner />
+      </div>
+    </QRCodeProvider>
+  );
+};
+
 // Admin redirect component
 const AdminRedirect = () => {
   const { isAdmin } = useAuth();
@@ -93,9 +105,16 @@ const AppRoutes = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify" element={<EmailVerification />} />
+
+      {/*  QR Scanner route that handles URLs from QR codes */}
+      <Route path="/scan" element={
+        <QRCodeProvider>
+          <QRScanProcessor />
+        </QRCodeProvider>
+      } />
       
-      {/* QR Scanner - Public route */}
-      <Route path="/scan" element={<QRScanner />} />
+      {/* QR Scanner - Manual access page (not for QR code scanning) */}
+      <Route path="/qr-scanner" element={<QRScannerPage />} />
       
       {/* Protected routes - User & Admin with automatic redirect */}
       <Route
@@ -121,6 +140,15 @@ const AppRoutes = () => {
         path="/bookings"
         element={
           <ProtectedRoute>
+            <MyBookingsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/my-bookings"
+        element={
+          <ProtectedRoute includeQR={true}>
             <MyBookingsPage />
           </ProtectedRoute>
         }

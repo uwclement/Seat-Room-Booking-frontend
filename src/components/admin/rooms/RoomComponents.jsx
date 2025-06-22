@@ -32,16 +32,27 @@ const RoomCard = ({ room, isSelected, onSelect, onEdit, onToggleStatus, onSetMai
     return 'Available';
   };
 
-   const handleQRGenerated = (response) => {
-    if (onQRUpdated) {
-      onQRUpdated(room.id, {
-        qrCodeUrl: response.qrCodeUrl,
-        qrImageUrl: response.imagePath,
-        hasQRCode: true,
-        qrGeneratedAt: response.generatedAt
-      });
-    }
+const handleQRGenerated = (response) => {
+  console.log('🏠 QR Generated for room:', room.id, response); // Debug log
+  
+  const updates = {
+    qrCodeUrl: response.qrCodeUrl,
+    qrImageUrl: response.imagePath,
+    hasQRCode: true,
+    qrGeneratedAt: response.generatedAt
   };
+  
+  console.log('🏠 Updating room with:', updates); 
+  console.log('🏠 onQRUpdated function exists:', !!onQRUpdated);
+  
+  if (onQRUpdated) {
+    console.log('🏠 Calling onQRUpdated for room:', room.id); 
+    onQRUpdated(room.id, updates);
+    console.log('🏠 onQRUpdated called successfully'); 
+  } else {
+    console.warn('🏠 onQRUpdated function not provided!'); 
+  }
+};
 
   return (
     <div className={`admin-card room-card ${isSelected ? 'selected' : ''}`}>

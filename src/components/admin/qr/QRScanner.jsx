@@ -5,7 +5,15 @@ import { useAuth } from '../../../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false }) => {
-  const { handleScan, extractQRData, validateQR, handleCheckIn, loading, error } = useQRCode();
+  const { 
+    handleScan, 
+    extractQRData, 
+    validateQR, 
+    handleCheckIn, 
+    handleStoredScan, 
+    loading, 
+    error 
+  } = useQRCode();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
   
@@ -19,6 +27,9 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
   const [availableCameras, setAvailableCameras] = useState([]);
   const [selectedCamera, setSelectedCamera] = useState('');
   const [isInitializing, setIsInitializing] = useState(false);
+  
+  // NEW: Add state for stored QR context
+  const [storedQRContext, setStoredQRContext] = useState(null);
   
   const scannerRef = useRef(null);
   const html5QrCodeScannerRef = useRef(null);
@@ -35,6 +46,35 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
       }
     };
   }, []);
+
+  // NEW: Process stored QR after login
+  useEffect(() => {
+    const processStoredQR = async () => {
+      const storedContext = localStorage.getItem('pendingQRScan');
+      if (storedContext && isAuthenticated) {
+        try {
+          const qrContext = JSON.parse(storedContext);
+          localStorage.removeItem('pendingQRScan');
+          
+          // Call the new backend endpoint for stored QR processing
+          const response = await handleStoredScan(qrContext);
+          setScanResult(response);
+          setStoredQRContext(qrContext);
+          
+        } catch (error) {
+          console.error('Error processing stored QR:', error);
+          setScanResult({
+            success: false,
+            message: 'Failed to process stored QR scan',
+            action: 'ERROR',
+            errorCode: 'STORED_SCAN_ERROR'
+          });
+        }
+      }
+    };
+
+    processStoredQR();
+  }, [isAuthenticated, handleStoredScan]);
 
   const initializeQRScanner = async () => {
     try {
@@ -222,6 +262,7 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
     // Ignore continuous scan errors (QR not found, etc.)
   };
 
+  // ENHANCED: Updated processScan with new logic
   const processScan = async (qrContent) => {
     try {
       // If we have an expected booking ID, validate the QR against it
@@ -252,7 +293,8 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
           setScanResult({
             success: false,
             message: validationResult.message || 'QR code does not match your booking',
-            action: 'VALIDATION_FAILED'
+            action: 'VALIDATION_FAILED',
+            errorCode: 'BOOKING_MISMATCH'
           });
         }
         return;
@@ -265,7 +307,8 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
         setScanResult({
           success: false,
           message: 'Invalid QR code format',
-          action: 'INVALID_FORMAT'
+          action: 'INVALID_FORMAT',
+          errorCode: 'INVALID_QR'
         });
         return;
       }
@@ -280,16 +323,44 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
       setScanResult({
         success: false,
         message: err.response?.data?.message || 'Failed to process QR code',
-        action: 'ERROR'
+        action: 'ERROR',
+        errorCode: 'PROCESSING_ERROR'
       });
     }
   };
 
+  // ENHANCED: Updated handleScanResult with new logic
   const handleScanResult = (response, qrData) => {
     if (response.requiresAuthentication) {
+      // NEW: Store QR context if provided by backend
+      if (response.qrScanContext) {
+        localStorage.setItem('pendingQRScan', JSON.stringify(response.qrScanContext));
+      } else {
+        // Fallback: create context from QR data
+        const context = {
+          token: qrData.token,
+          type: qrData.type,
+          resourceIdentifier: response.resourceIdentifier || 'Unknown',
+          scannedAt: new Date().toISOString()
+        };
+        localStorage.setItem('pendingQRScan', JSON.stringify(context));
+      }
       const returnUrl = `/scan?type=${qrData.type}&token=${qrData.token}`;
       navigate(`/login?redirect=${encodeURIComponent(returnUrl)}`);
-    } else if (response.canBook && !response.hasBookingDetails) {
+    } 
+    // NEW: Handle alternative actions
+    else if (response.alternativeAction === 'GO_TO_BOOKED_SEAT' || response.alternativeAction === 'GO_TO_BOOKED_ROOM') {
+      // Show option to navigate to their actual booking
+      const bookingDetails = response.alternativeDetails;
+      if (bookingDetails) {
+        setTimeout(() => {
+          if (window.confirm(`${response.warning}\n\nWould you like to go to your booked ${response.resourceType.toLowerCase()}?`)) {
+            navigate(`/my-bookings`);
+          }
+        }, 2000);
+      }
+    }
+    else if (response.canBook && !response.hasBookingDetails) {
       const bookingUrl = response.resourceType === 'SEAT' 
         ? `/seats?seat=${response.resourceId}`
         : `/book-room/${response.resourceId}`;
@@ -302,7 +373,8 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
       setScanResult({
         success: false,
         message: 'Please enter a QR code token',
-        action: 'VALIDATION_ERROR'
+        action: 'VALIDATION_ERROR',
+        errorCode: 'EMPTY_TOKEN'
       });
       return;
     }
@@ -332,7 +404,8 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
       setScanResult({
         ...scanResult,
         action: 'CHECK_IN_FAILED',
-        message: err.response?.data?.message || 'Check-in failed'
+        message: err.response?.data?.message || 'Check-in failed',
+        errorCode: 'CHECK_IN_ERROR'
       });
     }
   };
@@ -341,6 +414,7 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
     setScanResult(null);
     setCameraError('');
     setManualToken('');
+    setStoredQRContext(null);
     
     if (cameraPermission === 'granted') {
       setIsScanning(true);
@@ -371,12 +445,339 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
     await initializeQRScanner();
   };
 
+  // NEW: Enhanced helper functions
+  const renderActionContent = (result) => {
+    switch (result.action) {
+      case 'CHECK_IN':
+        if (result.canCheckIn) {
+          return (
+            <div className="check-in-section">
+              <div className="booking-info">
+                <p><i className="fas fa-calendar"></i> 
+                  {formatTime(result.bookingStartTime)} - {formatTime(result.bookingEndTime)}
+                </p>
+                {result.checkInAvailableAt && (
+                  <p><i className="fas fa-clock"></i> 
+                    Check-in available from {formatTime(result.checkInAvailableAt)}
+                  </p>
+                )}
+              </div>
+              <button className="btn btn-primary btn-lg" onClick={handleCheckInAction}>
+                <i className="fas fa-check-circle"></i> Check In Now
+              </button>
+            </div>
+          );
+        }
+        break;
+
+      case 'TOO_EARLY':
+        return (
+          <div className="status-message warning">
+            <i className="fas fa-clock"></i>
+            <p>{result.message}</p>
+            {result.checkInAvailableAt && (
+              <p className="timing-info">
+                Check-in opens at {formatTime(result.checkInAvailableAt)}
+              </p>
+            )}
+            {result.warning && <p className="warning-text">{result.warning}</p>}
+          </div>
+        );
+
+      case 'TOO_LATE':
+        return (
+          <div className="status-message error">
+            <i className="fas fa-exclamation-triangle"></i>
+            <p>{result.message}</p>
+            {result.warning && <p className="warning-text">{result.warning}</p>}
+          </div>
+        );
+
+      case 'ALREADY_CHECKED_IN':
+        return (
+          <div className="status-message success">
+            <i className="fas fa-check-circle"></i>
+            <p>You are already checked in</p>
+            {result.checkInTime && (
+              <p className="check-in-time">
+                Checked in at: {formatTime(result.checkInTime)}
+              </p>
+            )}
+          </div>
+        );
+
+      case 'NO_BOOKING':
+        return (
+          <div className="no-booking-section">
+            <p className="no-booking-message">{result.message}</p>
+            {result.availabilityInfo && (
+              <p className="availability-info">
+                <i className="fas fa-info-circle"></i> {result.availabilityInfo}
+              </p>
+            )}
+          </div>
+        );
+
+      case 'CHECKED_IN':
+        return (
+          <div className="status-message success">
+            <i className="fas fa-check-circle"></i>
+            <p>Successfully checked in!</p>
+            <p className="check-in-time">
+              {formatTime(result.checkInTime || new Date().toISOString())}
+            </p>
+          </div>
+        );
+
+      case 'VIEW_AVAILABILITY':
+        return (
+          <div className="availability-section">
+            <p className="availability-info">{result.availabilityInfo}</p>
+            {result.canBook && (
+              <button 
+                className="btn btn-primary"
+                onClick={() => {
+                  const bookingUrl = result.resourceType === 'SEAT' 
+                    ? `/seats?seat=${result.resourceId}`
+                    : `/book-room/${result.resourceId}`;
+                  navigate(bookingUrl);
+                }}
+              >
+                <i className="fas fa-calendar-plus"></i> Book Now
+              </button>
+            )}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const renderAlternativeAction = (result) => {
+    if (result.alternativeAction === 'GO_TO_BOOKED_SEAT' || result.alternativeAction === 'GO_TO_BOOKED_ROOM') {
+      return (
+        <div className="alternative-action">
+          <button 
+            className="btn btn-primary"
+            onClick={() => navigate('/my-bookings')}
+          >
+            <i className="fas fa-arrow-right"></i> Go to My Booking
+          </button>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  const getActionButtonClass = (action) => {
+    switch (action) {
+      case 'CHECK_IN': return 'btn-primary';
+      case 'TOO_EARLY': return 'btn-warning';
+      case 'TOO_LATE': return 'btn-danger';
+      case 'NO_BOOKING': return 'btn-secondary';
+      default: return 'btn-primary';
+    }
+  };
+
+  const getActionButtonIcon = (action) => {
+    switch (action) {
+      case 'CHECK_IN': return <i className="fas fa-check-circle"></i>;
+      case 'TOO_EARLY': return <i className="fas fa-clock"></i>;
+      case 'TOO_LATE': return <i className="fas fa-exclamation-triangle"></i>;
+      case 'NO_BOOKING': return <i className="fas fa-calendar-plus"></i>;
+      default: return <i className="fas fa-check"></i>;
+    }
+  };
+
+  const handleActionButton = (result) => {
+    switch (result.action) {
+      case 'CHECK_IN':
+        if (result.canCheckIn) {
+          handleCheckInAction();
+        }
+        break;
+      case 'NO_BOOKING':
+        if (result.canBook) {
+          const bookingUrl = result.resourceType === 'SEAT' 
+            ? `/seats?seat=${result.resourceId}`
+            : `/book-room/${result.resourceId}`;
+          navigate(bookingUrl);
+        }
+        break;
+      case 'TOO_EARLY':
+        // Could set a reminder or show countdown
+        break;
+      default:
+        break;
+    }
+  };
+
+  const handleSecondaryAction = (result) => {
+    switch (result.secondaryButtonText) {
+      case 'View My Bookings':
+        navigate('/my-bookings');
+        break;
+      case 'Find Available Seats':
+        navigate('/seats');
+        break;
+      case 'Find Available Rooms':
+        navigate('/rooms');
+        break;
+      case 'Book Again':
+        const bookingUrl = result.resourceType === 'SEAT' 
+          ? `/seats?seat=${result.resourceId}`
+          : `/book-room/${result.resourceId}`;
+        navigate(bookingUrl);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return '';
+    try {
+      return new Date(timeString).toLocaleTimeString([], { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+    } catch (e) {
+      return timeString;
+    }
+  };
+
+  // ENHANCED: Main render with improved scan result
+  const renderScanResult = () => {
+    if (!scanResult) return null;
+
+    return (
+      <div className="scan-result">
+        <div className={`result-card ${scanResult.success ? 'success' : 'error'}`}>
+          {scanResult.success ? (
+            <div className="success-result">
+              <div className="result-icon">
+                <i className={`fas fa-${scanResult.resourceType === 'SEAT' ? 'chair' : 'door-open'}`}></i>
+              </div>
+              
+              <h3>{scanResult.resourceIdentifier}</h3>
+              
+              {/* Resource Details */}
+              {scanResult.resourceDetails && (
+                <div className="resource-details">
+                  {scanResult.resourceType === 'SEAT' ? (
+                    <>
+                      <p><i className="fas fa-map-marker-alt"></i> {scanResult.resourceDetails.zoneType} Zone</p>
+                      <p><i className="fas fa-desktop"></i> Desktop: {scanResult.resourceDetails.hasDesktop ? 'Yes' : 'No'}</p>
+                    </>
+                  ) : (
+                    <>
+                      <p><i className="fas fa-building"></i> {scanResult.resourceDetails.building}</p>
+                      <p><i className="fas fa-users"></i> Capacity: {scanResult.resourceDetails.capacity}</p>
+                    </>
+                  )}
+                </div>
+              )}
+
+              {/* Enhanced action handling */}
+              {renderActionContent(scanResult)}
+
+              {/* Enhanced info and warning messages */}
+              {scanResult.warning && (
+                <div className="warning-message">
+                  <i className="fas fa-exclamation-triangle"></i>
+                  <p>{scanResult.warning}</p>
+                </div>
+              )}
+
+              {scanResult.info && (
+                <div className="info-message">
+                  <i className="fas fa-info-circle"></i>
+                  <p>{scanResult.info}</p>
+                </div>
+              )}
+
+              {scanResult.requiresAuthentication && (
+                <div className="auth-required">
+                  <p>{scanResult.message}</p>
+                  <button 
+                    className="btn btn-primary"
+                    onClick={() => navigate('/login')}
+                  >
+                    <i className="fas fa-sign-in-alt"></i> Log In
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="error-result">
+              <div className="result-icon">
+                <i className="fas fa-exclamation-triangle"></i>
+              </div>
+              <h3>
+                {scanResult.errorCode === 'NO_BOOKING_FOR_SEAT' ? 'No Booking Found' :
+                 scanResult.errorCode === 'NO_BOOKING_FOR_ROOM' ? 'No Room Booking Found' :
+                 scanResult.errorCode === 'CHECK_IN_NOT_OPEN' ? 'Check-in Not Open' :
+                 scanResult.errorCode === 'CHECK_IN_EXPIRED' ? 'Check-in Expired' :
+                 'Scan Failed'}
+              </h3>
+              <p>{scanResult.message}</p>
+              
+              {/* Show alternative actions for errors */}
+              {scanResult.alternativeAction && renderAlternativeAction(scanResult)}
+            </div>
+          )}
+
+          <div className="result-actions">
+            {/* Dynamic action buttons */}
+            {scanResult.actionButtonText && (
+              <button 
+                className={`btn btn-lg ${getActionButtonClass(scanResult.action)}`}
+                onClick={() => handleActionButton(scanResult)}
+              >
+                {getActionButtonIcon(scanResult.action)} {scanResult.actionButtonText}
+              </button>
+            )}
+
+            {scanResult.secondaryButtonText && (
+              <button 
+                className="btn btn-outline btn-lg"
+                onClick={() => handleSecondaryAction(scanResult)}
+              >
+                {scanResult.secondaryButtonText}
+              </button>
+            )}
+
+            <button className="btn btn-outline btn-lg" onClick={handleRescan}>
+              <i className="fas fa-redo"></i> Scan Another
+            </button>
+            
+            {!isModal && (
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => navigate(-1)}
+              >
+                <i className="fas fa-arrow-left"></i> Go Back
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={`qr-scanner-container ${isModal ? 'modal-scanner' : 'full-scanner'}`}>
       {!isModal && (
         <div className="scanner-header">
           <h2>Scan QR Code</h2>
           <p>Point your camera at a seat or room QR code</p>
+          {storedQRContext && (
+            <div className="stored-context-info">
+              <i className="fas fa-info-circle"></i>
+              Continuing scan for {storedQRContext.resourceIdentifier}
+            </div>
+          )}
         </div>
       )}
 
@@ -478,218 +879,77 @@ const QRScanner = ({ expectedBookingId = null, onSuccess = null, isModal = false
                 onChange={(e) => {
                   setSelectedCamera(e.target.value);
                   // Reinitialize scanner with new camera
-                  if (isScanning) {
-                    cleanupScanner();
-                    setTimeout(initializeScanner, 100);
-                  }
-                }}
-                className="form-control"
-              >
-                {availableCameras.map(camera => (
-                  <option key={camera.id} value={camera.id}>
-                    {camera.label || `Camera ${camera.id}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-        </div>
-      )}
+                 if (isScanning) {
+                   cleanupScanner();
+                   setTimeout(initializeScanner, 100);
+                 }
+               }}
+               className="form-control"
+             >
+               {availableCameras.map(camera => (
+                 <option key={camera.id} value={camera.id}>
+                   {camera.label || `Camera ${camera.id}`}
+                 </option>
+               ))}
+             </select>
+           </div>
+         )}
+       </div>
+     )}
 
-      {/* Manual Entry */}
-      {manualEntry && !scanResult && (
-        <div className="manual-entry">
-          <div className="manual-form">
-            <h3>Manual QR Code Entry</h3>
-            <div className="form-group">
-              <label>QR Code Type</label>
-              <select
-                className="form-control"
-                value={manualType}
-                onChange={(e) => setManualType(e.target.value)}
-              >
-                <option value="seat">Seat</option>
-                <option value="room">Room</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>QR Code Token</label>
-              <input
-                type="text"
-                className="form-control"
-                placeholder="Enter the token from QR code URL"
-                value={manualToken}
-                onChange={(e) => setManualToken(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleManualScan()}
-              />
-              <small className="form-text text-muted">
-                Example: abc123-def456-ghi789
-              </small>
-            </div>
-            <button
-              className="btn btn-primary"
-              onClick={handleManualScan}
-              disabled={loading || !manualToken.trim()}
-            >
-              {loading ? 'Processing...' : 'Submit'}
-            </button>
-          </div>
-        </div>
-      )}
+     {/* Manual Entry */}
+     {manualEntry && !scanResult && (
+       <div className="manual-entry">
+         <div className="manual-form">
+           <h3>Manual QR Code Entry</h3>
+           <div className="form-group">
+             <label>QR Code Type</label>
+             <select
+               className="form-control"
+               value={manualType}
+               onChange={(e) => setManualType(e.target.value)}
+             >
+               <option value="seat">Seat</option>
+               <option value="room">Room</option>
+             </select>
+           </div>
+           <div className="form-group">
+             <label>QR Code Token</label>
+             <input
+               type="text"
+               className="form-control"
+               placeholder="Enter the token from QR code URL"
+               value={manualToken}
+               onChange={(e) => setManualToken(e.target.value)}
+               onKeyPress={(e) => e.key === 'Enter' && handleManualScan()}
+             />
+             <small className="form-text text-muted">
+               Example: abc123-def456-ghi789
+             </small>
+           </div>
+           <button
+             className="btn btn-primary"
+             onClick={handleManualScan}
+             disabled={loading || !manualToken.trim()}
+           >
+             {loading ? 'Processing...' : 'Submit'}
+           </button>
+         </div>
+       </div>
+     )}
 
-      {/* Loading State */}
-      {loading && (
-        <div className="loading-overlay">
-          <div className="spinner"></div>
-          <p>Processing QR code...</p>
-        </div>
-      )}
+     {/* Loading State */}
+     {loading && (
+       <div className="loading-overlay">
+         <div className="spinner"></div>
+         <p>Processing QR code...</p>
+       </div>
+     )}
 
-      {/* Scan Result */}
-      {scanResult && (
-        <div className="scan-result">
-          <div className={`result-card ${scanResult.success ? 'success' : 'error'}`}>
-            {scanResult.success ? (
-              <div className="success-result">
-                <div className="result-icon">
-                  <i className={`fas fa-${scanResult.resourceType === 'SEAT' ? 'chair' : 'door-open'}`}></i>
-                </div>
-                
-                <h3>{scanResult.resourceIdentifier}</h3>
-                
-                {/* Resource Details */}
-                {scanResult.resourceDetails && (
-                  <div className="resource-details">
-                    {scanResult.resourceType === 'SEAT' ? (
-                      <>
-                        <p><i className="fas fa-map-marker-alt"></i> {scanResult.resourceDetails.zoneType} Zone</p>
-                        <p><i className="fas fa-desktop"></i> Desktop: {scanResult.resourceDetails.hasDesktop ? 'Yes' : 'No'}</p>
-                      </>
-                    ) : (
-                      <>
-                        <p><i className="fas fa-building"></i> {scanResult.resourceDetails.building}</p>
-                        <p><i className="fas fa-users"></i> Capacity: {scanResult.resourceDetails.capacity}</p>
-                      </>
-                    )}
-                  </div>
-                )}
-
-                {/* Action-specific content */}
-                {scanResult.action === 'CHECK_IN' && scanResult.canCheckIn && (
-                  <div className="check-in-section">
-                    <p className="booking-info">
-                      Booking: {new Date(scanResult.bookingDetails.startTime).toLocaleTimeString()} - 
-                      {new Date(scanResult.bookingDetails.endTime).toLocaleTimeString()}
-                    </p>
-                    <button className="btn btn-primary btn-lg" onClick={handleCheckInAction}>
-                      <i className="fas fa-check-circle"></i> Check In Now
-                    </button>
-                  </div>
-                )}
-
-                {scanResult.action === 'ALREADY_CHECKED_IN' && (
-                  <div className="status-message success">
-                    <i className="fas fa-check-circle"></i>
-                    <p>You are already checked in</p>
-                    <p className="check-in-time">
-                      Checked in at: {new Date(scanResult.checkInTime).toLocaleTimeString()}
-                    </p>
-                  </div>
-                )}
-
-                {scanResult.action === 'CHECKED_IN' && (
-                  <div className="status-message success">
-                    <i className="fas fa-check-circle"></i>
-                    <p>Successfully checked in!</p>
-                    <p className="check-in-time">
-                      {new Date().toLocaleTimeString()}
-                    </p>
-                  </div>
-                )}
-
-                {scanResult.action === 'TOO_EARLY' && (
-                  <div className="status-message warning">
-                    <i className="fas fa-clock"></i>
-                    <p>{scanResult.message}</p>
-                    {scanResult.warning && <p className="warning-text">{scanResult.warning}</p>}
-                  </div>
-                )}
-
-                {scanResult.action === 'TOO_LATE' && (
-                  <div className="status-message error">
-                    <i className="fas fa-exclamation-triangle"></i>
-                    <p>{scanResult.message}</p>
-                    {scanResult.warning && <p className="warning-text">{scanResult.warning}</p>}
-                  </div>
-                )}
-
-                {scanResult.action === 'VIEW_AVAILABILITY' && (
-                  <div className="availability-section">
-                    <p className="availability-info">{scanResult.availabilityInfo}</p>
-                    {scanResult.canBook && (
-                      <button 
-                        className="btn btn-primary"
-                        onClick={() => {
-                          const bookingUrl = scanResult.resourceType === 'SEAT' 
-                            ? `/seats?seat=${scanResult.resourceId}`
-                            : `/book-room/${scanResult.resourceId}`;
-                          navigate(bookingUrl);
-                        }}
-                      >
-                        <i className="fas fa-calendar-plus"></i> Book Now
-                      </button>
-                    )}
-                  </div>
-                )}
-
-                {scanResult.requiresAuthentication && (
-                  <div className="auth-required">
-                    <p>{scanResult.message}</p>
-                    <button 
-                      className="btn btn-primary"
-                      onClick={() => navigate('/login')}
-                    >
-                      <i className="fas fa-sign-in-alt"></i> Log In
-                    </button>
-                  </div>
-                )}
-
-                {scanResult.info && (
-                  <div className="info-message">
-                    <i className="fas fa-info-circle"></i>
-                    <p>{scanResult.info}</p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="error-result">
-                <div className="result-icon">
-                  <i className="fas fa-exclamation-triangle"></i>
-                </div>
-                <h3>Scan Failed</h3>
-                <p>{scanResult.message}</p>
-              </div>
-            )}
-
-            <div className="result-actions">
-              <button className="btn btn-outline btn-lg" onClick={handleRescan}>
-                <i className="fas fa-redo"></i> Scan Another
-              </button>
-              
-              {!isModal && (
-                <button 
-                  className="btn btn-secondary" 
-                  onClick={() => navigate(-1)}
-                >
-                  <i className="fas fa-arrow-left"></i> Go Back
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+     {/* Enhanced Scan Result */}
+     {renderScanResult()}
+   </div>
+ );
 };
 
 export default QRScanner;

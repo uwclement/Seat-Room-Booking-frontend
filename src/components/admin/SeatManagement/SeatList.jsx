@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAdmin } from '../../../hooks/useAdmin';
 import SeatStatusBadge from './SeatStatusBadge';
 import QRCodeButton from '../qr/QRCodeButton';
 
 const SeatList = () => {
   const { 
-    seats, 
+    seats: originalSeats, 
     loading, 
     error, 
     applyFilters, 
@@ -15,6 +15,49 @@ const SeatList = () => {
     updateSeat
   } = useAdmin();
 
+  // Local state to manage seat updates immediately (like rooms do)
+  const [seats, setSeats] = useState([]);
+
+  // Initialize and sync with useAdmin seats
+  useEffect(() => {
+    setSeats(originalSeats || []);
+  }, [originalSeats]);
+
+  // QR Generation handler - exactly like rooms
+  const createQRHandler = (seatId) => (response) => {
+    console.log('💺 QR Generated for seat:', seatId, response);
+    
+    const updates = {
+      hasQRCode: true,
+      qrCodeUrl: response.qrCodeUrl,
+      qrImageUrl: response.imagePath,
+      qrGeneratedAt: response.generatedAt
+    };
+    
+    console.log('💺 Updating seat with:', updates);
+    
+    // Update local state immediately for UI responsiveness (like rooms)
+    setSeats(prevSeats => 
+      prevSeats.map(seat => 
+        seat.id === seatId 
+          ? { ...seat, ...updates }
+          : seat
+      )
+    );
+
+    // Also update via useAdmin hook if available
+    if (updateSeat && typeof updateSeat === 'function') {
+      try {
+        updateSeat(seatId, updates);
+        console.log('💺 updateSeat called successfully');
+      } catch (error) {
+        console.error('💺 Error calling updateSeat:', error);
+      }
+    } else {
+      console.warn('💺 updateSeat function not available');
+    }
+  };
+
   if (loading) {
     return <div className="loading">Loading seats...</div>;
   }
@@ -23,7 +66,8 @@ const SeatList = () => {
     return <div className="error-message">{error}</div>;
   }
 
-  const filteredSeats = applyFilters(seats);
+  // Use local seats state for filtering
+  const filteredSeats = seats ? applyFilters(seats) : [];
 
   // Group seats by zone for better organization
   const groupedSeats = filteredSeats.reduce((acc, seat) => {
@@ -39,16 +83,6 @@ const SeatList = () => {
   const zoneNames = {
     'SILENT': 'Silent Zone',
     'COLLABORATION': 'Collaboration Zone',
-  };
-
-  const handleQRGenerated = (seatId, qrData) => {
-    // Update seat data with QR info
-    updateSeat(seatId, {
-      hasQRCode: true,
-      qrCodeUrl: qrData.qrCodeUrl,
-      qrImageUrl: qrData.imagePath,
-      qrGeneratedAt: qrData.generatedAt
-    });
   };
 
   return (
@@ -83,13 +117,13 @@ const SeatList = () => {
                   {groupedSeats[zoneType].map(seat => (
                     <tr 
                       key={seat.id}
-                      className={selectedSeats.includes(seat.id) ? 'selected-row' : ''}
+                      className={selectedSeats?.includes(seat.id) ? 'selected-row' : ''}
                     >
                       <td>
                         <input 
                           type="checkbox" 
-                          checked={selectedSeats.includes(seat.id)}
-                          onChange={() => toggleSeatSelection(seat.id)}
+                          checked={selectedSeats?.includes(seat.id) || false}
+                          onChange={() => toggleSeatSelection && toggleSeatSelection(seat.id)}
                         />
                       </td>
                       <td>{seat.seatNumber}</td>
@@ -108,14 +142,19 @@ const SeatList = () => {
                           resourceId={seat.id}
                           resourceName={seat.seatNumber}
                           hasQR={seat.hasQRCode}
-                          onGenerated={(response) => handleQRGenerated(seat.id, response)}
+                          onGenerated={createQRHandler(seat.id)}
                         />
+                        {seat.qrGeneratedAt && (
+                          <small className="qr-info">
+                            QR generated: {new Date(seat.qrGeneratedAt).toLocaleDateString()}
+                          </small>
+                        )}
                       </td>
                       <td>
                         <div className="action-buttons">
                           <button
                             className="btn btn-sm btn-outline-primary"
-                            onClick={() => handleToggleDesktop(seat.id)}
+                            onClick={() => handleToggleDesktop && handleToggleDesktop(seat.id)}
                             title="Toggle Desktop"
                           >
                             <i className="fas fa-desktop"></i>
