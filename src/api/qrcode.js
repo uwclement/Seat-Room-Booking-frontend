@@ -1,4 +1,3 @@
-// api/qrcode.js
 import api from './axiosConfig';
 
 // Helper function for safe API calls
@@ -18,6 +17,11 @@ export const scanQRCode = async (type, token) => {
   return safeApiCall(() => api.get('/scan', { 
     params: { type, token } 
   }));
+};
+
+// NEW: Process stored QR scan after login
+export const processStoredQRScan = async (qrContext) => {
+  return safeApiCall(() => api.post('/scan/process-stored', qrContext));
 };
 
 // Process check-in after scan
@@ -41,7 +45,6 @@ export const getQRInfo = async (type, token) => {
     params: { type, token }
   }));
 };
-
 // ========== ADMIN QR GENERATION ==========
 
 // Generate QR for single seat

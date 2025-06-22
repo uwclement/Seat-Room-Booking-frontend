@@ -12,7 +12,8 @@ import {
   generateAllMissingQRs,
   scanQRCode,
   processQRCheckIn,
-  validateQRCode
+  validateQRCode,
+  processStoredQRScan 
 } from '../api/qrcode';
 
 const QRCodeContext = createContext();
@@ -26,7 +27,7 @@ export const useQRCode = () => {
 };
 
 export const QRCodeProvider = ({ children }) => {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { getToken } = useAuth(); // FIXED: Only get what we need
   
   // State
   const [loading, setLoading] = useState(false);
@@ -35,6 +36,10 @@ export const QRCodeProvider = ({ children }) => {
   const [statistics, setStatistics] = useState(null);
   const [history, setHistory] = useState([]);
   const [scanResult, setScanResult] = useState(null);
+  
+  // Enhanced states for our implementation
+  const [scanContext, setScanContext] = useState(null);
+  const [lastScanResult, setLastScanResult] = useState(null);
   
   // Modal states
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -47,6 +52,14 @@ export const QRCodeProvider = ({ children }) => {
       setError('');
       setSuccess('');
     }, 5000);
+  }, []);
+
+  // Clear all scan-related state
+  const clearScanState = useCallback(() => {
+    setScanResult(null);
+    setScanContext(null);
+    setLastScanResult(null);
+    setError('');
   }, []);
 
   // ========== QR GENERATION ==========
@@ -207,19 +220,68 @@ export const QRCodeProvider = ({ children }) => {
     }
   };
 
-  // ========== QR SCANNING ==========
+
+
+  // ========== ENHANCED QR SCANNING ==========
   
   const handleScan = async (type, token) => {
     setLoading(true);
     setError('');
     try {
+      // Enhanced scan with authentication check
       const response = await scanQRCode(type, token);
       setScanResult(response);
+      setLastScanResult(response);
+      
+      // Store scan context if authentication is required
+      if (response.requiresAuthentication && response.qrScanContext) {
+        setScanContext(response.qrScanContext);
+      }
+      
       return response;
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to scan QR code');
+      const errorMessage = err.response?.data?.message || 'Failed to scan QR code';
+      setError(errorMessage);
+      
+      // Create error scan result for better UX
+      const errorResult = {
+        success: false,
+        message: errorMessage,
+        action: 'ERROR',
+        errorCode: err.response?.data?.errorCode || 'SCAN_FAILED'
+      };
+      setScanResult(errorResult);
       clearMessages();
       throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // FIXED: Use the API function instead of manual fetch
+  const handleStoredScan = async (qrContext) => {
+    setLoading(true);
+    setError('');
+    try {
+      const result = await processStoredQRScan(qrContext);
+      setScanResult(result);
+      setLastScanResult(result);
+      setScanContext(qrContext);
+      
+      return result;
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to process stored scan';
+      setError(errorMessage);
+      
+      const errorResult = {
+        success: false,
+        message: errorMessage,
+        action: 'ERROR',
+        errorCode: 'STORED_SCAN_ERROR'
+      };
+      setScanResult(errorResult);
+      clearMessages();
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -231,10 +293,34 @@ export const QRCodeProvider = ({ children }) => {
     try {
       const response = await processQRCheckIn(type, bookingId, participantId);
       setSuccess(response.message);
+      
+      // Update scan result with check-in success
+      if (scanResult) {
+        setScanResult({
+          ...scanResult,
+          action: 'CHECKED_IN',
+          message: response.message,
+          checkInTime: new Date().toISOString(),
+          canCheckIn: false
+        });
+      }
+      
       clearMessages();
       return response;
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to check in');
+      const errorMessage = err.response?.data?.message || 'Failed to check in';
+      setError(errorMessage);
+      
+      // Update scan result with check-in failure
+      if (scanResult) {
+        setScanResult({
+          ...scanResult,
+          action: 'CHECK_IN_FAILED',
+          message: errorMessage,
+          errorCode: 'CHECK_IN_ERROR'
+        });
+      }
+      
       clearMessages();
       throw err;
     } finally {
@@ -256,18 +342,129 @@ export const QRCodeProvider = ({ children }) => {
     }
   };
 
-  // ========== UTILITY FUNCTIONS ==========
-  
-  const extractQRData = (qrUrl) => {
-    try {
-      const url = new URL(qrUrl);
-      const params = new URLSearchParams(url.search);
-      return {
-        type: params.get('type'),
-        token: params.get('token')
-      };
-    } catch {
+  // ENHANCED: Better QR data extraction
+const extractQRData = (qrUrl) => {
+  try {
+    let url;
+    
+    // Handle backend API URLs
+    if (qrUrl.includes('/scan')) {
+      url = new URL(qrUrl);
+    }
+    // Handle frontend URLs (legacy)
+    else if (qrUrl.startsWith('http')) {
+      url = new URL(qrUrl);
+    } else if (qrUrl.startsWith('/scan')) {
+      url = new URL(`${window.location.origin}${qrUrl}`);
+    } else {
+      url = new URL(`${window.location.origin}/scan?${qrUrl}`);
+    }
+    
+    const params = new URLSearchParams(url.search);
+    const type = params.get('type');
+    const token = params.get('token');
+    
+    if (!type || !token) {
       return null;
+    }
+    
+    if (!['seat', 'room'].includes(type.toLowerCase())) {
+      return null;
+    }
+    
+    return {
+      type: type.toLowerCase(),
+      token: token.trim()
+    };
+  } catch (error) {
+    console.error('Error extracting QR data:', error);
+    return null;
+  }
+};
+
+  // Validate QR token format (UUID)
+  const isValidQRToken = (token) => {
+    if (!token || typeof token !== 'string') {
+      return false;
+    }
+    
+    // UUID v4 pattern
+    const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidPattern.test(token.trim());
+  };
+
+  // Format QR scan result for display
+  const formatScanResult = (result) => {
+    if (!result) return null;
+    
+    return {
+      ...result,
+      formattedTime: result.bookingStartTime ? 
+        new Date(result.bookingStartTime).toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }) : null,
+      formattedEndTime: result.bookingEndTime ? 
+        new Date(result.bookingEndTime).toLocaleTimeString([], { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        }) : null,
+      isWithinCheckInWindow: result.checkInAvailableAt ? 
+        new Date() >= new Date(result.checkInAvailableAt) : false
+    };
+  };
+
+  // Get user-friendly error message
+  const getErrorMessage = (errorCode, defaultMessage) => {
+    const errorMessages = {
+      'INVALID_QR': 'This QR code is invalid or expired',
+      'SEAT_UNAVAILABLE': 'This seat is currently unavailable',
+      'ROOM_UNAVAILABLE': 'This room is currently unavailable',
+      'UNDER_MAINTENANCE': 'This room is under maintenance',
+      'NO_BOOKING_FOR_SEAT': 'You don\'t have a booking for this seat',
+      'NO_BOOKING_FOR_ROOM': 'You don\'t have a booking for this room',
+      'CHECK_IN_NOT_OPEN': 'Check-in window hasn\'t opened yet',
+      'CHECK_IN_EXPIRED': 'Check-in window has expired',
+      'BOOKING_MISMATCH': 'QR code doesn\'t match your booking',
+      'CHECK_IN_ERROR': 'Failed to complete check-in',
+      'STORED_SCAN_ERROR': 'Failed to continue scan after login'
+    };
+    
+    return errorMessages[errorCode] || defaultMessage;
+  };
+
+  // Check if scan result requires action
+  const requiresUserAction = (result) => {
+    if (!result) return false;
+    
+    const actionableResults = [
+      'CHECK_IN',
+      'TOO_EARLY',
+      'TOO_LATE',
+      'NO_BOOKING',
+      'VIEW_AVAILABILITY'
+    ];
+    
+    return actionableResults.includes(result.action);
+  };
+
+  // Get next recommended action
+  const getRecommendedAction = (result) => {
+    if (!result) return null;
+    
+    switch (result.action) {
+      case 'CHECK_IN':
+        return result.canCheckIn ? 'CHECK_IN_NOW' : 'WAIT_FOR_WINDOW';
+      case 'TOO_EARLY':
+        return 'SET_REMINDER';
+      case 'TOO_LATE':
+        return 'CONTACT_SUPPORT';
+      case 'NO_BOOKING':
+        return result.canBook ? 'BOOK_NOW' : 'FIND_ALTERNATIVE';
+      case 'VIEW_AVAILABILITY':
+        return 'BOOK_NOW';
+      default:
+        return null;
     }
   };
 
@@ -283,18 +480,31 @@ export const QRCodeProvider = ({ children }) => {
     showHistoryModal,
     showScanModal,
     
+    // Enhanced state
+    scanContext,
+    lastScanResult,
+    
     // Functions
-    generateQR,
+    generateQR, 
     bulkGenerateQR,
     generateMissingQRs,
-    handleSingleDownload,
-    handleBulkDownload,
+    handleSingleDownload, 
+    handleBulkDownload, 
     fetchStatistics,
-    fetchHistory,
+    fetchHistory, 
     handleScan,
     handleCheckIn,
     validateQR,
     extractQRData,
+    
+    // Enhanced functions
+    handleStoredScan,
+    isValidQRToken,
+    formatScanResult,
+    getErrorMessage,
+    requiresUserAction,
+    getRecommendedAction,
+    clearScanState,
     
     // Setters
     setError,
@@ -302,7 +512,8 @@ export const QRCodeProvider = ({ children }) => {
     setScanResult,
     setShowBulkModal,
     setShowHistoryModal,
-    setShowScanModal
+    setShowScanModal,
+    setScanContext
   };
 
   return (
