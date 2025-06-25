@@ -19,6 +19,7 @@ import {
 
 import {
   getAllAnnouncements,
+  getActiveAnnouncements,
   createAnnouncement,
   updateAnnouncement,
   deleteAnnouncement
@@ -35,6 +36,7 @@ export const ScheduleProvider = ({ children }) => {
   const [libraryStatus, setLibraryStatus] = useState(null);
   const [scheduleMessage, setScheduleMessageState] = useState('');
   const [announcements, setAnnouncements] = useState([]);
+  const [Activeannouncements, setActiveAnnouncements] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -138,6 +140,26 @@ export const ScheduleProvider = ({ children }) => {
       setLoading(false);
     }
   }, [isAuthenticated, isAdmin]);
+
+ // fetch for public users 
+  const fetchActiveAnnouncements = useCallback(async () => {
+    if (!isAuthenticated()) return;
+    
+    setLoading(true);
+    setError('');
+    try {
+      const data = await getActiveAnnouncements ();
+      setActiveAnnouncements(data);
+    } catch (err) {
+      // Only set error if it's not a 401
+      if (err.response && err.response.status !== 401) {
+        setError('Failed to fetch announcements. Please try again later.');
+        console.error(err);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   // Update a schedule
   const handleUpdateSchedule = async (id, scheduleData) => {
@@ -295,6 +317,7 @@ export const ScheduleProvider = ({ children }) => {
 
   fetchLibraryStatus();        // For all users
   fetchScheduleMessage();      // For all users
+  fetchActiveAnnouncements();
 
   if (isAdmin()) {
     fetchSchedules();
@@ -330,6 +353,7 @@ export const ScheduleProvider = ({ children }) => {
     libraryStatus,
     scheduleMessage,
     announcements,
+    Activeannouncements,
     loading,
     error,
     success,
@@ -340,6 +364,7 @@ export const ScheduleProvider = ({ children }) => {
     fetchLibraryStatus,
     fetchScheduleMessage,
     fetchAnnouncements,
+    fetchActiveAnnouncements,
     handleUpdateSchedule,
     handleSetDayClosed,
     handleSetSpecialClosingTime,

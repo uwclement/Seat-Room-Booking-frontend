@@ -19,7 +19,7 @@ export const scanQRCode = async (type, token) => {
   }));
 };
 
-// NEW: Process stored QR scan after login
+// Process stored QR scan after login
 export const processStoredQRScan = async (qrContext) => {
   return safeApiCall(() => api.post('/scan/process-stored', qrContext));
 };
