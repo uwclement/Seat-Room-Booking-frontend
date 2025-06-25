@@ -6,6 +6,7 @@ import '../../../assets/css/statusBanner.css';
 const ScheduleStatusBanner = () => {
   const { libraryStatus } = useSchedule();
   const [isVisible, setIsVisible] = useState(true);
+  const { Activeannouncements } = useSchedule();
 
   // Handle visibility timing
   useEffect(() => {
@@ -63,6 +64,33 @@ const ScheduleStatusBanner = () => {
           </span>
         )}
       </div>
+
+      <div> 
+       
+                   <div className="card-body">
+                     {Activeannouncements.length === 0 ? (
+                       <p className="text-muted">No active announcements</p>
+                     ) : (
+                       <div className="announcements-list"> Announcement:
+                         {Activeannouncements.map(announcement => (
+                           <div key={announcement.id} className="announcement-item">
+                             <h5>{announcement.title}</h5>
+                             <p>{announcement.message}</p>
+                             {/* <div className="announcement-meta">
+                               <span className="badge badge-info mr-2">
+                                 {announcement.isUIVisible ? 'UI Visible' : 'UI Hidden'}
+                               </span>
+                              
+                             </div> */}
+                           </div>
+                         ))}
+                       </div>
+                     )}
+                   </div>
+                 </div>
+      
+      
+
     </div>
   );
 };
