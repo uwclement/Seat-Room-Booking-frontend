@@ -6,10 +6,16 @@ import { useAuth } from '../../../hooks/useAuth';
 const QRScanProcessor = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { handleScan, loading, error } = useQRCode();
+  const { 
+    handleScan, 
+    handleCheckIn: contextHandleCheckIn, // Rename to avoid conflict
+    loading, 
+    error 
+  } = useQRCode();
   const { isAuthenticated } = useAuth();
   const [scanResult, setScanResult] = useState(null);
   const [processing, setProcessing] = useState(true);
+  const [checkingIn, setCheckingIn] = useState(false); // Local loading state for check-in
 
   useEffect(() => {
     const processQRScan = async () => {
@@ -65,32 +71,35 @@ const QRScanProcessor = () => {
     }
   };
 
-  const handleCheckIn = async () => {
-    // Implementation for check-in button
+  // ✅ FIXED: Use the context method instead of manual fetch
+  const handleCheckInClick = async () => {
     if (scanResult && scanResult.bookingDetails) {
+      setCheckingIn(true);
       try {
-        // Call check-in API
-        const response = await fetch('/scan/checkin', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: JSON.stringify({
-            type: scanResult.resourceType.toLowerCase(),
-            bookingId: scanResult.bookingDetails.bookingId
-          })
-        });
+        // Use the context method which properly calls the API
+        await contextHandleCheckIn(
+          scanResult.resourceType.toLowerCase(),
+          scanResult.bookingDetails.bookingId,
+          scanResult.bookingDetails.participantId || null
+        );
         
-        if (response.ok) {
-          setScanResult({
-            ...scanResult,
-            action: 'CHECKED_IN',
-            message: 'Successfully checked in!'
-          });
-        }
+        // Update local state for immediate UI feedback
+        setScanResult({
+          ...scanResult,
+          action: 'CHECKED_IN',
+          message: 'Successfully checked in!',
+          canCheckIn: false
+        });
       } catch (error) {
         console.error('Check-in failed:', error);
+        // Show error in UI
+        setScanResult({
+          ...scanResult,
+          action: 'CHECK_IN_FAILED',
+          message: error.response?.data?.message || 'Check-in failed. Please try again.'
+        });
+      } finally {
+        setCheckingIn(false);
       }
     }
   };
@@ -161,11 +170,35 @@ const QRScanProcessor = () => {
                     </p>
                   </div>
                   <button 
-                    onClick={handleCheckIn}
+                    onClick={handleCheckInClick}
                     className="btn btn-primary btn-lg check-in-btn"
+                    disabled={checkingIn || loading}
                   >
                     <i className="fas fa-check-circle"></i>
-                    Check In Now
+                    {checkingIn ? 'Checking In...' : 'Check In Now'}
+                  </button>
+                </div>
+              )}
+
+              {/* No booking case - show book button */}
+              {scanResult.action === 'NO_BOOKING' && scanResult.canBook && (
+                <div className="no-booking-section">
+                  <div className="info-message">
+                    <i className="fas fa-info-circle"></i>
+                    <h3>No Active Booking</h3>
+                    <p>{scanResult.message}</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      const bookingUrl = scanResult.resourceType === 'SEAT' 
+                        ? `/seats?seat=${scanResult.resourceId}`
+                        : `/book-room/${scanResult.resourceId}`;
+                      navigate(bookingUrl);
+                    }}
+                    className="btn btn-primary btn-lg"
+                  >
+                    <i className="fas fa-calendar-plus"></i>
+                    {scanResult.actionButtonText || 'Book This Seat'}
                   </button>
                 </div>
               )}
@@ -206,6 +239,21 @@ const QRScanProcessor = () => {
                 </div>
               )}
 
+              {scanResult.action === 'CHECK_IN_FAILED' && (
+                <div className="status-message error">
+                  <i className="fas fa-exclamation-triangle"></i>
+                  <h3>Check-in Failed</h3>
+                  <p>{scanResult.message}</p>
+                  <button 
+                    onClick={handleCheckInClick}
+                    className="btn btn-secondary"
+                    disabled={checkingIn}
+                  >
+                    Try Again
+                  </button>
+                </div>
+              )}
+
               {/* Show availability info */}
               {scanResult.availabilityInfo && (
                 <div className="availability-info">
@@ -230,23 +278,6 @@ const QRScanProcessor = () => {
                   >
                     <i className="fas fa-arrow-right"></i>
                     Go to My Booking
-                  </button>
-                </div>
-              )}
-
-              {scanResult.canBook && !scanResult.hasBookingDetails && (
-                <div className="booking-action">
-                  <button 
-                    onClick={() => {
-                      const bookingUrl = scanResult.resourceType === 'SEAT' 
-                        ? `/seats?seat=${scanResult.resourceId}`
-                        : `/book-room/${scanResult.resourceId}`;
-                      navigate(bookingUrl);
-                    }}
-                    className="btn btn-primary"
-                  >
-                    <i className="fas fa-calendar-plus"></i>
-                    Book This {scanResult.resourceType}
                   </button>
                 </div>
               )}

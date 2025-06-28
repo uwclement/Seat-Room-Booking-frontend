@@ -8,7 +8,6 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -57,6 +56,31 @@ export const AuthProvider = ({ children }) => {
     return user?.roles.includes('ROLE_ADMIN');
   };
 
+  // NEW: Enhanced role checking functions
+  const isEquipmentAdmin = () => {
+    return user?.roles.includes('ROLE_EQUIPMENT_ADMIN');
+  };
+
+  const isProfessor = () => {
+    return user?.roles.includes('ROLE_PROFESSOR');
+  };
+
+  const isHOD = () => {
+    return user?.roles.includes('ROLE_HOD');
+  };
+
+  const hasRole = (role) => {
+    return user?.roles.includes(role);
+  };
+
+  const getUserRole = () => {
+    if (isHOD()) return 'HOD';
+    if (isEquipmentAdmin()) return 'Equipment Admin';
+    if (isProfessor()) return 'Professor';
+    if (isAdmin()) return 'Admin';
+    return 'Student';
+  };
+
   const authContextValue = {
     user,
     loading,
@@ -64,7 +88,12 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     isAuthenticated,
-    isAdmin
+    isAdmin,
+    isEquipmentAdmin,
+    isProfessor,
+    isHOD,
+    hasRole,
+    getUserRole
   };
 
   return (
