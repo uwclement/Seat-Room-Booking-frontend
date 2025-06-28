@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import { AdminProvider } from './context/AdminContext';
 import { ScheduleProvider } from './context/ScheduleContext';
+import { EquipmentAdminProvider } from './context/EquipmentAdminContext';
+import { ProfessorProvider } from './context/ProfessorContext';
 import { useAuth } from './hooks/useAuth';
 import EmailVerification from './pages/auth/EmailVerification';
 import Navbar from './components/layout/Navbar';
@@ -28,8 +30,19 @@ import SeatManagement from './pages/admin/SeatManagement';
 import ScheduleManagement from './pages/admin/ScheduleManagement';
 import AdminRoomManagement from './components/admin/RoomManagement/AdminRoomManagement';
 import AdminSidebar from './components/common/AdminSidebar';
-import EquipmentDashboard from './components/admin/RoomManagement/EquipmentDashboard';
-import AdminRoomBookingManagement from './components/admin/RoomManagement/AdminRoomBookingManagement';
+
+// Equipment & Lab Management Components
+import EquipmentManagementDashboard from './components/admin/EquipmentManagement/EnhancedEquipmentDashboard';
+import CourseManagement from './components/admin/EquipmentManagement/CourseManagement';
+import LabClassManagement from './components/admin/EquipmentManagement/LabClassManagement';
+import EquipmentRequestManagement from './components/admin/EquipmentManagement/EquipmentRequestManagement';
+
+// Professor Components
+import ProfessorDashboard from './components/professor/ProfessorDashboard';
+import EquipmentRequestForm from './components/professor/EquipmentRequestForm';
+
+// HOD Components
+import HODDashboard from './components/hod/HODDashboard';
 
 // User room management
 import RoomBrowserPage from './pages/rooms/RoomBrowserPage';
@@ -45,6 +58,9 @@ import QRManagementPage from './pages/admin/QRManagementPage';
 import QRScanner from './components/admin/qr/QRScanner';
 import QRScanProcessor from './components/admin/qr/QRScanProcessor';
 
+// Room Booking Management
+import AdminRoomBookingManagement from './components/admin/RoomManagement/AdminRoomBookingManagement';
+
 // Import global CSS
 import './assets/css/styles.css';
 import './assets/css/admin.css';
@@ -53,14 +69,12 @@ import './assets/css/seat-management.css';
 import './assets/css/RoomManagementStyle.css';
 import './assets/css/admin-room-booking.css';
 import './assets/css/qr-scanner.css'; 
-// import './assets/css/seat-list.css';
-// import './assets/css/seat-actions.css';
 
-// Protected route component
-const ProtectedRoute = ({ children, requiredRole }) => {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+// Protected route component with enhanced role checking
+const ProtectedRoute = ({ children, requiredRole, allowedRoles = [] }) => {
+  const { isAuthenticated, isAdmin, isEquipmentAdmin, isProfessor, isHOD, loading } = useAuth();
   
-   if (loading) {
+  if (loading) {
     return (
       <div className="loading-container">
         <div className="spinner"></div>
@@ -73,14 +87,45 @@ const ProtectedRoute = ({ children, requiredRole }) => {
     return <Navigate to="/login" replace />;
   }
   
-  if (requiredRole === 'admin' && !isAdmin()) {
-    return <Navigate to="/" replace />;
+  // Check specific role requirements
+  if (requiredRole) {
+    switch (requiredRole) {
+      case 'admin':
+        if (!isAdmin()) return <Navigate to="/" replace />;
+        break;
+      case 'equipment-admin':
+        if (!isEquipmentAdmin()) return <Navigate to="/" replace />;
+        break;
+      case 'professor':
+        if (!isProfessor()) return <Navigate to="/" replace />;
+        break;
+      case 'hod':
+        if (!isHOD()) return <Navigate to="/" replace />;
+        break;
+    }
+  }
+  
+  // Check allowed roles (for pages accessible by multiple roles)
+  if (allowedRoles.length > 0) {
+    const hasAllowedRole = allowedRoles.some(role => {
+      switch (role) {
+        case 'admin': return isAdmin();
+        case 'equipment-admin': return isEquipmentAdmin();
+        case 'professor': return isProfessor();
+        case 'hod': return isHOD();
+        default: return false;
+      }
+    });
+    
+    if (!hasAllowedRole) {
+      return <Navigate to="/" replace />;
+    }
   }
   
   return children;
 };
 
-// QR Scanner Page Component (for manual access)
+// QR Scanner Page Component
 const QRScannerPage = () => {
   return (
     <QRCodeProvider>
@@ -91,11 +136,16 @@ const QRScannerPage = () => {
   );
 };
 
-// Admin redirect component
+// Admin redirect component with enhanced role checking
 const AdminRedirect = () => {
-  const { isAdmin } = useAuth();
+  const { isAdmin, isEquipmentAdmin, isProfessor, isHOD } = useAuth();
   
-  return isAdmin() ? <Navigate to="/admin" replace /> : <UserDashboard />;
+  if (isHOD()) return <Navigate to="/hod/dashboard" replace />;
+  if (isEquipmentAdmin()) return <Navigate to="/equipment-admin/dashboard" replace />;
+  if (isProfessor()) return <Navigate to="/professor/dashboard" replace />;
+  if (isAdmin()) return <Navigate to="/admin" replace />;
+  
+  return <UserDashboard />;
 };
 
 const AppRoutes = () => {
@@ -106,17 +156,16 @@ const AppRoutes = () => {
       <Route path="/register" element={<Register />} />
       <Route path="/verify" element={<EmailVerification />} />
 
-      {/*  QR Scanner route that handles URLs from QR codes */}
+      {/* QR Scanner routes */}
       <Route path="/scan" element={
         <QRCodeProvider>
           <QRScanProcessor />
         </QRCodeProvider>
       } />
       
-      {/* QR Scanner - Manual access page (not for QR code scanning) */}
       <Route path="/qr-scanner" element={<QRScannerPage />} />
       
-      {/* Protected routes - User & Admin with automatic redirect */}
+      {/* Home route with role-based redirect */}
       <Route
         path="/"
         element={
@@ -126,7 +175,7 @@ const AppRoutes = () => {
         }
       />
       
-      {/* Seat related routes */}
+      {/* ========== STUDENT/USER ROUTES ========== */}
       <Route
         path="/seats"
         element={
@@ -200,15 +249,15 @@ const AppRoutes = () => {
       <Route
        path="/my-room-bookings" 
        element={
-      <ProtectedRoute>
-      <RoomBookProvider>
-        <QRCodeProvider>
-          <MyRoomBookings />
-        </QRCodeProvider>
-      </RoomBookProvider>
-    </ProtectedRoute>
-  }
-/>
+        <ProtectedRoute>
+          <RoomBookProvider>
+            <QRCodeProvider>
+              <MyRoomBookings />
+            </QRCodeProvider>
+          </RoomBookProvider>
+        </ProtectedRoute>
+      }
+      />
       
       <Route
         path="/room-booking/:bookingId"
@@ -232,7 +281,7 @@ const AppRoutes = () => {
         }
       />
       
-      {/* ========== ADMIN ROUTES ========== */}
+      {/* ========== ROOM ADMIN ROUTES ========== */}
       <Route
         path="/admin"
         element={
@@ -269,7 +318,6 @@ const AppRoutes = () => {
         }
       />
 
-      {/* QR Management Route */}
       <Route
         path="/admin/qr"
         element={
@@ -279,26 +327,11 @@ const AppRoutes = () => {
         }
       />
 
-      {/* ROUTES FOR ROOM MANAGEMENT */}
       <Route
         path="/admin/rooms"
         element={
           <ProtectedRoute requiredRole="admin">
             <AdminRoomManagement />
-          </ProtectedRoute>
-        }
-      />
-      
-      <Route
-        path="/admin/equipment"
-        element={
-          <ProtectedRoute requiredRole="admin">
-            <RoomProvider>
-              <div className="admin-page-container">
-                <AdminSidebar activePage="equipment" />
-                <EquipmentDashboard />
-              </div>
-            </RoomProvider>
           </ProtectedRoute>
         }
       />
@@ -317,31 +350,136 @@ const AppRoutes = () => {
         }
       />
 
-      {/* Additional admin booking sub-routes */}
+      {/* ========== EQUIPMENT ADMIN ROUTES ========== */}
       <Route
-        path="/admin/Roombookings/pending"
+        path="/equipment-admin/dashboard"
         element={
-          <ProtectedRoute requiredRole="admin">
-            <AdminRoomBookingProvider>
+          <ProtectedRoute requiredRole="equipment-admin">
+            <EquipmentAdminProvider>
               <div className="admin-page-container">
-                <AdminSidebar activePage="bookings" />
-                <AdminRoomBookingManagement initialView="pending" />
+                <AdminSidebar activePage="dashboard" />
+                <EquipmentManagementDashboard />
               </div>
-            </AdminRoomBookingProvider>
+            </EquipmentAdminProvider>
           </ProtectedRoute>
         }
       />
 
       <Route
-        path="/admin/Roombookings/warnings"
+        path="/admin/equipment-management"
         element={
-          <ProtectedRoute requiredRole="admin">
-            <AdminRoomBookingProvider>
+          <ProtectedRoute allowedRoles={['admin', 'equipment-admin']}>
+            <EquipmentAdminProvider>
+              <EquipmentManagementDashboard />
+            </EquipmentAdminProvider>
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/admin/courses"
+        element={
+          <ProtectedRoute requiredRole="equipment-admin">
+            <EquipmentAdminProvider>
               <div className="admin-page-container">
-                <AdminSidebar activePage="bookings" />
-                <AdminRoomBookingManagement initialView="warnings" />
+                <AdminSidebar activePage="courses" />
+                <CourseManagement />
               </div>
-            </AdminRoomBookingProvider>
+            </EquipmentAdminProvider>
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/admin/lab-classes"
+        element={
+          <ProtectedRoute requiredRole="equipment-admin">
+            <EquipmentAdminProvider>
+              <div className="admin-page-container">
+                <AdminSidebar activePage="lab-classes" />
+                <LabClassManagement />
+              </div>
+            </EquipmentAdminProvider>
+          </ProtectedRoute>
+        }
+      />
+      
+      <Route
+        path="/admin/equipment-requests"
+        element={
+          <ProtectedRoute requiredRole="equipment-admin">
+            <EquipmentAdminProvider>
+              <div className="admin-page-container">
+                <AdminSidebar activePage="equipment-requests" />
+                <EquipmentRequestManagement />
+              </div>
+            </EquipmentAdminProvider>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ========== PROFESSOR ROUTES ========== */}
+      <Route
+        path="/professor/dashboard"
+        element={
+          <ProtectedRoute requiredRole="professor">
+            <ProfessorProvider>
+              <div className="admin-page-container">
+                <AdminSidebar activePage="dashboard" />
+                <ProfessorDashboard />
+              </div>
+            </ProfessorProvider>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/professor/request-equipment"
+        element={
+          <ProtectedRoute requiredRole="professor">
+            <ProfessorProvider>
+              <div className="admin-page-container">
+                <AdminSidebar activePage="request-equipment" />
+                <EquipmentRequestForm />
+              </div>
+            </ProfessorProvider>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ========== HOD ROUTES ========== */}
+      <Route
+        path="/hod/dashboard"
+        element={
+          <ProtectedRoute requiredRole="hod">
+            <div className="admin-page-container">
+              <AdminSidebar activePage="dashboard" />
+              <HODDashboard />
+            </div>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/professor-approvals"
+        element={
+          <ProtectedRoute requiredRole="hod">
+            <div className="admin-page-container">
+              <AdminSidebar activePage="professor-approvals" />
+              <HODDashboard />
+            </div>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/escalated-requests"
+        element={
+          <ProtectedRoute requiredRole="hod">
+            <div className="admin-page-container">
+              <AdminSidebar activePage="escalated-requests" />
+              <HODDashboard />
+            </div>
           </ProtectedRoute>
         }
       />

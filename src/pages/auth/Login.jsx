@@ -13,7 +13,34 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
-  const { login, isAdmin } = useAuth();
+  const { login } = useAuth();
+
+  // Function to determine redirect path based on user roles
+  const getRedirectPath = (userRoles) => {
+    if (!userRoles || !Array.isArray(userRoles)) {
+      return '/seats'; // Default for regular users
+    }
+
+    // Role priority order (highest to lowest)
+    if (userRoles.includes('ROLE_HOD')) {
+      return '/hod/dashboard';
+    }
+    
+    if (userRoles.includes('ROLE_EQUIPMENT_ADMIN')) {
+      return '/equipment-admin/dashboard';
+    }
+    
+    if (userRoles.includes('ROLE_PROFESSOR')) {
+      return '/professor/dashboard';
+    }
+    
+    if (userRoles.includes('ROLE_ADMIN')) {
+      return '/admin';
+    }
+    
+    // Default for ROLE_USER or any other role
+    return '/seats';
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -26,21 +53,51 @@ const Login = () => {
         // Get the user data directly from local storage to ensure it's up to date
         const userData = JSON.parse(localStorage.getItem('user'));
         
-        // Check if the user has admin role
-        if (userData && userData.roles && userData.roles.includes('ROLE_ADMIN')) {
-          navigate('/admin/seats');
-        } else {
-          navigate('/seats');
+        // Determine redirect path based on user roles
+        const redirectPath = getRedirectPath(userData?.roles);
+        
+        // Navigate to the appropriate dashboard
+        navigate(redirectPath);
+        
+        // Optional: Show welcome message based on role
+        const roleMessage = getRoleWelcomeMessage(userData?.roles);
+        if (roleMessage) {
+          console.log(roleMessage); // You can replace this with a toast notification
         }
       } else {
         setError(result.message);
       }
     } catch (err) {
       setError('An error occurred during login. Please try again.');
-      console.error(err);
+      console.error('Login error:', err);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Optional: Function to get role-specific welcome message
+  const getRoleWelcomeMessage = (userRoles) => {
+    if (!userRoles || !Array.isArray(userRoles)) {
+      return 'Welcome to the Library Management System!';
+    }
+
+    if (userRoles.includes('ROLE_HOD')) {
+      return 'Welcome, Head of Department!';
+    }
+    
+    if (userRoles.includes('ROLE_EQUIPMENT_ADMIN')) {
+      return 'Welcome to Equipment Management Dashboard!';
+    }
+    
+    if (userRoles.includes('ROLE_PROFESSOR')) {
+      return 'Welcome, Professor!';
+    }
+    
+    if (userRoles.includes('ROLE_ADMIN')) {
+      return 'Welcome to Admin Dashboard!';
+    }
+    
+    return 'Welcome to the Library Management System!';
   };
 
   return (
@@ -65,6 +122,7 @@ const Login = () => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="email"
           />
 
           <Input
@@ -75,6 +133,7 @@ const Login = () => {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            autoComplete="current-password"
           />
 
           <Button

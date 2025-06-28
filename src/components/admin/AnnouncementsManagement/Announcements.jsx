@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 
 const AnnouncementsManagement = () => {
   const { announcements, handleCreateAnnouncement } = useSchedule();
+
   
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
