@@ -286,6 +286,7 @@ const AppRoutes = () => {
         path="/admin"
         element={
           <ProtectedRoute requiredRole="admin">
+            <AdminSidebar activePage="User Management" />
             <AdminDashboard />
           </ProtectedRoute>
         }
@@ -351,7 +352,7 @@ const AppRoutes = () => {
       />
 
       {/* ========== EQUIPMENT ADMIN ROUTES ========== */}
-      <Route
+      {/* <Route
         path="/equipment-admin/dashboard"
         element={
           <ProtectedRoute requiredRole="equipment-admin">
@@ -363,13 +364,14 @@ const AppRoutes = () => {
             </EquipmentAdminProvider>
           </ProtectedRoute>
         }
-      />
+      /> */}
 
       <Route
         path="/admin/equipment-management"
         element={
           <ProtectedRoute allowedRoles={['admin', 'equipment-admin']}>
             <EquipmentAdminProvider>
+               <AdminSidebar activePage="equipment-management" />
               <EquipmentManagementDashboard />
             </EquipmentAdminProvider>
           </ProtectedRoute>
