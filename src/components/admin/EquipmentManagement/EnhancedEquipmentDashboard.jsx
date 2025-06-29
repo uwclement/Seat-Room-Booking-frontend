@@ -112,7 +112,6 @@ const EnhancedEquipmentDashboard = () => {
 
   return (
     <div className="admin-content">
-    
       <div className="admin-header">
         <div className="header-content">
           <div>

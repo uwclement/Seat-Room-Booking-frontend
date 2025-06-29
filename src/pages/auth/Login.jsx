@@ -27,7 +27,7 @@ const Login = () => {
     }
     
     if (userRoles.includes('ROLE_EQUIPMENT_ADMIN')) {
-      return '/equipment-admin/dashboard';
+      return '/admin/equipment-management';
     }
     
     if (userRoles.includes('ROLE_PROFESSOR')) {

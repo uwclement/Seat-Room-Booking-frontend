@@ -7,7 +7,7 @@ const AdminSidebar = ({ activePage }) => {
 
   // Base menu items for all admin types
   const baseMenuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt', path: '/admin' }
+    // { id: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt', path: '/admin' }
   ];
 
   // Room Admin specific items

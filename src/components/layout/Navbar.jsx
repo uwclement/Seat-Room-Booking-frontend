@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import './Navbar.css';
 import NotificationComponent from './../../components/common/NotificationComponent';
+import logo from '../../assets/images/logo.jpeg';
 
 const Navbar = () => {
   const { user, logout, isAuthenticated, isAdmin, isProfessor, isEquipmentAdmin, isHOD } = useAuth();
@@ -63,13 +64,13 @@ const Navbar = () => {
         <div className="container navbar-container">
           <div className="navbar-logo">
             <Link to="/" className="navbar-brand" onClick={closeMobileMenu}>
-              AUCA Library
+              <img src={logo} alt="Logo" className="navbar-logo-img" />
             </Link>
           </div>
 
           {/* Desktop Menu */}
           <div className="navbar-menu">
-            {isAuthenticated() && !isAdmin() && !isProfessor && !isEquipmentAdmin && !isHOD &&(
+            {isAuthenticated() && !isAdmin() && !isProfessor () && !isEquipmentAdmin () && !isHOD () && (
               <>
                 <Link to="/seats" className="navbar-item">Home</Link>
                 

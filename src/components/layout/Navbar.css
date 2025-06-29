@@ -35,6 +35,12 @@
   background-clip: text;
 }
 
+.navbar-logo-img {
+  height: 35px;       
+  width: auto;        
+  display: block;    
+}
+
 .navbar-brand:hover {
   transform: translateY(-1px);
   filter: brightness(1.1);
