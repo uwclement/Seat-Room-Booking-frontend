@@ -4,6 +4,7 @@ import { escalateRequest } from '../../api/equipmentRequests';
 import Alert from '../common/Alert';
 import LoadingSpinner from '../common/LoadingSpinner';
 import EquipmentRequestForm from './EquipmentRequestForm';
+import CourseSelectionForm from './CourseSelectionForm';
 
 const ProfessorDashboard = () => {
   const {
@@ -21,6 +22,7 @@ const ProfessorDashboard = () => {
   } = useProfessor();
 
   const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showCourseModal, setShowCourseModal] = useState(false); 
   const [processing, setProcessing] = useState(false);
 
   const handleEscalate = async (requestId) => {
@@ -69,13 +71,22 @@ const ProfessorDashboard = () => {
               Manage your equipment requests and course assignments
             </p>
           </div>
-          <button 
-            className="btn btn-primary"
-            onClick={() => setShowRequestModal(true)}
-          >
-            <i className="fas fa-plus"></i>
-            New Request
-          </button>
+          <div className="header-actions">
+            <button 
+              className="btn btn-secondary"
+              onClick={() => setShowCourseModal(true)}
+            >
+              <i className="fas fa-book"></i>
+              Request Courses
+            </button>
+            <button 
+              className="btn btn-primary"
+              onClick={() => setShowRequestModal(true)}
+            >
+              <i className="fas fa-plus"></i>
+              New Request
+            </button>
+          </div>
         </div>
       </div>
 
@@ -103,9 +114,16 @@ const ProfessorDashboard = () => {
         </div>
       </div>
 
+
+      
+
       {/* Alerts */}
       {error && (
         <Alert type="danger" message={error} onClose={clearMessages} />
+      )}
+
+      {successMessage && (
+        <Alert type="success" message={successMessage} onClose={clearMessages} />
       )}
 
       {/* Escalation Notice */}
@@ -129,6 +147,13 @@ const ProfessorDashboard = () => {
               <i className="fas fa-book"></i>
               <h4>No Approved Courses</h4>
               <p>Contact your HOD to get course approvals.</p>
+              <button 
+                className="btn btn-primary"
+                onClick={() => setShowCourseModal(true)}
+              >
+                <i className="fas fa-plus"></i>
+                Request Course Approval
+              </button>
             </div>
           ) : (
             <div className="course-grid">
@@ -179,12 +204,27 @@ const ProfessorDashboard = () => {
         </div>
       </div>
 
-      {/* Equipment Request Modal would go here */}
+      {/* Equipment Request Modal */}
       {showRequestModal && (
-        <EquipmentRequestModal 
+        <EquipmentRequestForm 
           show={showRequestModal}
           onClose={() => setShowRequestModal(false)}
-          courses={myCourses}
+          onSuccess={(message) => {
+            showSuccess(message);
+            setShowRequestModal(false);
+          }}
+        />
+      )}
+
+      {/* Course Selection Modal */}
+      {showCourseModal && (
+        <CourseSelectionForm 
+          show={showCourseModal}
+          onClose={() => setShowCourseModal(false)}
+          onSuccess={(message) => {
+            showSuccess(message);
+            setShowCourseModal(false);
+          }}
         />
       )}
     </div>
@@ -273,33 +313,6 @@ const ProfessorRequestCard = ({ request, onEscalate, canEscalate, processing }) 
             This request has been escalated to the HOD
           </div>
         )}
-      </div>
-    </div>
-  );
-};
-
-// Equipment Request Modal (Placeholder)
-const EquipmentRequestModal = ({ show, onClose, courses }) => {
-  if (!show) return null;
-
-  return (
-    <div className="modal-backdrop">
-      <div className="modal-container large-modal">
-        <div className="modal-header">
-          <h3>Create Equipment Request</h3>
-          <button className="close-button" onClick={onClose}>
-            <i className="fas fa-times"></i>
-          </button>
-        </div>
-        <div className="modal-body">
-          <p>Equipment Request Form will be implemented here...</p>
-           <EquipmentRequestForm />
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-secondary" onClick={onClose}>
-            Close
-          </button>
-        </div>
       </div>
     </div>
   );

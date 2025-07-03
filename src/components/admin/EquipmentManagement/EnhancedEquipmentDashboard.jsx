@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEquipmentAdmin } from '../../../context/EquipmentAdminContext';
 import {
   createEquipmentAdmin,
@@ -29,13 +29,19 @@ const EnhancedEquipmentDashboard = () => {
     showSuccess,
     showError,
     clearMessages,
-    loadEquipment
+    loadEquipment,
+    viewMode,  
+    setViewMode
   } = useEquipmentAdmin();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   const [processing, setProcessing] = useState(false);
+
+    useEffect(() => {
+    setViewMode('equipment');
+  }, [setViewMode]);
 
   const filteredEquipment = getFilteredData();
 

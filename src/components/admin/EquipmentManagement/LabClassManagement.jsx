@@ -24,7 +24,9 @@ const LabClassManagement = () => {
     showSuccess,
     showError,
     clearMessages,
-    loadLabClasses: refreshLabClasses
+    loadLabClasses: refreshLabClasses,
+    viewMode,  
+    setViewMode
   } = useEquipmentAdmin();
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -32,7 +34,15 @@ const LabClassManagement = () => {
   const [selectedLabClass, setSelectedLabClass] = useState(null);
   const [processing, setProcessing] = useState(false);
 
+    useEffect(() => {
+    setViewMode('labs');
+  }, [setViewMode]);
+
   const filteredLabClasses = getFilteredData();
+
+   console.log('Filtered Lab Classes:', filteredLabClasses)
+   console.log('View Mode:', viewMode);
+   console.log('Lab Classes from context:', labClasses);
 
   const handleCreate = async (labClassData) => {
     setProcessing(true);
