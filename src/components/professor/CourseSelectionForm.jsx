@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  getPublicActiveCourses,
+  getActiveCourses,
   requestCourseApproval 
 } from '../../api/professor';
 import Alert from '../common/Alert';
@@ -22,7 +22,7 @@ const CourseSelectionForm = ({ show, onClose, onSuccess }) => {
   const loadAvailableCourses = async () => {
     setLoading(true);
     try {
-      const courses = await getPublicActiveCourses();
+      const courses = await getActiveCourses();
       setAvailableCourses(courses);
     } catch (err) {
       setError('Failed to load available courses');
