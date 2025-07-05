@@ -4,7 +4,8 @@ import {
   getAllEquipmentAdmin,
   getAllCourses,
   getAllLabClasses,
-  getPendingEquipmentRequests
+  getPendingEquipmentRequests,
+  getCurrentMonthEquipmentRequests
 } from '../api/equipmentAdmin';
 
 const EquipmentAdminContext = createContext();
@@ -25,12 +26,14 @@ export const EquipmentAdminProvider = ({ children }) => {
   const [courses, setCourses] = useState([]);
   const [labClasses, setLabClasses] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [EquipmentRequests, setEquipmentRequests] = useState([]);
   
   // Loading states
   const [loadingEquipment, setLoadingEquipment] = useState(false);
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [loadingLabClasses, setLoadingLabClasses] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
+  const [loadingEquipmentRequests, setLoadingEquipmentRequests] = useState(false);
   
   // Filter and view state
   const [filters, setFilters] = useState({
@@ -74,6 +77,21 @@ export const EquipmentAdminProvider = ({ children }) => {
       setError('Failed to load courses');
     } finally {
       setLoadingCourses(false);
+    }
+  };
+
+  // load the equipment request
+  const loadEquipmentRequests = async () => {
+    if (!isEquipmentAdmin()) return;
+    
+    setLoadingEquipmentRequests(true);
+    try {
+      const data = await getCurrentMonthEquipmentRequests();
+      setEquipmentRequests(data);
+    } catch (err) {
+      setError('Failed to load EquipmentRequests');
+    } finally {
+      setLoadingEquipmentRequests(false);
     }
   };
 
@@ -230,7 +248,8 @@ export const EquipmentAdminProvider = ({ children }) => {
       loadEquipment(),
       loadCourses(),
       loadLabClasses(),
-      loadPendingRequests()
+      loadPendingRequests(),
+      loadEquipmentRequests(),
     ]);
   };
 
@@ -247,12 +266,14 @@ export const EquipmentAdminProvider = ({ children }) => {
     courses,
     labClasses,
     pendingRequests,
+    EquipmentRequests,
     
     // Loading states
     loadingEquipment,
     loadingCourses,
     loadingLabClasses,
     loadingRequests,
+    loadingEquipmentRequests,
     
     // Filters and view
     filters,
@@ -266,6 +287,7 @@ export const EquipmentAdminProvider = ({ children }) => {
     // Functions
     loadEquipment,
     loadCourses,
+    loadEquipmentRequests,
     loadLabClasses,
     loadPendingRequests,
     updateFilters,

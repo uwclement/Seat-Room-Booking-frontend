@@ -25,6 +25,10 @@ const ProfessorDashboard = () => {
   const [showCourseModal, setShowCourseModal] = useState(false); 
   const [processing, setProcessing] = useState(false);
 
+  console.log('myCourses:', myCourses);
+  console.log('myCourses type:', typeof myCourses);
+  console.log('Is array:', Array.isArray(myCourses));
+
   const handleEscalate = async (requestId) => {
     if (!window.confirm('Are you sure you want to escalate this request to the HOD?')) {
       return;
