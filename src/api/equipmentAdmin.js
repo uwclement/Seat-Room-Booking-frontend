@@ -84,7 +84,12 @@ export const toggleLabAvailability = async (id) => {
   return safeApiCall(() => api.post(`/equipment-admin/lab-classes/${id}/toggle-availability`));
 };
 
-// FIXED: Add missing equipment requests function
+
 export const getPendingEquipmentRequests = async () => {
   return safeApiCall(() => api.get('/equipment-requests/pending'));
+};
+
+
+export const getCurrentMonthEquipmentRequests = async () => {
+  return safeApiCall(() => api.get('/equipment-requests/current-month'));
 };
