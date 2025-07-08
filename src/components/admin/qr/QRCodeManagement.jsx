@@ -43,10 +43,10 @@ const QRManagementPage = () => {
     }
   };
 
-  const handleBulkDownloadAll = async (type) => {
+   const handleBulkDownloadAll = async (type) => {
     setActionLoading(prev => ({ ...prev, [`download_${type}`]: true }));
     try {
-      await handleBulkDownload(type, [], true);
+      await handleBulkDownload(type, [], true); // Empty array, downloadAll = true
     } catch (err) {
       console.error(`Failed to download ${type} QR codes:`, err);
     } finally {
@@ -58,6 +58,7 @@ const QRManagementPage = () => {
     setBulkType(type);
     setShowBulkModal(true);
   };
+
 
   return (
     <div className="admin-page-container">

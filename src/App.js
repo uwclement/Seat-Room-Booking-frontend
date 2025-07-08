@@ -14,6 +14,7 @@ import { RoomProvider } from './context/RoomContext';
 import { RoomBookProvider } from './context/RoomBookingContext'; 
 import { AdminRoomBookingProvider } from './context/AdminRoomBookingContext';
 import { QRCodeProvider } from './context/QRCodeContext';
+import { AdminSeatBookingProvider } from './context/AdminSeatBookingContext';
 
 // FontAwesome CSS
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -30,6 +31,7 @@ import SeatManagement from './pages/admin/SeatManagement';
 import ScheduleManagement from './pages/admin/ScheduleManagement';
 import AdminRoomManagement from './components/admin/RoomManagement/AdminRoomManagement';
 import AdminSidebar from './components/common/AdminSidebar';
+import SeatBookingManagement from './pages/admin/SeatBookingManagement';
 
 // Equipment & Lab Management Components
 import EquipmentManagementDashboard from './components/admin/EquipmentManagement/EnhancedEquipmentDashboard';
@@ -308,6 +310,17 @@ const AppRoutes = () => {
             <AdminSeatManagement />
           </ProtectedRoute>
         }
+      />
+
+      <Route
+         path="/admin/seat-bookings"
+         element={
+            <ProtectedRoute requiredRole="admin">
+              <AdminSeatBookingProvider>
+              <SeatBookingManagement />
+              </AdminSeatBookingProvider>
+           </ProtectedRoute>
+       }
       />
       
       <Route

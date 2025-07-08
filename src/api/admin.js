@@ -88,24 +88,46 @@ export const getBookingsBySeat = async (seatId) => {
   return safeApiCall(() => api.get(`/admin/bookings/seat/${seatId}`));
 };
 
-// // Admin activity logs
-// export const getAdminLogs = async (page = 0, size = 10) => {
-//   return safeApiCall(() => api.get('/admin/logs', {
-//     params: { page, size }
-//   }));
-// };
+export const bulkToggleDesktop = async (seatIds) => {
+  return safeApiCall(() => api.put('/admin/seats/bulk-toggle-desktop', seatIds));
+};
 
-// // Export data functions
-// export const exportSeatsData = async (format = 'csv') => {
-//   return safeApiCall(() => api.get('/admin/export/seats', {
-//     params: { format },
-//     responseType: 'blob'
-//   }));
-// };
 
-// export const exportBookingsData = async (startDate, endDate, format = 'csv') => {
-//   return safeApiCall(() => api.get('/admin/export/bookings', {
-//     params: { startDate, endDate, format },
-//     responseType: 'blob'
-//   }));
-// };
+
+// Get all current bookings
+export const getCurrentAdminBookings = async () => {
+  return safeApiCall(() => api.get('/admin/bookings/current'));
+};
+
+
+
+
+// Manual check-in by admin
+export const manualCheckInBooking = async (bookingId) => {
+  return safeApiCall(() => api.post(`/admin/bookings/${bookingId}/checkin`));
+};
+
+// Manual cancellation by admin
+export const manualCancelBooking = async (bookingId, reason = '') => {
+  return safeApiCall(() => api.delete(`/admin/bookings/${bookingId}/cancel`, {
+    data: { reason }
+  }));
+};
+
+// Bulk cancellation by admin
+export const bulkCancelBookings = async (bookingIds, reason = '') => {
+  return safeApiCall(() => api.post('/admin/bookings/bulk-cancel', {
+    bookingIds,
+    reason
+  }));
+};
+
+// Get bookings eligible for check-in
+export const getBookingsEligibleForCheckIn = async () => {
+  return safeApiCall(() => api.get('/admin/bookings/eligible-checkin'));
+};
+
+// Get bookings eligible for cancellation
+export const getBookingsEligibleForCancellation = async () => {
+  return safeApiCall(() => api.get('/admin/bookings/eligible-cancellation'));
+};

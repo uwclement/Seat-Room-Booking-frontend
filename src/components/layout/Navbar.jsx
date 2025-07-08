@@ -80,8 +80,8 @@ const Navbar = () => {
                     Seats <i className="fas fa-chevron-down"></i>
                   </span>
                   <div className="navbar-dropdown-menu">
-                    <Link to="/seats" className="navbar-dropdown-item">Browse Seats</Link>
-                    <Link to="/bookings" className="navbar-dropdown-item">My Seat Bookings</Link>
+                    <Link to="/seats" className="navbar-dropdown-item">Seats</Link>
+                    <Link to="/bookings" className="navbar-dropdown-item">My Bookings</Link>
                     <Link to="/waitlist" className="navbar-dropdown-item">My Waitlist</Link>
                   </div>
                 </div>
@@ -92,9 +92,21 @@ const Navbar = () => {
                     Rooms <i className="fas fa-chevron-down"></i>
                   </span>
                   <div className="navbar-dropdown-menu">
-                    <Link to="/rooms" className="navbar-dropdown-item">Browse Rooms</Link>
-                    <Link to="/room-bookings" className="navbar-dropdown-item">My Room Bookings</Link>
+                    <Link to="/rooms" className="navbar-dropdown-item">Rooms</Link>
+                    <Link to="/room-bookings" className="navbar-dropdown-item">My Bookings</Link>
                     <Link to="/join-bookings" className="navbar-dropdown-item">Join Public Bookings</Link>
+                  </div>
+                </div>
+
+                {/* Masoro Section */}
+                <div className="navbar-dropdown">
+                  <span className="navbar-item navbar-dropdown-trigger">
+                    Masoro <i className="fas fa-chevron-down"></i>
+                  </span>
+                  <div className="navbar-dropdown-menu">
+                    <Link to="/rooms" className="navbar-dropdown-item">Seats</Link>
+                    <Link to="/room-bookings" className="navbar-dropdown-item">My Bookings</Link>
+                    <Link to="/join-bookings" className="navbar-dropdown-item">My Waitlist</Link>
                   </div>
                 </div>
               </>
@@ -172,14 +184,14 @@ const Navbar = () => {
                     className="navbar-mobile-dropdown-item"
                     onClick={closeMobileMenu}
                   >
-                    Browse Seats
+                    Seats
                   </Link>
                   <Link 
                     to="/bookings" 
                     className="navbar-mobile-dropdown-item"
                     onClick={closeMobileMenu}
                   >
-                    My Seat Bookings
+                    My Bookings
                   </Link>
                   <Link 
                     to="/waitlist" 
@@ -206,14 +218,14 @@ const Navbar = () => {
                     className="navbar-mobile-dropdown-item"
                     onClick={closeMobileMenu}
                   >
-                    Browse Rooms
+                    Rooms
                   </Link>
                   <Link 
                     to="/room-bookings" 
                     className="navbar-mobile-dropdown-item"
                     onClick={closeMobileMenu}
                   >
-                    My Room Bookings
+                    My Bookings
                   </Link>
                   <Link 
                     to="/join-bookings" 
@@ -225,6 +237,40 @@ const Navbar = () => {
                 </div>
               </div>
             </div>
+
+             {/* Mobile Masoro Booking Section */}
+              <div className="navbar-mobile-dropdown">
+                <div 
+                  className={`navbar-mobile-dropdown-trigger ${activeDropdown === 'Masoro' ? 'active' : ''}`}
+                  onClick={() => toggleDropdown('Masoro')}
+                >
+                  Masoro
+                  <i className="fas fa-chevron-down"></i>
+                </div>
+                <div className={`navbar-mobile-dropdown-menu ${activeDropdown === 'Masoro' ? 'active' : ''}`}>
+                  <Link 
+                    to="/Masoro" 
+                    className="navbar-mobile-dropdown-item"
+                    onClick={closeMobileMenu}
+                  >
+                    Seats
+                  </Link>
+                  <Link 
+                    to="/bookings" 
+                    className="navbar-mobile-dropdown-item"
+                    onClick={closeMobileMenu}
+                  >
+                    My Bookings
+                  </Link>
+                  <Link 
+                    to="/waitlist" 
+                    className="navbar-mobile-dropdown-item"
+                    onClick={closeMobileMenu}
+                  >
+                    My Waitlist
+                  </Link>
+                </div>
+              </div>
 
             {/* Mobile Auth Section - Now always visible */}
             <div className="navbar-mobile-auth">

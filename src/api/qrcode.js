@@ -76,12 +76,16 @@ export const downloadQRCode = async (type, resourceId) => {
 };
 
 // Download bulk QR codes as ZIP
-export const downloadBulkQRCodes = async (type, resourceIds, downloadAll = false) => {
-  const response = await api.post('/admin/qr/download/bulk', {
-    type,
-    resourceIds,
-    downloadAll
-  }, {
+export const downloadBulkQRCodes = async (type, resourceIds = [], downloadAll = false) => {
+  const requestData = {
+    type: type.toUpperCase(), 
+    downloadAll: downloadAll
+  };
+  if (!downloadAll && resourceIds && resourceIds.length > 0) {
+    requestData.resourceIds = resourceIds;
+  }
+  
+  const response = await api.post('/admin/qr/download/bulk', requestData, {
     responseType: 'blob'
   });
   return response;
