@@ -5,6 +5,7 @@ import {
   bulkUpdateSeats,
   toggleDesktop,
   disableSeatsForMaintenance,
+  bulkToggleDesktop,
   enableSeats,
   getDisabledSeats
 } from '../api/admin';
@@ -157,6 +158,24 @@ export const AdminProvider = ({ children }) => {
       setTimeout(() => setSuccess(''), 3000);
     }
   };
+  
+  // bulk desktop toggle
+  const handleBulkToggleDesktop = async () => {
+  setLoading(true);
+  setError('');
+  try {
+    await bulkToggleDesktop(selectedSeats);
+    setSuccess('Desktop properties toggled successfully');
+    await fetchSeats();
+    clearSelection();
+  } catch (err) {
+    setError('Failed to toggle desktop properties. Please try again later.');
+    console.error(err);
+  } finally {
+    setLoading(false);
+    setTimeout(() => setSuccess(''), 3000);
+  }
+};
 
   // Disable seats for maintenance
   const handleDisableSeats = async (reason, endDate) => {
@@ -234,6 +253,7 @@ export const AdminProvider = ({ children }) => {
     applyFilters,
     handleBulkUpdate,
     handleToggleDesktop,
+    handleBulkToggleDesktop,
     handleDisableSeats,
     handleEnableSeats,
     setFilters,

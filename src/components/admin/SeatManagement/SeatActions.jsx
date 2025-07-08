@@ -10,7 +10,9 @@ const SeatActions = () => {
     selectedSeats, 
     selectAllSeats, 
     clearSelection, 
+    handleBulkToggleDesktop,
     handleBulkUpdate,
+    
     handleEnableSeats,
     seats
   } = useAdmin();
@@ -19,7 +21,7 @@ const SeatActions = () => {
   const [showQRModal, setShowQRModal] = useState(false);
 
   const handleToggleDesktopBulk = () => {
-    handleBulkUpdate({ toggleDesktop: true });
+    handleBulkToggleDesktop(); 
   };
 
   const handleBulkQRGeneration = () => {
@@ -54,7 +56,7 @@ const SeatActions = () => {
             className="btn btn-primary"
             onClick={handleToggleDesktopBulk}
           >
-            Toggle Desktop
+            Desktop On/Off
           </button>
           <button 
             className="btn btn-primary"

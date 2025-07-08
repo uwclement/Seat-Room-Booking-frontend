@@ -43,49 +43,6 @@ const DisableSeatModal = ({ isOpen, onClose }) => {
           </div>
           
           <form onSubmit={handleSubmit}>
-
-            {/* Adding a reason but to handled in backend  */}
-            {/* <div className="form-group">
-              <label htmlFor="reason">Maintenance Reason:</label>
-              <textarea
-                id="reason"
-                className="form-control"
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                required
-                placeholder="Explain why these seats are under maintenance"
-                rows="3"
-              ></textarea>
-            </div> */}
-            
-            {/* Adding the end time of the disabled seat 
-            <div className="form-group">
-              <label htmlFor="endDate">Maintenance End Date:</label>
-              <input
-                type="date"
-                id="endDate"
-                className="form-control"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                min={minDate}
-              />
-              <small className="form-text text-muted">
-                Leave blank for indefinite maintenance period
-              </small>
-            </div> */}
-            
-            {/* {endDate && (
-              <div className="form-group">
-                <label htmlFor="endTime">Maintenance End Time:</label>
-                <input
-                  type="time"
-                  id="endTime"
-                  className="form-control"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </div>
-            )} */}
             
             <div className="modal-footer">
               <button type="button" className="btn btn-secondary" onClick={onClose}>

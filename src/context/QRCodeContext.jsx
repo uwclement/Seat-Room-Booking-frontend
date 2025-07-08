@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import api from '../api/axiosConfig';
 import {
   generateSeatQR,
   generateRoomQR,
@@ -87,36 +88,74 @@ export const QRCodeProvider = ({ children }) => {
   };
 
   const bulkGenerateQR = async (type, request) => {
-    setLoading(true);
-    setError('');
-    try {
-      let response;
+  setLoading(true);
+  setError('');
+  try {
+    let response;
+    
+    // FIXED: Handle different response types based on generateAndDownload
+    if (request.generateAndDownload) {
+      // When generateAndDownload is true, backend returns ZIP file directly
+      if (type === 'seats') {
+        response = await api.post('/admin/qr/generate/bulk/seats', request, {
+          responseType: 'blob' // Important: Tell axios to expect binary data
+        });
+      } else if (type === 'rooms') {
+        response = await api.post('/admin/qr/generate/bulk/rooms', request, {
+          responseType: 'blob' // Important: Tell axios to expect binary data
+        });
+      }
+      
+      // Handle ZIP download directly
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const filename = `${type.toUpperCase()}_QRCodes_${timestamp}.zip`;
+      
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      setSuccess(`QR codes generated and downloaded successfully`);
+      clearMessages();
+      
+      // Return mock response since we don't get JSON back
+      return {
+        successCount: 'Generated', // We don't know exact count from ZIP
+        failureCount: 0,
+        downloadAvailable: true
+      };
+      
+    } else {
+      // When generateAndDownload is false, expect JSON response
       if (type === 'seats') {
         response = await bulkGenerateSeatQRs(request);
-      } else {
+      } else if (type === 'rooms') {
         response = await bulkGenerateRoomQRs(request);
       }
       
       setSuccess(`Generated ${response.successCount} QR codes successfully`);
       if (response.failureCount > 0) {
-        setError(`Failed to generate ${response.failureCount} QR codes`);
+        setError(`Failed to generate ${response.failureCount} QR codes. Check logs for details.`);
       }
       clearMessages();
-      
-      // If generateAndDownload is true, download the ZIP
-      if (request.generateAndDownload && response.generatedQRCodes) {
-        await handleBulkDownload(type, response.successfulResourceIds);
-      }
       
       return response;
-    } catch (err) {
-      setError(err.response?.data?.message || `Failed to generate QR codes`);
-      clearMessages();
-      throw err;
-    } finally {
-      setLoading(false);
     }
-  };
+    
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || `Failed to generate QR codes`;
+    setError(errorMessage);
+    clearMessages();
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+};
 
   const generateMissingQRs = async () => {
     setLoading(true);
@@ -165,30 +204,39 @@ export const QRCodeProvider = ({ children }) => {
     }
   };
 
-  const handleBulkDownload = async (type, resourceIds = [], downloadAll = false) => {
-    setLoading(true);
-    try {
-      const response = await downloadBulkQRCodes(type, resourceIds, downloadAll);
-      
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `QR_${type.toUpperCase()}_BULK_${Date.now()}.zip`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      
-      setSuccess('QR codes downloaded successfully');
-      clearMessages();
-    } catch (err) {
-      setError('Failed to download QR codes');
-      clearMessages();
-    } finally {
-      setLoading(false);
-    }
-  };
+const handleBulkDownload = async (type, resourceIds = [], downloadAll = false) => {
+  setLoading(true);
+  try {
+    const response = await downloadBulkQRCodes(type, resourceIds, downloadAll);
+    
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    
+    const timestamp = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const filename = downloadAll 
+      ? `${type.toUpperCase()}_ALL_QRCodes_${timestamp}.zip`
+      : `${type.toUpperCase()}_Selected_QRCodes_${timestamp}.zip`;
+    
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+    
+    const count = downloadAll ? 'all' : (resourceIds.length || 'selected');
+    setSuccess(`Downloaded ${count} ${type} QR codes successfully`);
+    clearMessages();
+  } catch (err) {
+    const errorMessage = err.response?.data?.message || err.message || 'Failed to download QR codes';
+    setError(errorMessage);
+    clearMessages();
+    throw err;
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ========== QR STATISTICS ==========
   

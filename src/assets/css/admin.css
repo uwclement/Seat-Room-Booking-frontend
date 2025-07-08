@@ -716,3 +716,121 @@
     gap: 0.5rem;
   }
 }
+
+.booking-filters {
+  margin-bottom: 1rem;
+}
+
+.filter-section {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+}
+
+.filter-section h4 {
+  margin-bottom: 0.75rem;
+  color: #333;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.view-mode-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-row {
+  display: flex;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.filter-group label {
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+  color: #555;
+}
+
+.booking-actions {
+  margin-bottom: 1rem;
+}
+
+.selection-tools {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.selection-count {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.user-info, .seat-info {
+  line-height: 1.2;
+}
+
+.user-id, .seat-id {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.datetime-info {
+  line-height: 1.2;
+}
+
+.time-range {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.checkin-info {
+  line-height: 1.2;
+}
+
+.checkin-time, .checkout-time {
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.text-green { color: #28a745; }
+.text-red { color: #dc3545; }
+
+.status-badge.completed {
+  background-color: #cce5ff;
+  color: #0066cc;
+}
+
+.booking-summary {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+}
+
+.booking-summary p {
+  margin: 0;
+  line-height: 1.6;
+}
