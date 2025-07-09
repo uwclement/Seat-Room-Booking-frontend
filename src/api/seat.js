@@ -6,6 +6,18 @@ export const getAllSeats = async () => {
   return response.data;
 };
 
+// get all seats in Gishushu
+export const getAllSeatsInGishushu = async () => {
+  const response = await api.get('/seats/Gishushu');
+  return response.data;
+};
+
+// get seats in Masoro
+export const getAllSeatsInMasoro = async () => {
+  const response = await api.get('/seats/Masoro');
+  return response.data;
+};
+
 // Get a specific seat by ID
 export const getSeatById = async (id) => {
   const response = await api.get(`/seats/${id}`);

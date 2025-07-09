@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getAllSeatsInGishushu, findAvailableSeats, toggleFavoriteSeat, getFavoriteSeats } from '../../api/seat';
+import { getAllSeatsInMasoro, findAvailableSeats, toggleFavoriteSeat, getFavoriteSeats } from '../../api/seat';
 import { getUserActiveBookings } from '../../api/booking';
 import { createBooking } from '../../api/booking';
 import { joinWaitlist } from '../../api/waitlist';
@@ -35,7 +35,7 @@ const SeatsPage = () => {
       try {
         setLoading(true);
         const [seatsData, favoritesData, userBookingsData] = await Promise.all([
-          getAllSeatsInGishushu(),
+          getAllSeatsInMasoro(),
           getFavoriteSeats(),
           getUserActiveBookings()
         ]);
@@ -264,7 +264,7 @@ const SeatsPage = () => {
       setShowModal(false);
       
       // Refresh seat data
-      const updatedSeats = await getAllSeatsInGishushu();
+      const updatedSeats = await getAllSeatsInMasoro();
       setSeats(updatedSeats);
       setFilteredSeats(updatedSeats);
 

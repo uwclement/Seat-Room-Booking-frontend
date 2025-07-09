@@ -19,11 +19,14 @@ import { AdminSeatBookingProvider } from './context/AdminSeatBookingContext';
 // FontAwesome CSS
 import '@fortawesome/fontawesome-free/css/all.min.css';
 
-// User pages
+// User Seats pages
 import UserDashboard from './pages/user/Dashboard';
 import SeatsPage from './pages/seats/Seats';
 import MyBookingsPage from './pages/user/MyBookings';
 import MyWaitlistPage from './pages/user/MyWaitlist';
+
+//Masoro Seats
+import MasoroSeatsPage from './pages/seats/MasoroSeats';
 
 // Admin pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -213,6 +216,16 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      {/*Masoro seats Routing*/}
+      <Route
+        path="/Masoro-Seats"
+        element={
+          <ProtectedRoute>
+            <MasoroSeatsPage />
+          </ProtectedRoute>
+        }
+      />
+      
 
       {/* ========== ROOM BOOKING ROUTES ========== */}
       <Route
