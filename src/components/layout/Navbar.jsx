@@ -104,9 +104,9 @@ const Navbar = () => {
                     Masoro <i className="fas fa-chevron-down"></i>
                   </span>
                   <div className="navbar-dropdown-menu">
-                    <Link to="/rooms" className="navbar-dropdown-item">Seats</Link>
-                    <Link to="/room-bookings" className="navbar-dropdown-item">My Bookings</Link>
-                    <Link to="/join-bookings" className="navbar-dropdown-item">My Waitlist</Link>
+                    <Link to="/Masoro-Seats" className="navbar-dropdown-item">Seats</Link>
+                    <Link to="/bookings" className="navbar-dropdown-item">My Bookings</Link>
+                    <Link to="/waitlist" className="navbar-dropdown-item">My Waitlist</Link>
                   </div>
                 </div>
               </>
@@ -249,7 +249,7 @@ const Navbar = () => {
                 </div>
                 <div className={`navbar-mobile-dropdown-menu ${activeDropdown === 'Masoro' ? 'active' : ''}`}>
                   <Link 
-                    to="/Masoro" 
+                    to="/Masoro-Seats" 
                     className="navbar-mobile-dropdown-item"
                     onClick={closeMobileMenu}
                   >
