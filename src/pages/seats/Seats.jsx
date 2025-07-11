@@ -300,7 +300,7 @@ const SeatsPage = () => {
       <div className="container">
         <ScheduleStatusBanner />
         <div className="content-header">
-          <h2>Available Seats</h2>
+          <h2>Gishushu Seats</h2>
           <div className="filters">
             <select 
               className="filter-select"
