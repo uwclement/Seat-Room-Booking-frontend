@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect } from 'react';
 import { login as apiLogin, register as apiRegister } from '../api/auth';
 
@@ -10,17 +11,26 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        console.error('Error parsing stored user data:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
     }
     setLoading(false);
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (identifier, password) => {
     try {
-      const response = await apiLogin(email, password);
+      const response = await apiLogin(identifier, password);
+      
+      // Store token and user data
       localStorage.setItem('token', response.token);
       localStorage.setItem('user', JSON.stringify(response));
       setUser(response);
+      
       return { success: true };
     } catch (error) {
       return { 
@@ -49,36 +59,123 @@ export const AuthProvider = ({ children }) => {
   };
 
   const isAuthenticated = () => {
-    return !!user;
+    return !!user && !!localStorage.getItem('token');
   };
 
   const isAdmin = () => {
-    return user?.roles.includes('ROLE_ADMIN');
+    return user?.roles?.includes('ROLE_ADMIN');
   };
 
-  // NEW: Enhanced role checking functions
   const isEquipmentAdmin = () => {
-    return user?.roles.includes('ROLE_EQUIPMENT_ADMIN');
+    return user?.roles?.includes('ROLE_EQUIPMENT_ADMIN');
   };
 
   const isProfessor = () => {
-    return user?.roles.includes('ROLE_PROFESSOR');
+    return user?.roles?.includes('ROLE_PROFESSOR');
   };
 
   const isHOD = () => {
-    return user?.roles.includes('ROLE_HOD');
+    return user?.roles?.includes('ROLE_HOD');
   };
 
+  // New: Check if user is a librarian
+  const isLibrarian = () => {
+    return user?.roles?.includes('ROLE_LIBRARIAN');
+  };
+
+  // New: Check if user is a student
+  const isStudent = () => {
+    return user?.roles?.includes('ROLE_USER') || user?.userType === 'STUDENT';
+  };
+
+  // New: Check if user is staff
+  const isStaff = () => {
+    return user?.userType === 'STAFF';
+  };
+
+  // New: Get user's location
+  const getUserLocation = () => {
+    return user?.location;
+  };
+
+  // New: Check if user is at a specific location
+  const isAtLocation = (location) => {
+    return user?.location === location;
+  };
+
+  // New: Get user's identifier (studentId or employeeId)
+  const getUserIdentifier = () => {
+    return user?.identifier || user?.studentId || user?.employeeId;
+  };
+
+  // Enhanced: Check if user has specific role
   const hasRole = (role) => {
-    return user?.roles.includes(role);
+    return user?.roles?.includes(role);
   };
 
+  // Enhanced: Get primary user role for display
   const getUserRole = () => {
-    if (isHOD()) return 'HOD';
+    if (!user?.roles) return 'Student';
+    
+    if (isHOD()) return 'Head of Department';
     if (isEquipmentAdmin()) return 'Equipment Admin';
     if (isProfessor()) return 'Professor';
-    if (isAdmin()) return 'Admin';
+    if (isAdmin()) return 'Administrator';
+    if (isLibrarian()) {
+      const location = getUserLocation();
+      return `Librarian${location ? ` (${location})` : ''}`;
+    }
     return 'Student';
+  };
+
+  // New: Check if user account is fully activated
+  const isAccountActive = () => {
+    return user?.emailVerified && !user?.mustChangePassword;
+  };
+
+  // New: Check if user needs to change password
+  const mustChangePassword = () => {
+    return user?.mustChangePassword;
+  };
+
+  // New: Check if email is verified
+  const isEmailVerified = () => {
+    return user?.emailVerified;
+  };
+
+  // Enhanced: Get user permissions based on roles and location
+  const getUserPermissions = () => {
+    const permissions = [];
+    
+    if (isAdmin()) {
+      permissions.push('FULL_ADMIN_ACCESS', 'USER_MANAGEMENT', 'SYSTEM_CONFIG');
+    }
+    
+    if (isLibrarian()) {
+      permissions.push('LIBRARY_MANAGEMENT', 'BOOK_MANAGEMENT');
+      const location = getUserLocation();
+      if (location) {
+        permissions.push(`LIBRARY_${location}_ACCESS`);
+      }
+    }
+    
+    if (isProfessor()) {
+      permissions.push('EQUIPMENT_REQUEST', 'ACADEMIC_RESOURCES');
+    }
+    
+    if (isEquipmentAdmin()) {
+      permissions.push('EQUIPMENT_MANAGEMENT', 'LAB_MANAGEMENT');
+    }
+    
+    if (isHOD()) {
+      permissions.push('PROFESSOR_APPROVAL', 'DEPARTMENT_MANAGEMENT');
+    }
+    
+    if (isStudent()) {
+      permissions.push('SEAT_BOOKING', 'RESOURCE_ACCESS');
+    }
+    
+    return permissions;
   };
 
   const authContextValue = {
@@ -87,13 +184,33 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    
+    // Authentication checks
     isAuthenticated,
+    
+    // Role checks
     isAdmin,
     isEquipmentAdmin,
     isProfessor,
     isHOD,
+    isLibrarian,
+    isStudent,
+    isStaff,
     hasRole,
-    getUserRole
+    
+    // Location functions
+    getUserLocation,
+    isAtLocation,
+    
+    // User info functions
+    getUserIdentifier,
+    getUserRole,
+    getUserPermissions,
+    
+    // Account status checks
+    isAccountActive,
+    mustChangePassword,
+    isEmailVerified
   };
 
   return (

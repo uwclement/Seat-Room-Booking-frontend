@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate , useNavigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { AdminProvider } from './context/AdminContext';
 import { ScheduleProvider } from './context/ScheduleContext';
@@ -18,6 +18,14 @@ import { AdminSeatBookingProvider } from './context/AdminSeatBookingContext';
 
 // FontAwesome CSS
 import '@fortawesome/fontawesome-free/css/all.min.css';
+
+// user management
+import { UserManagementProvider } from './context/UserManagementContext';
+import UserManagementDashboard from './components/admin/UserManagement/UserManagementDashboard';
+import PasswordProtectedRoute from './pages/auth/PasswordProtectedRoute';
+import ChangePassword from './pages/auth/ChangePassword';
+import AdminPasswordManagement from './components/admin/UserManagement/AdminPasswordManagement';
+
 
 // User Seats pages
 import UserDashboard from './pages/user/Dashboard';
@@ -74,11 +82,12 @@ import './assets/css/seat-management.css';
 import './assets/css/RoomManagementStyle.css';
 import './assets/css/admin-room-booking.css';
 import './assets/css/qr-scanner.css'; 
+import './assets/css/user-management.css';
 
 // Protected route component with enhanced role checking
 const ProtectedRoute = ({ children, requiredRole, allowedRoles = [] }) => {
   const { isAuthenticated, isAdmin, isEquipmentAdmin, isProfessor, isHOD, loading } = useAuth();
-  
+  const navigate = useNavigate();
   if (loading) {
     return (
       <div className="loading-container">
@@ -169,7 +178,9 @@ const AppRoutes = () => {
       } />
       
       <Route path="/qr-scanner" element={<QRScannerPage />} />
-      
+
+      <Route path="/change-password" element={<ChangePassword />} />
+
       {/* Home route with role-based redirect */}
       <Route
         path="/"
@@ -179,7 +190,36 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
+      <Route
+       path="/admin/users"
+        element={
+         <ProtectedRoute requiredRole="admin">
+          <UserManagementProvider>
+        <div className="admin-page-container">
+          <AdminSidebar activePage="users" />
+          <UserManagementDashboard />
+        </div>
+      </UserManagementProvider>
+    </ProtectedRoute>
+  }
+/>
       
+       <Route
+  path="/admin/passwords"
+  element={
+    <ProtectedRoute requiredRole="admin">
+      <UserManagementProvider>
+        <div className="admin-page-container">
+          <AdminSidebar activePage="passwords" />
+          <AdminPasswordManagement show={true} onClose={() => Navigate('/admin/users')} />
+        </div>
+      </UserManagementProvider>
+    </ProtectedRoute>
+  }
+/>
+
+
       {/* ========== STUDENT/USER ROUTES ========== */}
       <Route
         path="/seats"

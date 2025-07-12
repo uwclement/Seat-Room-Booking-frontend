@@ -36,3 +36,4 @@ export const approveProfessorCourses = async (professorId, courseIds) => {
 export const getActiveCourses = async () => {
   return safeApiCall(() => api.get('professor/courses/active'));
 };
+
