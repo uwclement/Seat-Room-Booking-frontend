@@ -10,14 +10,15 @@ const AdminSidebar = ({ activePage }) => {
     // { id: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt', path: '/admin' }
   ];
 
-  // Room Admin specific items
+  //  Admin specific items
   const roomAdminItems = [
     { id: 'seats', label: 'Seat Management', icon: 'fa-chair', path: '/admin/seats' },
     { id: 'seatsBooking', label: 'Seat Bookings', icon: 'fa-calendar-check', path: '/admin/seat-bookings' },
     { id: 'rooms', label: 'Room Management', icon: 'fa-door-open', path: '/admin/rooms' },
     { id: 'schedule', label: 'Schedule Management', icon: 'fa-calendar-alt', path: '/admin/schedule' },
     { id: 'bookings', label: 'Room Bookings', icon: 'fa-bookmark', path: '/admin/Roombookings' },
-    { id: 'users', label: 'User Management', icon: 'fa-users', path: '/admin/users' }
+    { id: 'users', label: 'User Management', icon: 'fa-users', path: '/admin/users' },
+    { id: 'passwords', label: 'Password Management', icon: 'fa-key', path: '/admin/passwords' }
   ];
 
   // Equipment Admin specific items

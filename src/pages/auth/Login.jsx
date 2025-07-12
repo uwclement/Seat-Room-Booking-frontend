@@ -1,3 +1,4 @@
+// src/pages/auth/Login.js
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
@@ -7,7 +8,7 @@ import Alert from '../../components/common/Alert';
 import '../../assets/css/auth.css';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState(''); // Changed from email to identifier
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -15,8 +16,8 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  // Function to determine redirect path based on user roles
-  const getRedirectPath = (userRoles) => {
+  // Enhanced redirect logic with librarian location consideration
+  const getRedirectPath = (userRoles, userLocation, userType) => {
     if (!userRoles || !Array.isArray(userRoles)) {
       return '/seats'; // Default for regular users
     }
@@ -35,7 +36,13 @@ const Login = () => {
     }
     
     if (userRoles.includes('ROLE_ADMIN')) {
-      return '/admin';
+      return '/admin/users'; // Direct to user management for admins
+    }
+    
+    // Location-based routing for librarians
+    if (userRoles.includes('ROLE_LIBRARIAN')) {
+      // You can customize this based on your librarian dashboard requirements
+      return '/admin/seats'; // Or create specific librarian dashboards
     }
     
     // Default for ROLE_USER or any other role
@@ -48,19 +55,24 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const result = await login(email, password);
+      // Updated to use identifier instead of email
+      const result = await login(identifier, password);
       if (result.success) {
         // Get the user data directly from local storage to ensure it's up to date
         const userData = JSON.parse(localStorage.getItem('user'));
         
-        // Determine redirect path based on user roles
-        const redirectPath = getRedirectPath(userData?.roles);
+        // Enhanced redirect path determination
+        const redirectPath = getRedirectPath(
+          userData?.roles, 
+          userData?.location,
+          userData?.userType
+        );
         
         // Navigate to the appropriate dashboard
         navigate(redirectPath);
         
-        // Optional: Show welcome message based on role
-        const roleMessage = getRoleWelcomeMessage(userData?.roles);
+        // Enhanced welcome message
+        const roleMessage = getRoleWelcomeMessage(userData?.roles, userData?.location);
         if (roleMessage) {
           console.log(roleMessage); // You can replace this with a toast notification
         }
@@ -75,8 +87,8 @@ const Login = () => {
     }
   };
 
-  // Optional: Function to get role-specific welcome message
-  const getRoleWelcomeMessage = (userRoles) => {
+  // Enhanced welcome message with location awareness
+  const getRoleWelcomeMessage = (userRoles, location) => {
     if (!userRoles || !Array.isArray(userRoles)) {
       return 'Welcome to the Library Management System!';
     }
@@ -97,7 +109,44 @@ const Login = () => {
       return 'Welcome to Admin Dashboard!';
     }
     
+    if (userRoles.includes('ROLE_LIBRARIAN')) {
+      const locationName = location === 'GISHUSHU' ? 'Gishushu Campus' : 
+                          location === 'MASORO' ? 'Masoro Campus' : location;
+      return `Welcome, ${locationName} Librarian!`;
+    }
+    
     return 'Welcome to the Library Management System!';
+  };
+
+  // Helper function to determine input placeholder based on what user is typing
+  const getInputPlaceholder = () => {
+    if (!identifier) {
+      return 'Email, Student ID, or Employee ID';
+    }
+    
+    // Simple detection logic
+    if (identifier.includes('@')) {
+      return 'Email address';
+    } else if (identifier.toLowerCase().startsWith('stu') || /^\d+$/.test(identifier)) {
+      return 'Student ID';
+    } else if (identifier.toLowerCase().includes('emp') || identifier.toLowerCase().includes('lib')) {
+      return 'Employee ID';
+    }
+    
+    return 'Email, Student ID, or Employee ID';
+  };
+
+  // Helper function to show what type of login is being attempted
+  const getLoginType = () => {
+    if (!identifier) return '';
+    
+    if (identifier.includes('@')) {
+      return 'Signing in with email';
+    } else if (identifier.toLowerCase().startsWith('stu') || /^\d+$/.test(identifier)) {
+      return 'Signing in as student';
+    } else {
+      return 'Signing in as staff';
+    }
   };
 
   return (
@@ -115,15 +164,25 @@ const Login = () => {
         
         <form className="auth-form" onSubmit={handleSubmit}>
           <Input
-            label="Email address"
-            type="email"
-            id="email"
-            name="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            label="Login"
+            type="text"
+            id="identifier"
+            name="identifier"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            placeholder={getInputPlaceholder()}
             required
-            autoComplete="email"
+            autoComplete="username"
           />
+          
+          {/* Show login type hint */}
+          {identifier && (
+            <div className="login-type-hint">
+              <small className="text-muted">
+                <i className="fas fa-info-circle"></i> {getLoginType()}
+              </small>
+            </div>
+          )}
 
           <Input
             label="Password"

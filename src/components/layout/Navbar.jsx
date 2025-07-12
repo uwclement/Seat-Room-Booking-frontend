@@ -121,7 +121,7 @@ const Navbar = () => {
                     <NotificationComponent />
                   </div> 
                 )}
-                <span className="navbar-username">{user.studentId}</span>
+                <span className="navbar-username">{user.identifier}</span>
                 <button onClick={handleLogout} className="navbar-logout">Logout</button>
               </div>
             ) : (
