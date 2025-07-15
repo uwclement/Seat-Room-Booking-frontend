@@ -141,7 +141,21 @@ const isUserBooking = () => {
       return;
     }
 
-    // Check if end time is after start time
+    // NEW VALIDATION 1: Check if start time is in the past (for today's date)
+    const now = new Date();
+    const selectedDate = new Date(bookingDate);
+    const startDateTime = new Date(`${bookingDate}T${startTime}:00`);
+    const isToday = selectedDate.toDateString() === now.toDateString();
+    
+    if (isToday && startDateTime <= now) {
+      setAlert({ 
+        type: 'danger', 
+        message: 'Start time cannot be in the past' 
+      });
+      return;
+    }
+
+    // NEW VALIDATION 2: Check if end time is earlier than start time
     if (startTime >= endTime) {
       setAlert({ 
         type: 'danger', 
@@ -199,6 +213,29 @@ const isUserBooking = () => {
       setAlert({
         type: 'danger',
         message: 'Please select both start and end times'
+      });
+      return;
+    }
+
+    // NEW VALIDATION 1: Check if start time is in the past (for today's date)
+    const now = new Date();
+    const selectedDate = new Date(bookingDate);
+    const startDateTime = new Date(`${bookingDate}T${startTime}:00`);
+    const isToday = selectedDate.toDateString() === now.toDateString();
+    
+    if (isToday && startDateTime <= now) {
+      setAlert({ 
+        type: 'danger', 
+        message: 'Start time cannot be in the past' 
+      });
+      return;
+    }
+
+    // NEW VALIDATION 2: Check if end time is earlier than start time
+    if (startTime >= endTime) {
+      setAlert({ 
+        type: 'danger', 
+        message: 'End time must be after start time' 
       });
       return;
     }

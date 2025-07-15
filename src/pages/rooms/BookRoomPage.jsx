@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useRoom } from '../../context/RoomBookingContext';
-import { createRoomBooking, getRoomById } from '../../api/roomBooking'; // Removed getRoomAvailability
+import { createRoomBooking, getRoomById } from '../../api/roomBooking';
 import './BookRoom.css';
 
 const BookRoom = () => {
@@ -11,12 +11,11 @@ const BookRoom = () => {
   const { addBooking } = useRoom();
   
   const [room, setRoom] = useState(null);
-  // Removed availability state since we're not using it
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   
-  // Form state
+  // UPDATED: Enhanced form state with identifier field
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -28,6 +27,7 @@ const BookRoom = () => {
     requiresCheckIn: true,
     reminderEnabled: true,
     invitedUserEmails: '',
+    invitedUserIdentifiers: '', // NEW: Add identifier field
     requestedEquipmentIds: [],
     isRecurring: false,
     recurringDetails: {
@@ -61,7 +61,6 @@ const BookRoom = () => {
   const loadRoomData = async () => {
     try {
       setLoading(true);
-      // Only load room data, removed availability call
       const roomData = await getRoomById(roomId);
       
       setRoom(roomData);
@@ -174,6 +173,7 @@ const BookRoom = () => {
     return true;
   };
 
+  // UPDATED: Enhanced handleSubmit function
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -198,9 +198,15 @@ const BookRoom = () => {
         requiresCheckIn: formData.requiresCheckIn,
         reminderEnabled: formData.reminderEnabled,
         requestedEquipmentIds: formData.requestedEquipmentIds,
+        
+        // UPDATED: Enhanced invitation handling
         invitedUserEmails: formData.invitedUserEmails
           ? formData.invitedUserEmails.split(',').map(email => email.trim()).filter(Boolean)
           : null,
+        invitedUserIdentifiers: formData.invitedUserIdentifiers // NEW
+          ? formData.invitedUserIdentifiers.split(',').map(id => id.trim()).filter(Boolean)
+          : null,
+          
         isRecurring: formData.isRecurring,
         recurringDetails: formData.isRecurring ? formData.recurringDetails : null
       };
@@ -312,7 +318,7 @@ const BookRoom = () => {
           </div>
         </div>
 
-        {/* Rest of the component remains the same - booking form, etc. */}
+        {/* Booking Form */}
         <div className="booking-form-container">
           <form onSubmit={handleSubmit} className="booking-form">
             {error && (
@@ -392,7 +398,7 @@ const BookRoom = () => {
               </div>
             </div>
 
-            {/* Sharing Options */}
+            {/* Enhanced Sharing & Collaboration Section */}
             <div className="form-section">
               <h3>Sharing & Collaboration</h3>
               
@@ -422,17 +428,44 @@ const BookRoom = () => {
                 </label>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="invitedUserEmails">Invite Users (Email)</label>
-                <input
-                  type="text"
-                  id="invitedUserEmails"
-                  name="invitedUserEmails"
-                  value={formData.invitedUserEmails}
-                  onChange={handleInputChange}
-                  placeholder="email1@example.com, email2@example.com"
-                />
-                <small>Separate multiple emails with commas</small>
+              {/* Enhanced invitation fields */}
+              <div className="invitation-fields">
+                <h4>Invite Participants</h4>
+                
+                <div className="form-group">
+                  <label htmlFor="invitedUserEmails">
+                    <i className="fas fa-envelope"></i> Invite by Email
+                  </label>
+                  <input
+                    type="text"
+                    id="invitedUserEmails"
+                    name="invitedUserEmails"
+                    value={formData.invitedUserEmails}
+                    onChange={handleInputChange}
+                    placeholder="email1@example.com, email2@example.com"
+                  />
+                  <small>Separate multiple emails with commas</small>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="invitedUserIdentifiers">
+                    <i className="fas fa-id-card"></i> Invite by Student ID
+                  </label>
+                  <input
+                    type="text"
+                    id="invitedUserIdentifiers"
+                    name="invitedUserIdentifiers"
+                    value={formData.invitedUserIdentifiers}
+                    onChange={handleInputChange}
+                    placeholder="24604, 24603, 24601"
+                  />
+                  <small>Separate multiple IDs with commas (Student IDs)</small>
+                </div>
+
+                <div className="invitation-help">
+                  <i className="fas fa-info-circle"></i>
+                  <span>You can invite users by email address or their Student ID</span>
+                </div>
               </div>
             </div>
 

@@ -53,7 +53,7 @@ export const AdminProvider = ({ children }) => {
 
   // Fetch disabled seats
   const fetchDisabledSeats = useCallback(async () => {
-    if (!isAuthenticated() || !isAdmin()) return; // Skip if not authenticated admin
+    if (!isAuthenticated() || !isAdmin()  ) return; // Skip if not authenticated admin
     
     setLoading(true);
     try {
@@ -68,7 +68,7 @@ export const AdminProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin ]);
 
   // Handle seat selection
   const toggleSeatSelection = (seatId) => {

@@ -11,6 +11,7 @@ import UserStatsCards from './UserStatsCards';
 import LibrarianManagement from './LibrarianManagement';
 import Alert from '../../common/Alert';
 import LoadingSpinner from '../../common/LoadingSpinner';
+import AdminPasswordManagement from './AdminPasswordManagement';
 
 const UserManagementDashboard = () => {
   const { user } = useAuth();
@@ -35,6 +36,7 @@ const UserManagementDashboard = () => {
   const [showLibrarianModal, setShowLibrarianModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -123,6 +125,13 @@ const UserManagementDashboard = () => {
               <i className="fas fa-book-reader"></i>
               Manage Librarians
             </button>
+            <button 
+             className="btn btn-warning"
+             onClick={() => setShowPasswordModal(true)}
+            >
+               <i className="fas fa-key"></i>
+                Password Management
+            </button>
             {selectedUsers.length > 0 && (
               <button 
                 className="btn btn-warning"
@@ -149,6 +158,7 @@ const UserManagementDashboard = () => {
 
       {loading && <LoadingSpinner />}
 
+      
       {/* User Management Tabs */}
       <div className="admin-card">
         <div className="card-header">
@@ -223,6 +233,14 @@ const UserManagementDashboard = () => {
           }}
         />
       )}
+
+       
+       {showPasswordModal && (
+        <AdminPasswordManagement
+       show={showPasswordModal}
+       onClose={() => setShowPasswordModal(false)}
+      />
+     )}
 
       {showBulkModal && (
         <BulkActionModal

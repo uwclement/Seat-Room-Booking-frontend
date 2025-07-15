@@ -62,14 +62,14 @@ const RoomBrowser = () => {
     navigate(`/book-room/${roomId}`);
   };
 
-  const handleQuickBook = async (roomId) => {
-    try {
-      // For now, redirect to booking page - you can implement quick booking logic later
-      navigate(`/book-room/${roomId}?quick=true`);
-    } catch (err) {
-      console.error('Quick booking failed:', err);
-    }
-  };
+  // const handleQuickBook = async (roomId) => {
+  //   try {
+  //     // For now, redirect to booking page - you can implement quick booking logic later
+  //     navigate(`/book-room/${roomId}?quick=true`);
+  //   } catch (err) {
+  //     console.error('Quick booking failed:', err);
+  //   }
+  // };
 
   const getRoomStatusInfo = (room) => {
     const availability = roomAvailability[room.id];
@@ -252,7 +252,7 @@ const RoomBrowser = () => {
                             {equip.name}
                           </span>
                         ))}
-                        {room.equipment.length > 3 && (
+                        {room.equipment.length > 3 && ( 
                           <span className="equipment-more">
                             +{room.equipment.length - 3} more
                           </span>
@@ -279,14 +279,14 @@ const RoomBrowser = () => {
                     Book Room
                   </button>
                   
-                  {statusInfo.status === 'available' && (
+                  {/* {statusInfo.status === 'available' && (
                     <button
                       onClick={() => handleQuickBook(room.id)}
                       className="btn btn-secondary"
                     >
                       Quick Book
                     </button>
-                  )}
+                  )} */}
                   
                   <button
                     onClick={() => loadRoomAvailability(room.id)}

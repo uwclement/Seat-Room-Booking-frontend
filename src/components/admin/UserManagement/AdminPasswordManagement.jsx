@@ -1,3 +1,4 @@
+// src/components/admin/UserManagement/AdminPasswordManagement.js
 import React, { useState, useEffect } from 'react';
 import { useUserManagement } from '../../../hooks/useUserManagement';
 import { 
@@ -12,6 +13,7 @@ import LoadingSpinner from '../../common/LoadingSpinner';
 const AdminPasswordManagement = ({ show, onClose }) => {
   const { loading: contextLoading } = useUserManagement();
   
+  // Initialize as empty array to prevent filter errors
   const [staffUsers, setStaffUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -32,11 +34,14 @@ const AdminPasswordManagement = ({ show, onClose }) => {
     
     try {
       const data = await getStaffWithDefaultPasswords();
-      setStaffUsers(data);
+      
+      // Ensure data is always an array
+      const staffArray = Array.isArray(data) ? data : [];
+      setStaffUsers(staffArray);
       
       // Pre-load passwords for users who haven't changed them
       const passwords = {};
-      for (const user of data) {
+      for (const user of staffArray) {
         if (user.mustChangePassword) {
           try {
             const passwordInfo = await getDefaultPassword(user.id);
@@ -51,6 +56,8 @@ const AdminPasswordManagement = ({ show, onClose }) => {
     } catch (err) {
       setError('Failed to fetch staff users. Please try again.');
       console.error(err);
+      // Set empty array on error
+      setStaffUsers([]);
     } finally {
       setLoading(false);
     }
@@ -77,7 +84,8 @@ const AdminPasswordManagement = ({ show, onClose }) => {
         )
       );
       
-      setSuccess(`Password reset successfully for ${staffUsers.find(u => u.id === userId)?.fullName}`);
+      const userName = staffUsers.find(u => u.id === userId)?.fullName || 'User';
+      setSuccess(`Password reset successfully for ${userName}`);
       
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reset password');
@@ -90,24 +98,25 @@ const AdminPasswordManagement = ({ show, onClose }) => {
     }
   };
 
-//   const handleSendPasswordEmail = async (userId) => {
-//     setProcessingUsers(prev => new Set(prev).add(userId));
-//     setError('');
-//     setSuccess('');
+  // const handleSendPasswordEmail = async (userId) => {
+  //   setProcessingUsers(prev => new Set(prev).add(userId));
+  //   setError('');
+  //   setSuccess('');
     
-//     try {
-//       await sendPasswordEmail(userId);
-//       setSuccess(`Password email sent successfully to ${staffUsers.find(u => u.id === userId)?.fullName}`);
-//     } catch (err) {
-//       setError(err.response?.data?.message || 'Failed to send password email');
-//     } finally {
-//       setProcessingUsers(prev => {
-//         const newSet = new Set(prev);
-//         newSet.delete(userId);
-//         return newSet;
-//       });
-//     }
-//   };
+  //   try {
+  //     await sendPasswordEmail(userId);
+  //     const userName = staffUsers.find(u => u.id === userId)?.fullName || 'User';
+  //     setSuccess(`Password email sent successfully to ${userName}`);
+  //   } catch (err) {
+  //     setError(err.response?.data?.message || 'Failed to send password email');
+  //   } finally {
+  //     setProcessingUsers(prev => {
+  //       const newSet = new Set(prev);
+  //       newSet.delete(userId);
+  //       return newSet;
+  //     });
+  //   }
+  // };
 
   const togglePasswordVisibility = (userId) => {
     setShowPasswords(prev => ({
@@ -119,7 +128,8 @@ const AdminPasswordManagement = ({ show, onClose }) => {
   const copyToClipboard = async (text, userId) => {
     try {
       await navigator.clipboard.writeText(text);
-      setSuccess(`Password copied to clipboard for ${staffUsers.find(u => u.id === userId)?.fullName}`);
+      const userName = staffUsers.find(u => u.id === userId)?.fullName || 'User';
+      setSuccess(`Password copied to clipboard for ${userName}`);
     } catch (err) {
       setError('Failed to copy to clipboard');
     }
@@ -132,6 +142,7 @@ const AdminPasswordManagement = ({ show, onClose }) => {
     return <span className="status-badge status-success">Password Changed</span>;
   };
 
+  // Safe filter functions with array checks
   const getUsersNeedingPasswordChange = () => {
     return staffUsers.filter(user => user.mustChangePassword);
   };
@@ -142,6 +153,7 @@ const AdminPasswordManagement = ({ show, onClose }) => {
 
   if (!show) return null;
 
+  // Safe access to filtered arrays
   const needingChange = getUsersNeedingPasswordChange();
   const changedPassword = getUsersWithChangedPassword();
 
@@ -233,43 +245,41 @@ const AdminPasswordManagement = ({ show, onClose }) => {
                         </td>
                         <td>
                           <span className="role-badge">
-                            {user.roles?.map(role => role.replace('ROLE_', '')).join(', ')}
+                            {user.roles?.map(role => role.replace('ROLE_', '')).join(', ') || 'N/A'}
                           </span>
                         </td>
                         <td>
-                          <span className={`location-badge location-${user.location?.toLowerCase()}`}>
-                            {user.location}
+                          <span className={`location-badge location-${user.location?.toLowerCase() || 'default'}`}>
+                            {user.location || 'N/A'}
                           </span>
                         </td>
                         <td>
                           <div className="password-field">
                             {passwordData[user.id] ? (
-                              <>
-                                <div className="password-display">
-                                  <input
-                                    type={showPasswords[user.id] ? 'text' : 'password'}
-                                    value={passwordData[user.id]}
-                                    readOnly
-                                    className="password-input"
-                                  />
-                                  <div className="password-actions">
-                                    <button
-                                      className="btn btn-sm btn-secondary"
-                                      onClick={() => togglePasswordVisibility(user.id)}
-                                      title={showPasswords[user.id] ? 'Hide password' : 'Show password'}
-                                    >
-                                      <i className={`fas ${showPasswords[user.id] ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                                    </button>
-                                    <button
-                                      className="btn btn-sm btn-info"
-                                      onClick={() => copyToClipboard(passwordData[user.id], user.id)}
-                                      title="Copy to clipboard"
-                                    >
-                                      <i className="fas fa-copy"></i>
-                                    </button>
-                                  </div>
+                              <div className="password-display">
+                                <input
+                                  type={showPasswords[user.id] ? 'text' : 'password'}
+                                  value={passwordData[user.id]}
+                                  readOnly
+                                  className="password-input"
+                                />
+                                <div className="password-actions">
+                                  <button
+                                    className="btn btn-sm btn-secondary"
+                                    onClick={() => togglePasswordVisibility(user.id)}
+                                    title={showPasswords[user.id] ? 'Hide password' : 'Show password'}
+                                  >
+                                    <i className={`fas ${showPasswords[user.id] ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                                  </button>
+                                  <button
+                                    className="btn btn-sm btn-info"
+                                    onClick={() => copyToClipboard(passwordData[user.id], user.id)}
+                                    title="Copy to clipboard"
+                                  >
+                                    <i className="fas fa-copy"></i>
+                                  </button>
                                 </div>
-                              </>
+                              </div>
                             ) : (
                               <span className="no-password">Loading...</span>
                             )}
@@ -348,12 +358,12 @@ const AdminPasswordManagement = ({ show, onClose }) => {
                         </td>
                         <td>
                           <span className="role-badge">
-                            {user.roles?.map(role => role.replace('ROLE_', '')).join(', ')}
+                            {user.roles?.map(role => role.replace('ROLE_', '')).join(', ') || 'N/A'}
                           </span>
                         </td>
                         <td>
-                          <span className={`location-badge location-${user.location?.toLowerCase()}`}>
-                            {user.location}
+                          <span className={`location-badge location-${user.location?.toLowerCase() || 'default'}`}>
+                            {user.location || 'N/A'}
                           </span>
                         </td>
                         <td>

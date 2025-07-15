@@ -78,7 +78,7 @@ export const AdminSeatBookingProvider = ({ children }) => {
 
   // Fetch bookings in date range
   const fetchBookingsInRange = useCallback(async (startDate, endDate) => {
-    if (!isAuthenticated() || !isAdmin()) return;
+    if (!isAuthenticated() || !isAdmin() ) return;
     
     setLoading(true);
     setError('');
