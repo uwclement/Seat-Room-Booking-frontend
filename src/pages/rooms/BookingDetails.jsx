@@ -327,7 +327,7 @@ const BookingDetails = () => {
           </div>
           
           <div className="header-actions">
-            {statusInfo.canCheckIn && (
+            {/* {statusInfo.canCheckIn && (
               <button
                 onClick={handleCheckIn}
                 className="btn btn-success"
@@ -339,7 +339,7 @@ const BookingDetails = () => {
                   <><i className="fas fa-user-check"></i> Check In</>
                 )}
               </button>
-            )}
+            )} */}
             
             {statusInfo.canEdit && (
               <button

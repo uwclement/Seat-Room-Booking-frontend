@@ -41,8 +41,7 @@ const Login = () => {
     
     // Location-based routing for librarians
     if (userRoles.includes('ROLE_LIBRARIAN')) {
-      // You can customize this based on your librarian dashboard requirements
-      return '/admin/seats'; // Or create specific librarian dashboards
+      return '/admin/seats'; // Redirect to Admin page with only Librarian features
     }
     
     // Default for ROLE_USER or any other role

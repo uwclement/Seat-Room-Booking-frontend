@@ -78,42 +78,39 @@ export const AuthProvider = ({ children }) => {
     return user?.roles?.includes('ROLE_HOD');
   };
 
-  // New: Check if user is a librarian
   const isLibrarian = () => {
     return user?.roles?.includes('ROLE_LIBRARIAN');
   };
 
-  // New: Check if user is a student
+
   const isStudent = () => {
     return user?.roles?.includes('ROLE_USER') || user?.userType === 'STUDENT';
   };
 
-  // New: Check if user is staff
   const isStaff = () => {
     return user?.userType === 'STAFF';
   };
 
-  // New: Get user's location
   const getUserLocation = () => {
     return user?.location;
   };
 
-  // New: Check if user is at a specific location
+  // Check if user is at a specific location
   const isAtLocation = (location) => {
     return user?.location === location;
   };
 
-  // New: Get user's identifier (studentId or employeeId)
+  // Get user's identifier (studentId or employeeId)
   const getUserIdentifier = () => {
     return user?.identifier || user?.studentId || user?.employeeId;
   };
 
-  // Enhanced: Check if user has specific role
+  // Check if user has specific role
   const hasRole = (role) => {
     return user?.roles?.includes(role);
   };
 
-  // Enhanced: Get primary user role for display
+  // Get primary user role for display
   const getUserRole = () => {
     if (!user?.roles) return 'Student';
     
@@ -128,22 +125,22 @@ export const AuthProvider = ({ children }) => {
     return 'Student';
   };
 
-  // New: Check if user account is fully activated
+  //Check if user account is fully activated
   const isAccountActive = () => {
     return user?.emailVerified && !user?.mustChangePassword;
   };
 
-  // New: Check if user needs to change password
+  // Check if user needs to change password
   const mustChangePassword = () => {
     return user?.mustChangePassword;
   };
 
-  // New: Check if email is verified
+  // Check if email is verified
   const isEmailVerified = () => {
     return user?.emailVerified;
   };
 
-  // Enhanced: Get user permissions based on roles and location
+  // Get user permissions based on roles and location
   const getUserPermissions = () => {
     const permissions = [];
     
@@ -152,7 +149,7 @@ export const AuthProvider = ({ children }) => {
     }
     
     if (isLibrarian()) {
-      permissions.push('LIBRARY_MANAGEMENT', 'BOOK_MANAGEMENT');
+      permissions.push('FULL_ADMIN_ACCESS','LIBRARY_MANAGEMENT', 'BOOK_MANAGEMENT');
       const location = getUserLocation();
       if (location) {
         permissions.push(`LIBRARY_${location}_ACCESS`);
