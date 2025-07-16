@@ -14,14 +14,59 @@ export const getRoomById = async (roomId) => {
 
 // Map inviteUsersToBooking to your existing inviteParticipants function
 export const inviteUsersToBooking = async (bookingId, inviteData) => {
-  return await inviteParticipants(bookingId, inviteData);
+  try {
+    console.log('API: Inviting users to booking', bookingId, inviteData);
+    
+    const response = await api.post(`/Roombookings/${bookingId}/participants/invite`, inviteData);
+    
+    console.log('API: Invitation response', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('API Error: Failed to invite users', error);
+    
+    // Enhanced error handling
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else if (error.response?.status === 400) {
+      throw new Error('Invalid invitation request');
+    } else if (error.response?.status === 403) {
+      throw new Error('Not authorized to invite participants');
+    } else if (error.response?.status === 404) {
+      throw new Error('Booking not found');
+    }
+    
+    throw error;
+  }
 };
 
 // Map removeUserFromBooking to your existing removeParticipant function  
 export const removeUserFromBooking = async (bookingId, participantId) => {
-  return await removeParticipant(bookingId, participantId);
+  try {
+    console.log('API: Removing participant', participantId, 'from booking', bookingId);
+    
+    const response = await api.delete(`/Roombookings/${bookingId}/participants/${participantId}`);
+    
+    console.log('API: Remove participant response', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('API Error: Failed to remove participant', error);
+    
+    // Enhanced error handling
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    } else if (error.response?.status === 400) {
+      throw new Error('Invalid remove request');
+    } else if (error.response?.status === 403) {
+      throw new Error('Not authorized to remove this participant');
+    } else if (error.response?.status === 404) {
+      throw new Error('Participant or booking not found');
+    }
+    
+    throw error;
+  }
 };
-
 // Map requestToJoinBooking to your existing joinRoomBooking function
 export const requestToJoinBooking = async (bookingId) => {
   return await joinRoomBooking(bookingId);
@@ -76,8 +121,28 @@ export const cancelRoomBooking = async (bookingId) => {
 };
 
 export const getRoomBookingById = async (bookingId) => {
-  const response = await api.get(`/Roombookings/${bookingId}`);
-  return response.data;
+  try {
+    console.log('API: Fetching booking details for', bookingId);
+    
+    const response = await api.get(`/Roombookings/${bookingId}`);
+    
+    console.log('API: Booking details response', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('API Error: Failed to fetch booking details', error);
+    
+    // Enhanced error handling
+    if (error.response?.status === 404) {
+      throw new Error('Booking not found');
+    } else if (error.response?.status === 403) {
+      throw new Error('Not authorized to view this booking');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw error;
+  }
 };
 
 // ========== USER BOOKING MANAGEMENT ==========
