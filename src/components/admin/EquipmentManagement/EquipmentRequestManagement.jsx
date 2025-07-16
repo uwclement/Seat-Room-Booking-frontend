@@ -402,7 +402,7 @@ const EquipmentRequestManagement = () => {
                       </td>
                       <td>
                         <span className={`status-badge ${getStatusBadgeClass(request.status)}`}>
-                          <span className="status-dot"></span>
+                          <span className="status-dot"  ></span>
                           {request.status.replace('_', ' ')}
                         </span>
                       </td>
@@ -456,7 +456,7 @@ const EquipmentRequestManagement = () => {
                             >
                               <i className="fas fa-times"></i>
                               Reject
-                            </button>
+                            </button> 
                           )}
                         </div>
                       </td>

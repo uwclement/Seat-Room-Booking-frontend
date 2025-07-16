@@ -141,13 +141,13 @@ const BookingList = () => {
                   <td>
                     <div className="user-info">
                       <strong>{booking.userName}</strong>
-                      <div className="user-id">ID: {booking.userId}</div>
+                      {/* <div className="user-id">ID: {booking.userId}</div> */}
                     </div>
                   </td>
                   <td>
                     <div className="seat-info">
                       <strong>{booking.seatNumber}</strong>
-                      <div className="seat-id">ID: {booking.seatId}</div>
+                      {/* <div className="seat-id">ID: {booking.seatId}</div> */}
                     </div>
                   </td>
                   <td>
