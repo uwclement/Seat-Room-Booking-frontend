@@ -42,13 +42,13 @@
 
 /* Status colors */
 .library-status-banner.status-success {
-  background-color: #5bc38c;
-  border-left: 3px #5bc38c;
+  background-color: #39a069;
+  border-left: 3px #39a069;
 }
 
 .library-status-banner.status-danger {
-  background-color: #eb7676;
-  border-left: 3px solid #eb7676;
+  background-color: #e85757;
+  border-left: 3px solid #e85757;
 }
 
 .status-indicator {

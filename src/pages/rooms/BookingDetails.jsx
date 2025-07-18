@@ -142,135 +142,65 @@ const BookingDetails = () => {
     }
   };
 
-  // Enhanced invite users function
+  // invite users function
    const handleInviteUsers = async () => {
-   // Check if at least one invitation method has data
-   if (!inviteEmails.trim() && !inviteIdentifiers.trim()) {
-    setError('Please enter email addresses or student/employee IDs');
+  if (!inviteEmails.trim() && !inviteIdentifiers.trim()) {
+    setError('Please enter email addresses or studentIDs');
     return;
-   }
+  }
   
-   setActionLoading(prev => ({ ...prev, invite: true }));
-   setError(''); // Clear previous errors
+  setActionLoading(prev => ({ ...prev, invite: true }));
+  setError('');
   
-   try {
-    // Prepare invitation data
+  try {
     const inviteData = {};
     
-    // Add emails if provided
     if (inviteEmails.trim()) {
-      const emails = inviteEmails.split(',')
-        .map(email => email.trim())
-        .filter(Boolean);
-      
-      // Basic email validation
-      const invalidEmails = emails.filter(email => !isValidEmail(email));
-      if (invalidEmails.length > 0) {
-        setError(`Invalid email format: ${invalidEmails.join(', ')}`);
-        return;
-      }
-      
-      inviteData.invitedEmails = emails;
+      inviteData.invitedEmails = inviteEmails.split(',').map(email => email.trim()).filter(Boolean);
     }
     
-    // Add identifiers if provided
     if (inviteIdentifiers.trim()) {
-      const identifiers = inviteIdentifiers.split(',')
-        .map(id => id.trim())
-        .filter(Boolean);
-      
-      // Basic identifier validation
-      const invalidIds = identifiers.filter(id => id.length < 3);
-      if (invalidIds.length > 0) {
-        setError(`Invalid ID format (too short): ${invalidIds.join(', ')}`);
-        return;
-      }
-      
-      inviteData.invitedUserIdentifiers = identifiers;
+      inviteData.invitedUserIdentifiers = inviteIdentifiers.split(',').map(id => id.trim()).filter(Boolean);
     }
-    
-    console.log('Sending invitation data:', inviteData); // Debug log
     
     await inviteUsersToBooking(bookingId, inviteData);
     
-    // Reset form and close modal
     setShowInviteModal(false);
     setInviteEmails('');
     setInviteIdentifiers('');
     setSuccess('Invitations sent successfully!');
-    await loadBookingDetails(); // Reload to get updated participant list
+    loadBookingDetails();
     
-   } catch (err) {
-    console.error('Error inviting users:', err);
-    
-    // Enhanced error handling
-    let errorMessage = 'Failed to send invitations';
-    
-    if (err.response?.data?.message) {
-      errorMessage = err.response.data.message;
-    } else if (err.message) {
-      errorMessage = err.message;
-    }
-    
-    // Handle specific error cases
-    if (errorMessage.includes('already invited') || errorMessage.includes('already a participant')) {
-      errorMessage = 'Some users are already invited or participating in this booking';
-    } else if (errorMessage.includes('not found')) {
-      errorMessage = 'Some email addresses or IDs were not found in the system';
-    } else if (errorMessage.includes('booking creator')) {
-      errorMessage = 'Cannot invite the booking creator to their own booking';
-    } else if (errorMessage.includes('full capacity')) {
-      errorMessage = 'Booking is at full capacity';
-    }
-    
+  } catch (err) {
+    // Just show the error message from backend
+    const errorMessage = err.response?.data?.message || err.message || 'Failed to send invitations';
     setError(errorMessage);
-   } finally {
+  } finally {
     setActionLoading(prev => ({ ...prev, invite: false }));
-   }
-  };
+  }
+};
 
-   const handleRemoveParticipant = async (participantId, participantName) => {
+  const handleRemoveParticipant = async (participantId, participantName) => {
   if (!window.confirm(`Remove ${participantName} from this booking?`)) {
     return;
   }
 
   setActionLoading(prev => ({ ...prev, [`remove_${participantId}`]: true }));
-  setError(''); // Clear previous errors
+  setError('');
   
   try {
-    console.log('Removing participant:', participantId); // Debug log
-    
     await removeUserFromBooking(bookingId, participantId);
-    
     setSuccess(`${participantName} removed successfully`);
-    await loadBookingDetails(); // Reload to get updated participant list
+    loadBookingDetails();
     
   } catch (err) {
-    console.error('Error removing participant:', err);
-    
-    // Enhanced error handling
-    let errorMessage = 'Failed to remove participant';
-    
-    if (err.response?.data?.message) {
-      errorMessage = err.response.data.message;
-    } else if (err.message) {
-      errorMessage = err.message;
-    }
-    
-    // Handle specific error cases
-    if (errorMessage.includes('not authorized') || errorMessage.includes('cannot remove')) {
-      errorMessage = 'You are not authorized to remove this participant';
-    } else if (errorMessage.includes('booking owner')) {
-      errorMessage = 'Cannot remove the booking owner';
-    } else if (errorMessage.includes('not found')) {
-      errorMessage = 'Participant not found';
-    }
-    
+    // Just show the error message from backend
+    const errorMessage = err.response?.data?.message || err.message || 'Failed to remove participant';
     setError(errorMessage);
   } finally {
     setActionLoading(prev => ({ ...prev, [`remove_${participantId}`]: false }));
   }
- };
+};
     
    const isValidEmail = (email) => {
   const emailRegex = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
