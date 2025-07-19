@@ -806,4 +806,65 @@
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.3s ease;
+  
+}
+/* Add these styles to your modal CSS */
+
+.password-display-section {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  margin-bottom: 1rem;
+}
+
+.password-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.password-field {
+  flex: 1;
+  font-family: 'Courier New', monospace;
+  background: white !important;
+  border: 1px solid #ced4da !important;
+}
+
+.password-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.btn-icon {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: background-color 0.15s ease;
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: #0056b3;
+}
+
+.btn-icon:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.password-note {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  color: #6c757d;
+  font-size: 0.875rem;
+}
+
+.password-note i {
+  color: #17a2b8;
 }

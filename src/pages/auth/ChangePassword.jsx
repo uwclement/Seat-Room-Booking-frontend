@@ -295,7 +295,7 @@ const ChangePassword = () => {
             
             <Button
               type="button"
-              variant="secondary"
+              variant="secondary" 
               fullWidth
               onClick={handleLogout}
               className="logout-button"

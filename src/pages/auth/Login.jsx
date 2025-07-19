@@ -16,7 +16,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
 
-  // Enhanced redirect logic with librarian location consideration
+  // redirect logic with librarian location consideration
   const getRedirectPath = (userRoles, userLocation, userType) => {
     if (!userRoles || !Array.isArray(userRoles)) {
       return '/seats'; // Default for regular users
@@ -54,13 +54,18 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // Updated to use identifier instead of email
       const result = await login(identifier, password);
       if (result.success) {
         // Get the user data directly from local storage to ensure it's up to date
         const userData = JSON.parse(localStorage.getItem('user'));
         
-        // Enhanced redirect path determination
+        // Check if user must change password
+        if (userData?.mustChangePassword) {
+          navigate('/change-password');
+          return; 
+        }
+        
+        // redirect path determination (only if password change not required)
         const redirectPath = getRedirectPath(
           userData?.roles, 
           userData?.location,

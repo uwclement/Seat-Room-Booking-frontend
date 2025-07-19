@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 const AdminSidebar = ({ activePage }) => {
-  const { user, isAdmin, isEquipmentAdmin, isHOD, getUserRole } = useAuth();
+  const { user, isAdmin, isEquipmentAdmin, isHOD, isLibrarian, getUserRole } = useAuth();
 
   // Base menu items for all admin types
   const baseMenuItems = [
@@ -19,6 +19,15 @@ const AdminSidebar = ({ activePage }) => {
     { id: 'bookings', label: 'Room Bookings', icon: 'fa-bookmark', path: '/admin/Roombookings' },
     { id: 'users', label: 'User Management', icon: 'fa-users', path: '/admin/users' },
     { id: 'passwords', label: 'Password Management', icon: 'fa-key', path: '/admin/passwords' }
+  ];
+
+   //  Admin specific items
+  const GishusuLibrarianAdminItems = [
+    { id: 'seats', label: 'Seat Management', icon: 'fa-chair', path: '/admin/seats' },
+    { id: 'seatsBooking', label: 'Seat Bookings', icon: 'fa-calendar-check', path: '/admin/seat-bookings' },
+    { id: 'rooms', label: 'Room Management', icon: 'fa-door-open', path: '/admin/rooms' },
+    { id: 'schedule', label: 'Schedule Management', icon: 'fa-calendar-alt', path: '/admin/schedule' },
+    { id: 'bookings', label: 'Room Bookings', icon: 'fa-bookmark', path: '/admin/Roombookings' },
   ];
 
   // Equipment Admin specific items
@@ -51,6 +60,10 @@ const AdminSidebar = ({ activePage }) => {
   
   if (isHOD()) {
     menuItems = [...menuItems, ...hodItems];
+  }
+
+  if (isLibrarian()) {
+    menuItems = [...menuItems, ...GishusuLibrarianAdminItems];
   }
 
   // Add common items for all admin types

@@ -1,7 +1,7 @@
-// components/admin/seats/SeatActions.js
+// components/admin/SeatManagement/SeatActions.js
 import React, { useState } from 'react';
 import { useAdmin } from '../../../hooks/useAdmin';
-import { useQRCode } from '../../../context/QRCodeContext';
+import SeatModal from './SeatModal';
 import DisableSeatModal from './DisableSeatModal';
 import BulkQRModal from '../qr/BulkQRModal';
 
@@ -11,12 +11,12 @@ const SeatActions = () => {
     selectAllSeats, 
     clearSelection, 
     handleBulkToggleDesktop,
-    handleBulkUpdate,
-    
     handleEnableSeats,
     seats
   } = useAdmin();
 
+  // Modal states
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
 
@@ -30,11 +30,24 @@ const SeatActions = () => {
 
   return (
     <div className="seat-actions">
+      {/* Primary Actions */}
+      <div className="primary-actions">
+        <button 
+          className="btn btn-primary create-btn"
+          onClick={() => setShowCreateModal(true)}
+        >
+          <i className="fas fa-plus"></i>
+          Create New Seat
+        </button>
+      </div>
+
+      {/* Selection Tools */}
       <div className="selection-tools">
         <button 
           className="btn btn-outline-primary" 
           onClick={selectAllSeats}
         >
+          <i className="fas fa-check-square"></i>
           Select All
         </button>
         {selectedSeats.length > 0 && (
@@ -42,42 +55,71 @@ const SeatActions = () => {
             className="btn btn-outline-secondary" 
             onClick={clearSelection}
           >
+            <i className="fas fa-times"></i>
             Clear Selection
           </button>
         )}
         <div className="selection-count">
+          <i className="fas fa-info-circle"></i>
           {selectedSeats.length} seat{selectedSeats.length !== 1 ? 's' : ''} selected
         </div>
       </div>
 
+      {/* Bulk Actions */}
       {selectedSeats.length > 0 && (
-        <div className="action-buttons">
-          <button 
-            className="btn btn-primary"
-            onClick={handleToggleDesktopBulk}
-          >
-            Desktop On/Off
-          </button>
-          <button 
-            className="btn btn-primary"
-            onClick={handleBulkQRGeneration}
-          >
-            <i className="fas fa-qrcode"></i> Generate QR Codes
-          </button>
-          <button 
-            className="btn btn-warning"
-            onClick={() => setShowDisableModal(true)}
-          >
-            Disable for Maintenance
-          </button>
-          <button 
-            className="btn btn-success"
-            onClick={handleEnableSeats}
-          >
-            Enable Seats
-          </button>
+        <div className="bulk-actions">
+          <div className="action-group">
+            <h4 className="action-group-title">
+              <i className="fas fa-tools"></i>
+              Bulk Operations
+            </h4>
+            <div className="action-buttons">
+              <button 
+                className="btn btn-primary"
+                onClick={handleToggleDesktopBulk}
+                title="Toggle desktop property for selected seats"
+              >
+                <i className="fas fa-desktop"></i>
+                Toggle Desktop
+              </button>
+              
+              <button 
+                className="btn btn-primary"
+                onClick={handleBulkQRGeneration}
+                title="Generate QR codes for selected seats"
+              >
+                <i className="fas fa-qrcode"></i>
+                Generate QR Codes
+              </button>
+              
+              <button 
+                className="btn btn-warning"
+                onClick={() => setShowDisableModal(true)}
+                title="Disable selected seats for maintenance"
+              >
+                <i className="fas fa-exclamation-triangle"></i>
+                Disable for Maintenance
+              </button>
+              
+              <button 
+                className="btn btn-success"
+                onClick={handleEnableSeats}
+                title="Enable selected seats"
+              >
+                <i className="fas fa-check-circle"></i>
+                Enable Seats
+              </button>
+            </div>
+          </div>
         </div>
       )}
+
+      {/* Modals */}
+      <SeatModal 
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        seatToEdit={null}
+      />
 
       <DisableSeatModal 
         isOpen={showDisableModal} 
