@@ -86,15 +86,15 @@ export const getRecentlyUpdatedRooms = async (hours = 24) => {
 
 // Equipment Management API calls
 export const getAllEquipment = async () => {
-  return safeApiCall(() => api.get('/admin/equipment'));
+  return safeApiCall(() => api.get('/equipment-admin/equipment'));  
 };
 
 export const getAvailableEquipment = async () => {
-  return safeApiCall(() => api.get('/admin/equipment/available'));
+  return safeApiCall(() => api.get('/equipment-admin/equipment/available'));
 };
 
 export const getEquipmentById = async (id) => {
-  return safeApiCall(() => api.get(`/admin/equipment/${id}`));
+  return safeApiCall(() => api.get(`/equipment-admin/equipment/${id}`));
 };
 
 export const createEquipment = async (equipmentData) => {
@@ -110,7 +110,7 @@ export const deleteEquipment = async (id) => {
 };
 
 export const toggleEquipmentAvailability = async (id) => {
-  return safeApiCall(() => api.post(`/admin/equipment/${id}/toggle-availability`));
+  return safeApiCall(() => api.post(`/  /${id}/toggle-availability`));
 };
 
 export const searchEquipment = async (keyword) => {

@@ -28,6 +28,7 @@ const BookRoom = () => {
     requiresCheckIn: true,
     reminderEnabled: true,
     invitedUserEmails: '',
+    invitedUserIdentifiers: '',
     requestedEquipmentIds: [],
     isRecurring: false,
     recurringDetails: {
@@ -42,21 +43,21 @@ const BookRoom = () => {
     loadRoomData();
   }, [roomId]);
 
-  useEffect(() => {
-    // Set default times if quick booking
-    if (searchParams.get('quick') === 'true') {
-      const now = new Date();
-      const startTime = new Date(now.getTime() + 15 * 60000); // 15 minutes from now
-      const endTime = new Date(startTime.getTime() + 60 * 60000); // 1 hour duration
+  // useEffect(() => {
+  //   // Set default times if quick booking
+  //   if (searchParams.get('quick') === 'true') {
+  //     const now = new Date();
+  //     const startTime = new Date(now.getTime() + 15 * 60000); // 15 minutes from now
+  //     const endTime = new Date(startTime.getTime() + 60 * 60000); // 1 hour duration
       
-      setFormData(prev => ({
-        ...prev,
-        title: 'Quick Booking',
-        startTime: formatDateTimeLocal(startTime),
-        endTime: formatDateTimeLocal(endTime)
-      }));
-    }
-  }, [searchParams]);
+  //     setFormData(prev => ({
+  //       ...prev,
+  //       title: 'Quick Booking',
+  //       startTime: formatDateTimeLocal(startTime),
+  //       endTime: formatDateTimeLocal(endTime)
+  //     }));
+  //   }
+  // }, [searchParams]);
 
   const loadRoomData = async () => {
     try {
@@ -177,54 +178,56 @@ const BookRoom = () => {
     return true;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!validateForm()) {
+    return;
+  }
+  
+  setSubmitting(true);
+  setError('');
+  
+  try {
+    // Prepare booking data
+    const bookingData = {
+      roomId: parseInt(roomId),
+      title: formData.title.trim(),
+      description: formData.description.trim() || null,
+      startTime: formData.startTime,
+      endTime: formData.endTime,
+      maxParticipants: parseInt(formData.maxParticipants),
+      isPublic: formData.isPublic,
+      allowJoining: formData.allowJoining,
+      requiresCheckIn: formData.requiresCheckIn,
+      reminderEnabled: formData.reminderEnabled,
+      requestedEquipmentIds: formData.requestedEquipmentIds,
+      
+      // invitation handling
+      invitedUserEmails: formData.invitedUserEmails
+        ? formData.invitedUserEmails.split(',').map(email => email.trim()).filter(Boolean)
+        : null,
+      invitedUserIdentifiers: formData.invitedUserIdentifiers 
+        ? formData.invitedUserIdentifiers.split(',').map(id => id.trim()).filter(Boolean)
+        : null,
+        
+      isRecurring: formData.isRecurring,
+      recurringDetails: formData.isRecurring ? formData.recurringDetails : null
+    };
     
-    if (!validateForm()) {
-      return;
-    }
+    const result = await createRoomBooking(bookingData);
+    addBooking(result);
+    navigate(`/room-booking/${result.id}`, {
+      state: { message: 'Booking created successfully!' }
+    });
     
-    setSubmitting(true);
-    setError('');
-    
-    try {
-      // Prepare booking data
-      const bookingData = {
-        roomId: parseInt(roomId),
-        title: formData.title.trim(),
-        description: formData.description.trim() || null,
-        startTime: formData.startTime,
-        endTime: formData.endTime,
-        maxParticipants: parseInt(formData.maxParticipants),
-        isPublic: formData.isPublic,
-        allowJoining: formData.allowJoining,
-        requiresCheckIn: formData.requiresCheckIn,
-        reminderEnabled: formData.reminderEnabled,
-        requestedEquipmentIds: formData.requestedEquipmentIds,
-        invitedUserEmails: formData.invitedUserEmails
-          ? formData.invitedUserEmails.split(',').map(email => email.trim()).filter(Boolean)
-          : null,
-        isRecurring: formData.isRecurring,
-        recurringDetails: formData.isRecurring ? formData.recurringDetails : null
-      };
-      
-      const result = await createRoomBooking(bookingData);
-      
-      // Add to local state
-      addBooking(result);
-      
-      // Navigate to booking details or my bookings
-      navigate(`/room-booking/${result.id}`, {
-        state: { message: 'Booking created successfully!' }
-      });
-      
-    } catch (err) {
-      console.error('Error creating booking:', err);
-      setError(err.response?.data?.message || 'Failed to create booking');
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  } catch (err) {
+    console.error('Error creating booking:', err);
+    setError(err.response?.data?.message || 'Failed to create booking');
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   if (loading) {
     return (
@@ -396,48 +399,75 @@ const BookRoom = () => {
             </div>
 
             {/* Sharing Options */}
-            <div className="form-section">
-              <h3>Sharing & Collaboration</h3>
-              
-              <div className="form-group">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="isPublic"
-                    checked={formData.isPublic}
-                    onChange={handleInputChange}
-                  />
-                  <span>Make this booking public</span>
-                  <small>Other users can see this booking</small>
-                </label>
-              </div>
+             <div className="form-section">
+               <h3>Sharing & Collaboration</h3>
+  
+               <div className="form-group">
+                 <label className="checkbox-label">
+                     <input
+                        type="checkbox"
+                        name="isPublic"
+                       checked={formData.isPublic}
+                       onChange={handleInputChange}
+                     />
+                    <span>Make this booking public</span>
+                     <small>Other users can see this booking</small>
+                  </label>
+               </div>
 
-              <div className="form-group">
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    name="allowJoining"
-                    checked={formData.allowJoining}
-                    onChange={handleInputChange}
-                  />
-                  <span>Allow others to join</span>
-                  <small>Other users can request to join this booking</small>
-                </label>
-              </div>
+                 <div className="form-group">
+                   <label className="checkbox-label">
+                     <input
+                       type="checkbox"
+                       name="allowJoining"
+                       checked={formData.allowJoining}
+                       onChange={handleInputChange}
+                     />
+                     <span>Allow others to join</span>
+                     <small>Other users can request to join this booking</small>
+                   </label>
+                 </div>
 
-              <div className="form-group">
-                <label htmlFor="invitedUserEmails">Invite Users (Email)</label>
-                <input
-                  type="text"
-                  id="invitedUserEmails"
-                  name="invitedUserEmails"
-                  value={formData.invitedUserEmails}
-                  onChange={handleInputChange}
-                  placeholder="email1@example.com, email2@example.com"
-                />
-                <small>Separate multiple emails with commas</small>
-              </div>
-            </div>
+                   {/* invitation fields */}
+                   <div className="invitation-fields">
+                    <h4>Invite Participants</h4>
+    
+                     <div className="form-group">
+                        <label htmlFor="invitedUserEmails">
+                          <i className="fas fa-envelope"></i> Invite by Email
+                       </label>
+                       <input
+                         type="text"
+                         id="invitedUserEmails"
+                         name="invitedUserEmails"
+                         value={formData.invitedUserEmails}
+                         onChange={handleInputChange}
+                         placeholder="email1@example.com, email2@example.com"
+                       />
+                       <small>Separate multiple emails with commas</small>
+                     </div>
+
+                       <div className="form-group">
+                         <label htmlFor="invitedUserIdentifiers">
+                           <i className="fas fa-id-card"></i> Invite by Student/Employee ID
+                         </label>
+                          <input
+                            type="text"
+                            id="invitedUserIdentifiers"
+                            name="invitedUserIdentifiers"
+                            value={formData.invitedUserIdentifiers}
+                            onChange={handleInputChange}
+                            placeholder="24604, 24601, 24602"
+                          />
+                         <small>Separate multiple IDs with commas (Student IDs, Employee IDs)</small>
+                       </div>
+
+                        <div className="invitation-help">
+                          <i className="fas fa-info-circle"></i>
+                         <span>You can invite users by email address or their Student/Employee ID</span>
+                       </div>
+                   </div>
+               </div>
 
             {/* Settings */}
             <div className="form-section">

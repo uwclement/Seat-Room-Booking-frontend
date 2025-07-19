@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAdmin } from '../../../hooks/useAdmin';
+import { useAdmin, useLibrarian } from '../../../hooks/useAdmin';
 import SeatFilters from '../SeatManagement/SeatFilters';
 import SeatActions from '../SeatManagement/SeatActions';
 import SeatList from '../SeatManagement/SeatList';

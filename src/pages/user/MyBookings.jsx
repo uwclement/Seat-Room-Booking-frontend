@@ -315,7 +315,7 @@ const MyBookingsPage = () => {
                       </td>
                       <td>
                         <div className="booking-actions">
-                          {booking.status === 'RESERVED' && (
+                          {/* {booking.status === 'RESERVED' && (
                             <>
                               <Button
                                 variant="secondary"
@@ -359,7 +359,7 @@ const MyBookingsPage = () => {
                             >
                               {actionInProgress === booking.id ? 'Processing...' : 'Check Out'}
                             </Button>
-                          )}
+                          )} */}
                           
                           {(booking.status === 'RESERVED' || booking.status === 'CHECKED_IN') && (
                             <Button

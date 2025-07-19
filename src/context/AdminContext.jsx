@@ -62,6 +62,7 @@ export const AdminProvider = ({ children }) => {
   // Fetch disabled seats
   const fetchDisabledSeats = useCallback(async () => {
     if (!isAuthenticated() || !isAdmin() && !isLibrarian() ) return; // Skip if not authenticated admin
+
     
     setLoading(true);
     try {

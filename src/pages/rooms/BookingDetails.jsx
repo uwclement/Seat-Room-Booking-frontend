@@ -29,9 +29,10 @@ const BookingDetails = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
   
-  // Invite users state
+  // UPDATED: Enhanced invite users state
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteEmails, setInviteEmails] = useState('');
+  const [inviteIdentifiers, setInviteIdentifiers] = useState(''); // NEW: Separate state for identifiers
 
   useEffect(() => {
     loadBookingDetails();
@@ -44,25 +45,44 @@ const BookingDetails = () => {
     }
   }, [success]);
 
+    
   const loadBookingDetails = async () => {
-    try {
-      setLoading(true);
-      const bookingData = await getRoomBookingById(bookingId);
-      setBooking(bookingData);
-      setEditData({
-        title: bookingData.title,
-        description: bookingData.description || '',
-        maxParticipants: bookingData.maxParticipants,
-        isPublic: bookingData.isPublic,
-        allowJoining: bookingData.allowJoining
-      });
-    } catch (err) {
-      console.error('Error loading booking details:', err);
-      setError('Failed to load booking details');
-    } finally {
-      setLoading(false);
+  try {
+    setLoading(true);
+    setError(''); // Clear previous errors
+    
+    console.log('Loading booking details for ID:', bookingId); // Debug log
+    
+    const bookingData = await getRoomBookingById(bookingId);
+    
+    console.log('Loaded booking data:', bookingData); // Debug log
+    
+    setBooking(bookingData);
+    setEditData({
+      title: bookingData.title,
+      description: bookingData.description || '',
+      maxParticipants: bookingData.maxParticipants,
+      isPublic: bookingData.isPublic,
+      allowJoining: bookingData.allowJoining
+    });
+  } catch (err) {
+    console.error('Error loading booking details:', err);
+    
+    let errorMessage = 'Failed to load booking details';
+    
+    if (err.response?.status === 404) {
+      errorMessage = 'Booking not found';
+    } else if (err.response?.status === 403) {
+      errorMessage = 'You are not authorized to view this booking';
+    } else if (err.response?.data?.message) {
+      errorMessage = err.response.data.message;
     }
-  };
+    
+    setError(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleCancelBooking = async () => {
     if (!window.confirm('Are you sure you want to cancel this booking?')) {
@@ -122,45 +142,70 @@ const BookingDetails = () => {
     }
   };
 
-  const handleInviteUsers = async () => {
-    if (!inviteEmails.trim()) return;
+  // invite users function
+   const handleInviteUsers = async () => {
+  if (!inviteEmails.trim() && !inviteIdentifiers.trim()) {
+    setError('Please enter email addresses or studentIDs');
+    return;
+  }
+  
+  setActionLoading(prev => ({ ...prev, invite: true }));
+  setError('');
+  
+  try {
+    const inviteData = {};
     
-    setActionLoading(prev => ({ ...prev, invite: true }));
-    
-    try {
-      const emails = inviteEmails.split(',').map(email => email.trim()).filter(Boolean);
-      await inviteUsersToBooking(bookingId, emails);
-      setShowInviteModal(false);
-      setInviteEmails('');
-      setSuccess('Invitations sent successfully!');
-      loadBookingDetails(); // Reload to get updated participant list
-    } catch (err) {
-      console.error('Error inviting users:', err);
-      setError('Failed to send invitations');
-    } finally {
-      setActionLoading(prev => ({ ...prev, invite: false }));
+    if (inviteEmails.trim()) {
+      inviteData.invitedEmails = inviteEmails.split(',').map(email => email.trim()).filter(Boolean);
     }
+    
+    if (inviteIdentifiers.trim()) {
+      inviteData.invitedUserIdentifiers = inviteIdentifiers.split(',').map(id => id.trim()).filter(Boolean);
+    }
+    
+    await inviteUsersToBooking(bookingId, inviteData);
+    
+    setShowInviteModal(false);
+    setInviteEmails('');
+    setInviteIdentifiers('');
+    setSuccess('Invitations sent successfully!');
+    loadBookingDetails();
+    
+  } catch (err) {
+    // Just show the error message from backend
+    const errorMessage = err.response?.data?.message || err.message || 'Failed to send invitations';
+    setError(errorMessage);
+  } finally {
+    setActionLoading(prev => ({ ...prev, invite: false }));
+  }
+};
+
+  const handleRemoveParticipant = async (participantId, participantName) => {
+  if (!window.confirm(`Remove ${participantName} from this booking?`)) {
+    return;
+  }
+
+  setActionLoading(prev => ({ ...prev, [`remove_${participantId}`]: true }));
+  setError('');
+  
+  try {
+    await removeUserFromBooking(bookingId, participantId);
+    setSuccess(`${participantName} removed successfully`);
+    loadBookingDetails();
+    
+  } catch (err) {
+    // Just show the error message from backend
+    const errorMessage = err.response?.data?.message || err.message || 'Failed to remove participant';
+    setError(errorMessage);
+  } finally {
+    setActionLoading(prev => ({ ...prev, [`remove_${participantId}`]: false }));
+  }
+};
+    
+   const isValidEmail = (email) => {
+  const emailRegex = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
+  return emailRegex.test(email);
   };
-
-  const handleRemoveParticipant = async (participantId) => {
-    if (!window.confirm('Remove this participant from the booking?')) {
-      return;
-    }
-
-    setActionLoading(prev => ({ ...prev, [`remove_${participantId}`]: true }));
-    
-    try {
-      await removeUserFromBooking(bookingId, participantId);
-      loadBookingDetails(); // Reload to get updated participant list
-      setSuccess('Participant removed successfully');
-    } catch (err) {
-      console.error('Error removing participant:', err);
-      setError('Failed to remove participant');
-    } finally {
-      setActionLoading(prev => ({ ...prev, [`remove_${participantId}`]: false }));
-    }
-  };
-
   const getBookingStatusInfo = (booking) => {
     const now = new Date();
     const startTime = new Date(booking.startTime);
@@ -293,7 +338,8 @@ const BookingDetails = () => {
   const startDateTime = formatDateTime(booking.startTime);
   const endDateTime = formatDateTime(booking.endTime);
   const duration = getDuration(booking.startTime, booking.endTime);
-
+   
+  
   return (
     <div className="booking-details-container">
       {/* Header */}
@@ -327,20 +373,6 @@ const BookingDetails = () => {
           </div>
           
           <div className="header-actions">
-            {statusInfo.canCheckIn && (
-              <button
-                onClick={handleCheckIn}
-                className="btn btn-success"
-                disabled={actionLoading.checkin}
-              >
-                {actionLoading.checkin ? (
-                  <><i className="fas fa-spinner fa-spin"></i> Checking In...</>
-                ) : (
-                  <><i className="fas fa-user-check"></i> Check In</>
-                )}
-              </button>
-            )}
-            
             {statusInfo.canEdit && (
               <button
                 onClick={() => setIsEditing(!isEditing)}
@@ -523,23 +555,30 @@ const BookingDetails = () => {
             {/* Other participants */}
             {booking.participants?.map(participant => (
               <div key={participant.id} className="participant-item">
-                <div className="participant-info">
-                  <i className="fas fa-user"></i>
-                  <span className="participant-name">{participant.user?.fullName}</span>
-                  <span className="participant-email">{participant.user?.email}</span>
-                </div>
-                <button
-                  onClick={() => handleRemoveParticipant(participant.id)}
-                  className="btn btn-danger btn-sm"
-                  disabled={actionLoading[`remove_${participant.id}`]}
-                >
-                  {actionLoading[`remove_${participant.id}`] ? (
-                    <i className="fas fa-spinner fa-spin"></i>
-                  ) : (
-                    <i className="fas fa-times"></i>
-                  )}
-                </button>
-              </div>
+    <div className="participant-info">
+      <i className="fas fa-user"></i>
+      <span className="participant-name">{participant.user?.fullName || 'Unknown User'}</span>
+      <span className="participant-email">{participant.user?.email || 'No email'}</span>
+      <span className={`participant-status status-${participant.status?.toLowerCase()}`}>
+        {participant.status || 'UNKNOWN'}
+      </span>
+    </div>
+    
+    {/* Only show remove button for organizer and if participant is not the organizer */}
+
+      <button
+        onClick={() => handleRemoveParticipant(participant.id, participant.user?.fullName)}
+        className="btn btn-danger btn-sm"
+        disabled={actionLoading[`remove_${participant.id}`]}
+        title={`Remove ${participant.user?.fullName}`}
+      >
+        {actionLoading[`remove_${participant.id}`] ? (
+          <i className="fas fa-spinner fa-spin"></i>
+        ) : (
+          <i className="fas fa-times"></i>
+        )}
+      </button>
+  </div>
             ))}
           </div>
         </div>
@@ -571,7 +610,7 @@ const BookingDetails = () => {
         </div>
       </div>
 
-      {/* Invite Modal */}
+      {/* Invite Modal with Identifier Support */}
       {showInviteModal && (
         <div className="modal-overlay">
           <div className="modal-content">
@@ -586,16 +625,42 @@ const BookingDetails = () => {
             </div>
             
             <div className="modal-body">
-              <label htmlFor="invite-emails">Email Addresses</label>
-              <textarea
-                id="invite-emails"
-                value={inviteEmails}
-                onChange={(e) => setInviteEmails(e.target.value)}
-                placeholder="Enter email addresses separated by commas"
-                rows="4"
-                className="invite-textarea"
-              />
-              <small>Separate multiple email addresses with commas</small>
+              {/* Email Invitations */}
+              <div className="invite-section">
+                <label htmlFor="invite-emails">
+                  <i className="fas fa-envelope"></i> Invite by Email
+                </label>
+                <textarea
+                  id="invite-emails"
+                  value={inviteEmails}
+                  onChange={(e) => setInviteEmails(e.target.value)}
+                  placeholder="email1@example.com, email2@example.com"
+                  rows="3"
+                  className="invite-textarea"
+                />
+              </div>
+
+              {/* Identifier Invitations */}
+              <div className="invite-section">
+                <label htmlFor="invite-identifiers">
+                  <i className="fas fa-id-card"></i> Invite by StudentID
+                </label>
+                <textarea
+                  id="invite-identifiers"
+                  value={inviteIdentifiers}
+                  onChange={(e) => setInviteIdentifiers(e.target.value)}
+                  placeholder="24604*,24601*"
+                  rows="3"
+                  className="invite-textarea"
+                />
+                <small>Separate multiple IDs/emails with commas</small>
+              </div>
+
+              {/* Help Text */}
+              <div className="invite-help">
+                <i className="fas fa-info-circle"></i>
+                <span>You can invite users by email address or their StudentID. At least one field must be filled.</span>
+              </div>
             </div>
             
             <div className="modal-actions">
@@ -608,7 +673,7 @@ const BookingDetails = () => {
               <button
                 onClick={handleInviteUsers}
                 className="btn btn-primary"
-                disabled={actionLoading.invite || !inviteEmails.trim()}
+                disabled={actionLoading.invite || (!inviteEmails.trim() && !inviteIdentifiers.trim())}
               >
                 {actionLoading.invite ? (
                   <><i className="fas fa-spinner fa-spin"></i> Sending...</>

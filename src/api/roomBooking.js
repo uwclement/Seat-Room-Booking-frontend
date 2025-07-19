@@ -12,60 +12,23 @@ export const getRoomById = async (roomId) => {
   return response.data;
 };
 
-// export const getRoomsByCategory = async (category) => {
 
-//   const response = await api.get(`/Roombookings/rooms/category/${category}`);
-//   return response.data;
-// };
-
-// export const searchRooms = async (filters) => {
-//   const params = new URLSearchParams();
-  
-//   if (filters.keyword) params.append('keyword', filters.keyword);
-//   if (filters.category) params.append('category', filters.category);
-//   if (filters.minCapacity) params.append('minCapacity', filters.minCapacity);
-//   if (filters.maxCapacity) params.append('maxCapacity', filters.maxCapacity);
-//   if (filters.building) params.append('building', filters.building);
-//   if (filters.floor) params.append('floor', filters.floor);
-//   if (filters.equipmentIds) params.append('equipmentIds', filters.equipmentIds.join(','));
-//   if (filters.startTime) params.append('startTime', filters.startTime);
-//   if (filters.endTime) params.append('endTime', filters.endTime);
-  
-//   const response = await api.get(`/Roombookings/rooms/search?${params}`);
-//   return response.data;
-// };
-
-// Map inviteUsersToBooking to your existing inviteParticipants function
 export const inviteUsersToBooking = async (bookingId, inviteData) => {
-  return await inviteParticipants(bookingId, inviteData);
+  const response = await api.post(`/Roombookings/${bookingId}/participants/invite`, inviteData);
+  return response.data;
 };
 
-// Map removeUserFromBooking to your existing removeParticipant function  
+  
 export const removeUserFromBooking = async (bookingId, participantId) => {
-  return await removeParticipant(bookingId, participantId);
+  const response = await api.delete(`/Roombookings/${bookingId}/participants/${participantId}`);
+  return response.data;
 };
 
-// Map requestToJoinBooking to your existing joinRoomBooking function
 export const requestToJoinBooking = async (bookingId) => {
   return await joinRoomBooking(bookingId);
 };
 
-// export const getRoomCategories = async () => {
-//   const response = await api.get('/Roombookings/rooms/categories');
-//   return response.data;
-// };
-
-// export const getBuildings = async () => {
-//   const response = await api.get('/Roombookings/rooms/buildings');
-//   return response.data;
-// };
-
 // ========== ROOM AVAILABILITY ==========
-
-// export const getRoomAvailability = async (roomId) => {
-//   const response = await api.get(`/Roombookings/rooms/${roomId}/availability`);
-//   return response.data;
-// };
 
 export const getWeeklyAvailability = async (roomId, weekStart) => {
   const params = weekStart ? `?weekStart=${weekStart}` : '';
@@ -73,15 +36,33 @@ export const getWeeklyAvailability = async (roomId, weekStart) => {
   return response.data;
 };
 
-// export const getRoomsAvailableNow = async (durationHours = 1) => {
-//   const response = await api.get(`/Roombookings/rooms/available-now?durationHours=${durationHours}`);
-//   return response.data;
-// };
-
 // ========== ROOM BOOKING OPERATIONS ==========
 
+// Enhanced createRoomBooking function
 export const createRoomBooking = async (bookingData) => {
-  const response = await api.post('/Roombookings', bookingData);
+  // Ensure the payload includes the new identifier field
+  const payload = {
+    roomId: bookingData.roomId,
+    title: bookingData.title,
+    description: bookingData.description,
+    startTime: bookingData.startTime,
+    endTime: bookingData.endTime,
+    maxParticipants: bookingData.maxParticipants,
+    isPublic: bookingData.isPublic,
+    allowJoining: bookingData.allowJoining,
+    requiresCheckIn: bookingData.requiresCheckIn,
+    reminderEnabled: bookingData.reminderEnabled,
+    requestedEquipmentIds: bookingData.requestedEquipmentIds,
+    
+    // Include both invitation methods
+    invitedUserEmails: bookingData.invitedUserEmails,
+    invitedUserIdentifiers: bookingData.invitedUserIdentifiers, 
+    
+    isRecurring: bookingData.isRecurring,
+    recurringDetails: bookingData.recurringDetails
+  };
+
+  const response = await api.post('/Roombookings', payload);
   return response.data;
 };
 
@@ -96,8 +77,28 @@ export const cancelRoomBooking = async (bookingId) => {
 };
 
 export const getRoomBookingById = async (bookingId) => {
-  const response = await api.get(`/Roombookings/${bookingId}`);
-  return response.data;
+  try {
+    console.log('API: Fetching booking details for', bookingId);
+    
+    const response = await api.get(`/Roombookings/${bookingId}`);
+    
+    console.log('API: Booking details response', response.data);
+    
+    return response.data;
+  } catch (error) {
+    console.error('API Error: Failed to fetch booking details', error);
+    
+    // Enhanced error handling
+    if (error.response?.status === 404) {
+      throw new Error('Booking not found');
+    } else if (error.response?.status === 403) {
+      throw new Error('Not authorized to view this booking');
+    } else if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    
+    throw error;
+  }
 };
 
 // ========== USER BOOKING MANAGEMENT ==========
@@ -138,8 +139,15 @@ export const joinRoomBooking = async (bookingId) => {
 
 // ========== PARTICIPANT MANAGEMENT ==========
 
+// Enhanced inviteParticipants function
 export const inviteParticipants = async (bookingId, inviteData) => {
-  const response = await api.post(`/Roombookings/${bookingId}/participants/invite`, inviteData);
+  const payload = {
+    invitedEmails: inviteData.invitedEmails,
+    invitedUserIds: inviteData.invitedUserIds,
+    invitedUserIdentifiers: inviteData.invitedUserIdentifiers 
+  };
+
+  const response = await api.post(`/Roombookings/${bookingId}/participants/invite`, payload);
   return response.data;
 };
 
@@ -200,7 +208,4 @@ export const searchRoomBookings = async (filters) => {
   
   const response = await api.get(`/Roombookings/search?${params}`);
   return response.data;
-
-
-  
 };
