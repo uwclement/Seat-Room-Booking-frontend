@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import { useAuth } from '../hooks/useAuth'; // Import auth hook
+import { useAuth } from '../hooks/useAuth'; 
 import {
   getAllAdminSeats,
   bulkUpdateSeats,
@@ -7,13 +7,17 @@ import {
   disableSeatsForMaintenance,
   bulkToggleDesktop,
   enableSeats,
-  getDisabledSeats
+  getDisabledSeats,
+  createSeat,
+  bulkCreateSeats,
+  updateSeat,
+  deleteSeat
 } from '../api/admin';
 
 export const AdminContext = createContext();
 
 export const AdminProvider = ({ children }) => {
-  const { isAuthenticated, isAdmin } = useAuth(); // Get auth state
+  const { isAuthenticated, isAdmin, isLibrarian, getUserLocation } = useAuth(); // Get auth state
   
   // State for seat management
   const [seats, setSeats] = useState([]);
@@ -31,17 +35,21 @@ export const AdminProvider = ({ children }) => {
   const [adminLogs, setAdminLogs] = useState([]);
   const [success, setSuccess] = useState('');
 
+   const getUserEffectiveLocation = useCallback(() => {
+    return isLibrarian() ? getUserLocation() : null;
+  }, [isLibrarian, getUserLocation]);
+
   // Fetch all seats
   const fetchSeats = useCallback(async () => {
-    if (!isAuthenticated() || !isAdmin()) return; // Skip if not authenticated admin
+    if (!isAuthenticated() || !isAdmin() && !isLibrarian() ) return; // Skip if not authenticated admin
     
     setLoading(true);
     setError('');
     try {
+      const userLocation = getUserEffectiveLocation();
       const data = await getAllAdminSeats();
       setSeats(data);
     } catch (err) {
-      // Only set error if it's not a 401
       if (err.response && err.response.status !== 401) {
         setError('Failed to fetch seats. Please try again later.');
         console.error(err);
@@ -49,18 +57,18 @@ export const AdminProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, isLibrarian, getUserEffectiveLocation]);
 
   // Fetch disabled seats
   const fetchDisabledSeats = useCallback(async () => {
-    if (!isAuthenticated() || !isAdmin()) return; // Skip if not authenticated admin
+    if (!isAuthenticated() || !isAdmin() && !isLibrarian() ) return; // Skip if not authenticated admin
     
     setLoading(true);
     try {
+      const userLocation = getUserEffectiveLocation();
       const data = await getDisabledSeats();
       setDisabledSeats(data);
     } catch (err) {
-      // Only set error if it's not a 401
       if (err.response && err.response.status !== 401) {
         setError('Failed to fetch disabled seats.');
         console.error(err);
@@ -68,7 +76,7 @@ export const AdminProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, isLibrarian, getUserEffectiveLocation ]);
 
   // Handle seat selection
   const toggleSeatSelection = (seatId) => {
@@ -119,27 +127,82 @@ export const AdminProvider = ({ children }) => {
     });
   };
 
+  // create seats 
+   const handleCreateSeat = async (seatData) => {
+    setLoading(true);
+    setError('');
+    try {
+      // Add user's location if librarian
+      if (isLibrarian()) {
+        seatData.location = getUserLocation();
+      }
+      
+      await createSeat(seatData);
+      setSuccess('Seat created successfully');
+      await fetchSeats();
+    } catch (err) {
+      setError('Failed to create seat: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccess(''), 3000);
+    }
+  };
+
+  const handleBulkCreateSeats = async (bulkCreationData) => {
+    setLoading(true);
+    setError('');
+    try {
+      // Add user's location if librarian
+      if (isLibrarian()) {
+        bulkCreationData.location = getUserLocation();
+      }
+      
+      const createdSeats = await bulkCreateSeats(bulkCreationData);
+      setSuccess(`Successfully created ${createdSeats.length} seats`);
+      await fetchSeats();
+    } catch (err) {
+      setError('Failed to create seats: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccess(''), 3000);
+    }
+  };
+
   // Bulk update seats
+  const handleUpdateSeat = async (seatId, seatData) => {
+    setLoading(true);
+    setError('');
+    try {
+      await updateSeat(seatId, seatData);
+      setSuccess('Seat updated successfully');
+      await fetchSeats();
+    } catch (err) {
+      setError('Failed to update seat: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccess(''), 3000);
+    }
+  };
+
   const handleBulkUpdate = async (propertyUpdates) => {
     setLoading(true);
     setError('');
     try {
       await bulkUpdateSeats({
         seatIds: selectedSeats,
-        updates: propertyUpdates
+        ...propertyUpdates
       });
       setSuccess('Seats updated successfully');
       await fetchSeats();
       clearSelection();
     } catch (err) {
-      setError('Failed to update seats. Please try again later.');
-      console.error(err);
+      setError('Failed to update seats: ' + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
-      // Clear success message after 3 seconds
       setTimeout(() => setSuccess(''), 3000);
     }
   };
+
 
   // Toggle desktop property
   const handleToggleDesktop = async (seatId) => {
@@ -224,14 +287,30 @@ export const AdminProvider = ({ children }) => {
   }
 };
 
+  // delete seat 
+  const handleDeleteSeat = async (seatId) => {
+    setLoading(true);
+    setError('');
+    try {
+      await deleteSeat(seatId);
+      setSuccess('Seat deleted successfully');
+      await fetchSeats();
+    } catch (err) {
+      setError('Failed to delete seat: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+      setTimeout(() => setSuccess(''), 3000);
+    }
+  };
+
 
   // Load seats when authentication status changes
   useEffect(() => {
-    if (isAuthenticated() && isAdmin()) {
+    if (isAuthenticated() && isAdmin() || isLibrarian()) {
       fetchSeats();
       fetchDisabledSeats();
     }
-  }, [isAuthenticated, isAdmin, fetchSeats, fetchDisabledSeats]);
+  }, [isAuthenticated, isAdmin, isLibrarian, fetchSeats, fetchDisabledSeats]);
 
   const contextValue = {
     // State
@@ -244,6 +323,11 @@ export const AdminProvider = ({ children }) => {
     success,
     adminLogs,
     
+    // User info
+    isLibrarian: isLibrarian(),
+    isAdmin: isAdmin(),
+    userLocation: getUserEffectiveLocation(),
+
     // Functions
     fetchSeats,
     fetchDisabledSeats,
@@ -257,7 +341,21 @@ export const AdminProvider = ({ children }) => {
     handleDisableSeats,
     handleEnableSeats,
     setFilters,
-    setError
+    setError,
+    // create
+    handleCreateSeat,
+    handleBulkCreateSeats,
+
+    // Update functions
+    handleUpdateSeat,
+    handleBulkUpdate,
+    handleToggleDesktop,
+    handleBulkToggleDesktop,
+    handleDisableSeats,
+    handleEnableSeats,
+
+    // Delete functions
+    handleDeleteSeat,
   };
 
   return (

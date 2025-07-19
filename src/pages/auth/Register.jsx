@@ -33,9 +33,6 @@ const Register = () => {
   const locationOptions = [
     { value: 'GISHUSHU', label: 'Gishushu Campus' },
     { value: 'MASORO', label: 'Masoro Campus' },
-    { value: 'KIGALI', label: 'Kigali' },
-    { value: 'NYANZA', label: 'Nyanza' },
-    { value: 'MUSANZE', label: 'Musanze' }
   ];
 
   const validateField = async (field, value) => {
@@ -226,13 +223,6 @@ const Register = () => {
       <div className="auth-form-container">
         <h2 className="auth-heading">Create a new student account</h2>
         
-        <div className="registration-info">
-          <div className="info-card">
-            <h4>Student Registration</h4>
-            <p>Create your student account to access library services, book seats, and manage your bookings.</p>
-            <p><strong>Note:</strong> Staff accounts are created by administrators.</p>
-          </div>
-        </div>
         
         {message.text && (
           <Alert

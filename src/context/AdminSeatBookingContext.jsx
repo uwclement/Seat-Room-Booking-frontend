@@ -16,7 +16,7 @@ import {
 export const AdminSeatBookingContext = createContext();
 
 export const AdminSeatBookingProvider = ({ children }) => {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, isLibrarian } = useAuth();
   
   // State for booking management
   const [bookings, setBookings] = useState([]);
@@ -40,7 +40,7 @@ export const AdminSeatBookingProvider = ({ children }) => {
 
   // Fetch current bookings
   const fetchCurrentBookings = useCallback(async () => {
-    if (!isAuthenticated() || !isAdmin()) return;
+    if (!isAuthenticated() || !isAdmin() && !isLibrarian ()) return;
     
     setLoading(true);
     setError('');

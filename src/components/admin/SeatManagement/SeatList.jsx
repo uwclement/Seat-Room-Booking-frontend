@@ -159,6 +159,7 @@ const SeatList = () => {
                           >
                             <i className="fas fa-desktop"></i>
                           </button>
+                          
                         </div>
                       </td>
                     </tr>

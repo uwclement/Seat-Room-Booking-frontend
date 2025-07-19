@@ -13,8 +13,22 @@ const safeApiCall = async (apiCall) => {
 };
 
 // Seat Management API calls
-export const getAllAdminSeats = async () => {
-  return safeApiCall(() => api.get('/admin/seats'));
+export const getAllAdminSeats = async (userLocation = null) => {
+  const url = userLocation ? `/admin/seats?location=${userLocation}` : '/admin/seats';
+  return safeApiCall(() => api.get(url));
+};
+
+export const getSeatById = async (seatId) => {
+  return safeApiCall(() => api.get(`/admin/seats/${seatId}`));
+};
+
+// Create Operations
+export const createSeat = async (seatData) => {
+  return safeApiCall(() => api.post('/admin/seats', seatData));
+};
+
+export const bulkCreateSeats = async (bulkCreationData) => {
+  return safeApiCall(() => api.post('/admin/seats/bulk-create', bulkCreationData));
 };
 
 export const updateSeat = async (id, seatData) => {
@@ -30,18 +44,21 @@ export const toggleDesktop = async (seatId) => {
 };
 
 export const disableSeatsForMaintenance = async (seatIds) => {
-  return safeApiCall(() =>
-    api.put('/admin/seats/disable', seatIds)
+  return safeApiCall(() => api.put('/admin/seats/disable', seatIds)
   );
 };
 
 export const enableSeats = async (seatIds) => {
-  return safeApiCall(() => 
-    api.put('/admin/seats/enable',  seatIds ));
+  return safeApiCall(() => api.put('/admin/seats/enable',  seatIds ));
 };
 
-export const getDisabledSeats = async () => {
-  return safeApiCall(() => api.get('/admin/seats/disabled'));
+export const deleteSeat = async (seatId) => {
+  return safeApiCall(() => api.delete(`/admin/seats/${seatId}`));
+};
+
+export const getDisabledSeats = async (userLocation = null) => {
+  const url = userLocation ? `/admin/seats/disabled?location=${userLocation}` : '/admin/seats/disabled';
+  return safeApiCall(() => api.get(url));
 };
 
 // User Management API calls
@@ -130,4 +147,9 @@ export const getBookingsEligibleForCheckIn = async () => {
 // Get bookings eligible for cancellation
 export const getBookingsEligibleForCancellation = async () => {
   return safeApiCall(() => api.get('/admin/bookings/eligible-cancellation'));
+};
+
+export const getDefaultPassword = async (userId) => {
+  const response = await api.get(`/admin/users/${userId}/default-password`);
+  return response.data.data; // This will have the password from DefaultPasswordResponse
 };

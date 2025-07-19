@@ -86,7 +86,7 @@ import './assets/css/user-management.css';
 
 // Protected route component with enhanced role checking
 const ProtectedRoute = ({ children, requiredRole, allowedRoles = [] }) => {
-  const { isAuthenticated, isAdmin, isEquipmentAdmin, isProfessor, isHOD, loading } = useAuth();
+  const { isAuthenticated, isAdmin, isEquipmentAdmin, isProfessor, isHOD, isLibrarian, loading } = useAuth();
   const navigate = useNavigate();
   if (loading) {
     return (
@@ -116,6 +116,9 @@ const ProtectedRoute = ({ children, requiredRole, allowedRoles = [] }) => {
       case 'hod':
         if (!isHOD()) return <Navigate to="/" replace />;
         break;
+      case 'librarian':
+        if (!isLibrarian()) return <Navigate to="/" replace />;
+        break;
     }
   }
   
@@ -127,6 +130,7 @@ const ProtectedRoute = ({ children, requiredRole, allowedRoles = [] }) => {
         case 'equipment-admin': return isEquipmentAdmin();
         case 'professor': return isProfessor();
         case 'hod': return isHOD();
+        case 'librarian': return isLibrarian();
         default: return false;
       }
     });
@@ -152,12 +156,13 @@ const QRScannerPage = () => {
 
 // Admin redirect component with enhanced role checking
 const AdminRedirect = () => {
-  const { isAdmin, isEquipmentAdmin, isProfessor, isHOD } = useAuth();
+  const { isAdmin, isEquipmentAdmin, isProfessor, isHOD, isLibrarian } = useAuth();
   
   if (isHOD()) return <Navigate to="/hod/dashboard" replace />;
   if (isEquipmentAdmin()) return <Navigate to="/equipment-admin/dashboard" replace />;
   if (isProfessor()) return <Navigate to="/professor/dashboard" replace />;
   if (isAdmin()) return <Navigate to="/admin" replace />;
+  if (isLibrarian()) return <Navigate to="/admin/seats" replace />;
   
   return <UserDashboard />;
 };
@@ -350,7 +355,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/seats"
         element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute requiredRoles={["admin", "librarian"]}>
             <SeatManagement />
           </ProtectedRoute>
         }
@@ -359,7 +364,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/seat-management"
         element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute requiredRoles={["admin", "librarian"]}>
             <AdminSeatManagement />
           </ProtectedRoute>
         }
@@ -368,7 +373,7 @@ const AppRoutes = () => {
       <Route
          path="/admin/seat-bookings"
          element={
-            <ProtectedRoute requiredRole="admin">
+            <ProtectedRoute requiredRoles={["admin", "librarian"]}>
               <AdminSeatBookingProvider>
               <SeatBookingManagement />
               </AdminSeatBookingProvider>
@@ -379,7 +384,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/schedule"
         element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute requiredRoles={["admin", "librarian"]}>
             <ScheduleManagement />
           </ProtectedRoute>
         }
@@ -388,7 +393,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/qr"
         element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute requiredRoles={["admin", "librarian"]}>
             <QRManagementPage />
           </ProtectedRoute>
         }
@@ -397,7 +402,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/rooms"
         element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute requiredRoles={["admin", "librarian"]}>
             <AdminRoomManagement />
           </ProtectedRoute>
         }
@@ -406,7 +411,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/Roombookings"
         element={
-          <ProtectedRoute requiredRole="admin">
+          <ProtectedRoute requiredRoles={["admin", "librarian"]}>
             <AdminRoomBookingProvider>
               <div className="admin-page-container">
                 <AdminSidebar activePage="bookings" />

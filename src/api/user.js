@@ -214,9 +214,9 @@ export const getStaffWithDefaultPasswords = async () => {
 
 // Get default password for a specific user (admin only)
 export const getDefaultPassword = async (userId) => {
-  return safeApiCall(() => api.get(`/admin/users/${userId}/default-password`));
+  const response = await api.get(`/admin/users/${userId}/default-password`);
+  return response.data.data; 
 };
-
 
 // // Send password email to user (admin only)
 // export const sendPasswordEmail = async (userId) => {

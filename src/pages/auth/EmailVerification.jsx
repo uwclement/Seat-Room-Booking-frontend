@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { verifyEmail } from '../../api/auth';
-import Button from '../../components/common/Button';
-import Alert from '../../components/common/Alert';
-import '../../assets/css/auth.css';
+import './EmailVerification.css';
+import logo from '../../assets/images/logo.jpeg';
 
 const EmailVerification = () => {
   const [searchParams] = useSearchParams();
@@ -44,32 +43,68 @@ const EmailVerification = () => {
     navigate('/login');
   };
 
+  const handleResendVerification = () => {
+    navigate('/resend-verification');
+  };
+
   return (
-    <div className="auth-container">
-      <div className="auth-form-container">
-        <h2 className="auth-heading">Email Verification</h2>
+    <div className="verification-container">
+      <div className="verification-card">
+        {/* Logo */}
         
+        <div className="logo-section">
+          <div className="logo-circle">
+            {/* <svg className="logo-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg> */}
+            <img src={logo} alt="Logo" className="navbar-logo-img" />
+          </div>
+          <h1 className="app-title">AUCA Library</h1>
+        </div>
+
         {loading ? (
-          <div className="auth-loading">
-            <div className="loading-spinner"></div>
-            <p>Verifying your email...</p>
+          <div className="content-section loading-state">
+            <div className="spinner-container">
+              <div className="spinner"></div>
+            </div>
+            <h2 className="state-heading">Verifying your email...</h2>
+            <p className="state-message">Please wait while we confirm your email address</p>
           </div>
         ) : verified ? (
-          <div className="auth-success-container">
-            <div className="auth-success-icon">
-              <i className="fas fa-check-circle"></i>
+          <div className="content-section success-state">
+            <div className="status-icon success-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
             </div>
-            <h3 className="auth-success-heading">Email verified successfully!</h3>
-            <p className="auth-success-message">
-              Your email has been verified. You can now log in to your account.
+            <h2 className="state-heading">Email Verified!</h2>
+            <p className="state-message">
+              Great! Your email has been successfully verified. You can now access all features of your account.
             </p>
-            <Button variant="primary" onClick={handleContinue}>
+            <button onClick={handleContinue} className="primary-button">
               Continue to Login
-            </Button>
+            </button>
           </div>
         ) : (
-          <Alert type="danger" message={error} />
+          <div className="content-section error-state">
+            <div className="status-icon error-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <h2 className="state-heading">Verification Failed</h2>
+            <p className="state-message">{error}</p>
+            <div className="button-group">
+              <button onClick={handleResendVerification} className="primary-button">
+                Resend Verification Email
+              </button>
+              <button onClick={() => navigate('/login')} className="secondary-button">
+                Back to Login
+              </button>
+            </div>
+          </div>
         )}
+
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUserManagement } from '../../../hooks/useUserManagement';
+import { getDefaultPassword } from '../../../api/admin'; // Add this API function
 import Input from '../../common/Input';
 import Button from '../../common/Button';
 
@@ -17,6 +18,11 @@ const EditUserModal = ({ show, user, onClose }) => {
     isDefault: false
   });
 
+  // NEW: State for password display
+  const [defaultPassword, setDefaultPassword] = useState('');
+  const [loadingPassword, setLoadingPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   useEffect(() => {
     if (user) {
       setFormData({
@@ -29,8 +35,34 @@ const EditUserModal = ({ show, user, onClose }) => {
         activeToday: user.activeToday || false,
         isDefault: user.isDefault || false
       });
+
+      // NEW: Fetch password if user must change password
+      if (user.mustChangePassword) {
+        fetchDefaultPassword(user.id);
+      }
     }
   }, [user]);
+
+  // NEW: Function to fetch default password
+  const fetchDefaultPassword = async (userId) => {
+    setLoadingPassword(true);
+    try {
+      const response = await getDefaultPassword(userId);
+      setDefaultPassword(response.password);
+    } catch (error) {
+      console.error('Error fetching default password:', error);
+      setDefaultPassword('Error loading password');
+    } finally {
+      setLoadingPassword(false);
+    }
+  };
+
+  // NEW: Copy password to clipboard
+  const copyPassword = () => {
+    navigator.clipboard.writeText(defaultPassword);
+    // You can add a toast notification here
+    alert('Password copied to clipboard!');
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -75,6 +107,46 @@ const EditUserModal = ({ show, user, onClose }) => {
                 disabled
               />
             </div>
+
+            {/* NEW: Password display section */}
+            {user?.mustChangePassword && (
+              <div className="password-display-section">
+                <div className="form-group">
+                  <label>Default Password</label>
+                  <div className="password-display">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={loadingPassword ? "Loading..." : defaultPassword}
+                      className="form-control password-field"
+                      readOnly
+                    />
+                    <div className="password-actions">
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        onClick={() => setShowPassword(!showPassword)}
+                        title={showPassword ? "Hide password" : "Show password"}
+                      >
+                        <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-icon"
+                        onClick={copyPassword}
+                        title="Copy password"
+                        disabled={loadingPassword || !defaultPassword}
+                      >
+                        <i className="fas fa-copy"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <small className="password-note">
+                    <i className="fas fa-info-circle"></i>
+                    This is the temporary password. User must change it on first login.
+                  </small>
+                </div>
+              </div>
+            )}
 
             <div className="form-row">
               <Input
