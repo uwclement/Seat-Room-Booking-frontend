@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { getUserActiveBookings, getUserPastBookings, checkInBooking, checkOutBooking, cancelBooking } from '../../api/booking';
+import { getUserActiveBookings, getUserPastBookings, checkInBooking, checkOutBooking, cancelBooking, extendBooking } from '../../api/booking';
 import Alert from '../../components/common/Alert';
 import Button from '../../components/common/Button';
 import QRScannerModal from '../../components/admin/qr/QRScannerModal';
@@ -16,6 +16,8 @@ const MyBookingsPage = () => {
   const [error, setError] = useState('');
   const [actionInProgress, setActionInProgress] = useState(null);
   const [alert, setAlert] = useState({ type: '', message: '' });
+  const [extendingBooking, setExtendingBooking] = useState(null);
+  const [showExtendModal, setShowExtendModal] = useState(false);
   
   // QR Scanner states
   const [showQRScanner, setShowQRScanner] = useState(false);
@@ -170,6 +172,50 @@ const MyBookingsPage = () => {
     } finally {
       setActionInProgress(null);
     }
+  };
+
+  // Handle extend booking
+  const handleExtendBooking = async (bookingId, hours) => {
+    try {
+      setActionInProgress(bookingId);
+      await extendBooking(bookingId, hours);
+      
+      // Update bookings after extension
+      const updatedBookings = await getUserActiveBookings();
+      setActiveBookings(updatedBookings);
+      
+      setAlert({
+        type: 'success',
+        message: `Booking extended by ${hours} hour(s) successfully`
+      });
+      setShowExtendModal(false);
+    } catch (err) {
+      setAlert({
+        type: 'danger',
+        message: err.response?.data?.message || 'Failed to extend booking. Please try again.'
+      });
+    } finally {
+      setActionInProgress(null);
+      setExtendingBooking(null);
+    }
+  };
+
+  // Show extend modal
+  const showExtendDialog = (booking) => {
+    setExtendingBooking(booking);
+    setShowExtendModal(true);
+  };
+
+  // Check if booking can be extended
+  const canExtendBooking = (booking) => {
+    if (booking.status !== 'CHECKED_IN') return false;
+    
+    const now = new Date();
+    const endTime = new Date(booking.endTime);
+    const minutesUntilEnd = (endTime - now) / (1000 * 60);
+    
+    // Can extend if booking ends within next 30 minutes
+    return minutesUntilEnd <= 30 && minutesUntilEnd > 0;
   };
 
   // QR Scanner handlers
@@ -351,14 +397,27 @@ const MyBookingsPage = () => {
                           )}
                           
                           {booking.status === 'CHECKED_IN' && (
-                            <Button
-                              variant="secondary"
-                              onClick={() => handleCheckOut(booking.id)}
-                              disabled={actionInProgress === booking.id}
-                              className="action-btn"
-                            >
-                              {actionInProgress === booking.id ? 'Processing...' : 'Check Out'}
-                            </Button>
+                            <>
+                              <Button
+                                variant="secondary"
+                                onClick={() => handleCheckOut(booking.id)}
+                                disabled={actionInProgress === booking.id}
+                                className="action-btn"
+                              >
+                                {actionInProgress === booking.id ? 'Processing...' : 'Check Out'}
+                              </Button>
+                              
+                              {canExtendBooking(booking) && (
+                                <Button
+                                  variant="primary"
+                                  onClick={() => showExtendDialog(booking)}
+                                  disabled={actionInProgress === booking.id}
+                                  className="action-btn extend-btn"
+                                >
+                                  <i className="fas fa-clock"></i> Extend
+                                </Button>
+                              )}
+                            </>
                           )}
                           
                           {(booking.status === 'RESERVED' || booking.status === 'CHECKED_IN') && (
@@ -429,6 +488,55 @@ const MyBookingsPage = () => {
             </div>
           )}
         </div>
+
+        {/* Extend Booking Modal */}
+        {showExtendModal && extendingBooking && (
+          <div className="modal-overlay">
+            <div className="extend-modal">
+              <div className="modal-header">
+                <h3>Extend Booking</h3>
+                <button 
+                  className="close-btn"
+                  onClick={() => setShowExtendModal(false)}
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="modal-body">
+                <p>Extend your booking for Seat {extendingBooking.seatNumber}?</p>
+                <div className="extend-options">
+                  <Button
+                    variant="primary"
+                    onClick={() => handleExtendBooking(extendingBooking.id, 1)}
+                    disabled={actionInProgress === extendingBooking.id}
+                    className="extend-option-btn"
+                  >
+                    +1 Hour
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => handleExtendBooking(extendingBooking.id, 2)}
+                    disabled={actionInProgress === extendingBooking.id}
+                    className="extend-option-btn"
+                  >
+                    +2 Hours
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="modal-footer">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowExtendModal(false)}
+                  className="cancel-btn"
+                >
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* QR Scanner Modal */}
         <QRScannerModal
