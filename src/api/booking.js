@@ -43,27 +43,27 @@ export const cancelBooking = async (id) => {
 };
 
 // Request booking extension
-export const extendBooking = async (extensionData) => {
-  try {
-    const response = await fetch('/api/bookings/extend', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(extensionData),
-    });
+// export const extendBooking = async (extensionData) => {
+//   try {
+//     const response = await fetch('/api/bookings/extend', {
+//       method: 'PUT',
+//       headers: {
+//         'Content-Type': 'application/json',
+//       },
+//       body: JSON.stringify(extensionData),
+//     });
     
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to extend booking');
-    }
+//     if (!response.ok) {
+//       const errorData = await response.json();
+//       throw new Error(errorData.message || 'Failed to extend booking');
+//     }
     
-    return await response.json();
-  } catch (error) {
-    console.error('API Error:', error);
-    throw error;
-  }
-};
+//     return await response.json();
+//   } catch (error) {
+//     console.error('API Error:', error);
+//     throw error;
+//   }
+// };
 
 // Respond to extension request
 export const respondToExtension = async (id, accepted) => {
@@ -72,8 +72,14 @@ export const respondToExtension = async (id, accepted) => {
     accepted: accepted
   });
   return response.data;
-
-
-
   
+};
+
+
+// Extend a booking
+export const extendBooking = async (id, additionalHours) => {
+  const response = await api.post(`/bookings/${id}/extend`, {
+    additionalHours: additionalHours
+  });
+  return response.data;
 };
