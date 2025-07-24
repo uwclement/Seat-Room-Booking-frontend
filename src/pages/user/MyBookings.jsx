@@ -363,16 +363,16 @@ const MyBookingsPage = () => {
                         <div className="booking-actions">
                           {booking.status === 'RESERVED' && (
                             <>
-                              <Button
+                              {/* <Button
                                 variant="secondary"
                                 onClick={() => handleCheckIn(booking.id)}
                                 disabled={actionInProgress === booking.id}
                                 className="action-btn"
                               >
                                 {actionInProgress === booking.id ? 'Processing...' : 'Check In'}
-                              </Button>
+                              </Button> */}
 
-                              {canUseQRCheckIn(booking) && (
+                              {/* {canUseQRCheckIn(booking) && (
                                 <>
                                   <Button
                                     variant="primary"
@@ -392,7 +392,7 @@ const MyBookingsPage = () => {
                                     <i className="fas fa-shield-alt"></i> Validate
                                   </Button>
                                 </>
-                              )}
+                              )} */}
                             </>
                           )}
                           

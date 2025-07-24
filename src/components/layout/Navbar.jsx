@@ -6,7 +6,7 @@ import NotificationComponent from './../../components/common/NotificationCompone
 import logo from '../../assets/images/logo.jpeg';
 
 const Navbar = () => {
-  const { user, logout, isAuthenticated, isAdmin, isProfessor, isEquipmentAdmin, isHOD } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin, isProfessor, isEquipmentAdmin, isHOD, isLibrarian } = useAuth();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -70,7 +70,7 @@ const Navbar = () => {
 
           {/* Desktop Menu */}
           <div className="navbar-menu">
-            {isAuthenticated() && !isAdmin() && !isProfessor () && !isEquipmentAdmin () && !isHOD () && (
+            {isAuthenticated() && !isAdmin() && !isProfessor () && !isEquipmentAdmin () && !isHOD () && !isLibrarian ()  && (
               <>
                 <Link to="/seats" className="navbar-item">Home</Link>
                 
