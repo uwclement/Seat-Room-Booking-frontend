@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useAdmin } from '../../../hooks/useAdmin';
 import SeatModal from './SeatModal';
+import BulkSeatModal from './BulkSeatModal';
 import DisableSeatModal from './DisableSeatModal';
 import BulkQRModal from '../qr/BulkQRModal';
 
@@ -17,6 +18,8 @@ const SeatActions = () => {
 
   // Modal states
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showBulkCreateModal, setShowBulkCreateModal] = useState(false);
+  const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
 
@@ -37,7 +40,15 @@ const SeatActions = () => {
           onClick={() => setShowCreateModal(true)}
         >
           <i className="fas fa-plus"></i>
-          Create New Seat
+          Create Single Seat
+        </button>
+        
+        <button 
+          className="btn btn-success create-btn"
+          onClick={() => setShowBulkCreateModal(true)}
+        >
+          <i className="fas fa-layer-group"></i>
+          Bulk Create Seats
         </button>
       </div>
 
@@ -74,6 +85,15 @@ const SeatActions = () => {
               Bulk Operations
             </h4>
             <div className="action-buttons">
+              <button 
+                className="btn btn-info"
+                onClick={() => setShowBulkUpdateModal(true)}
+                title="Bulk update properties for selected seats"
+              >
+                <i className="fas fa-edit"></i>
+                Bulk Update
+              </button>
+
               <button 
                 className="btn btn-primary"
                 onClick={handleToggleDesktopBulk}
@@ -119,6 +139,18 @@ const SeatActions = () => {
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
         seatToEdit={null}
+      />
+
+      <BulkSeatModal
+        isOpen={showBulkCreateModal}
+        onClose={() => setShowBulkCreateModal(false)}
+        mode="create"
+      />
+
+      <BulkSeatModal
+        isOpen={showBulkUpdateModal}
+        onClose={() => setShowBulkUpdateModal(false)}
+        mode="update"
       />
 
       <DisableSeatModal 

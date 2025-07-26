@@ -17,6 +17,15 @@ export const getAllSchedules = async () => {
   return safeApiCall(() => api.get('/admin/schedule'));
 };
 
+// NEW: Get schedules for specific location (admin only)
+export const getSchedulesByLocation = async (location) => {
+  return safeApiCall(() => api.get(`/admin/schedule/location/${location}`));
+};
+
+export const getLibraryStatusByLocation = async (location) => {
+  return safeApiCall(() => api.get(`/library/status/${location}`));
+};
+
 // Update a schedule
 export const updateSchedule = async (id, scheduleData) => {
   return safeApiCall(() => api.put(`/admin/schedule/${id}`, scheduleData));

@@ -12,6 +12,7 @@ const SeatList = () => {
     selectedSeats,
     toggleSeatSelection,
     handleToggleDesktop,
+    handleDeleteSeat,
     updateSeat
   } = useAdmin();
 
@@ -22,6 +23,21 @@ const SeatList = () => {
   useEffect(() => {
     setSeats(originalSeats || []);
   }, [originalSeats]);
+
+  // Handle single seat deletion
+  const handleSingleDelete = async (seatId, seatNumber) => {
+    const confirmMessage = `Are you sure you want to delete seat "${seatNumber}"? This action cannot be undone.`;
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      await handleDeleteSeat(seatId);
+    } catch (error) {
+      console.error('Error deleting seat:', error);
+    }
+  };
 
   // QR Generation handler - exactly like rooms
   const createQRHandler = (seatId) => (response) => {
@@ -158,6 +174,14 @@ const SeatList = () => {
                             title="Toggle Desktop"
                           >
                             <i className="fas fa-desktop"></i>
+                          </button>
+
+                          <button
+                            className="btn btn-sm btn-outline-danger"
+                            onClick={() => handleSingleDelete(seat.id, seat.seatNumber)}
+                            title="Delete Seat"
+                          >
+                            <i className="fas fa-trash"></i>
                           </button>
                           
                         </div>

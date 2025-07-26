@@ -1,10 +1,11 @@
-import React from 'react';
+import React, {useCallback} from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 const AdminSidebar = ({ activePage }) => {
-  const { user, isAdmin, isEquipmentAdmin, isHOD, isLibrarian, getUserRole } = useAuth();
+  const { user, isAdmin, isEquipmentAdmin, isHOD, isLibrarian, getUserRole, getUserLocation } = useAuth();
 
+  
   // Base menu items for all admin types
   const baseMenuItems = [
     // { id: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt', path: '/admin' }
@@ -21,13 +22,18 @@ const AdminSidebar = ({ activePage }) => {
     { id: 'passwords', label: 'Password Management', icon: 'fa-key', path: '/admin/passwords' }
   ];
 
-   //  Admin specific items
+   //  Librarian specific items
   const GishusuLibrarianAdminItems = [
     { id: 'seats', label: 'Seat Management', icon: 'fa-chair', path: '/admin/seats' },
     { id: 'seatsBooking', label: 'Seat Bookings', icon: 'fa-calendar-check', path: '/admin/seat-bookings' },
     { id: 'rooms', label: 'Room Management', icon: 'fa-door-open', path: '/admin/rooms' },
     { id: 'schedule', label: 'Schedule Management', icon: 'fa-calendar-alt', path: '/admin/schedule' },
     { id: 'bookings', label: 'Room Bookings', icon: 'fa-bookmark', path: '/admin/Roombookings' },
+  ];
+  const MasororLibrarianAdminItems = [
+    { id: 'seats', label: 'Seat Management', icon: 'fa-chair', path: '/admin/seats' },
+    { id: 'seatsBooking', label: 'Seat Bookings', icon: 'fa-calendar-check', path: '/admin/seat-bookings' },
+    { id: 'schedule', label: 'Schedule Management', icon: 'fa-calendar-alt', path: '/admin/schedule' },
   ];
 
   // Equipment Admin specific items
@@ -63,7 +69,13 @@ const AdminSidebar = ({ activePage }) => {
   }
 
   if (isLibrarian()) {
+    const userLocation = getUserLocation(); 
+    console.log("User location:", userLocation);
+    if ( userLocation === "Gishushu Library")
     menuItems = [...menuItems, ...GishusuLibrarianAdminItems];
+    else{
+      menuItems = [...menuItems, ...MasororLibrarianAdminItems];
+    }
   }
 
   // Add common items for all admin types

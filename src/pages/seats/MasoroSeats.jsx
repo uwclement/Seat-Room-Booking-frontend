@@ -5,8 +5,7 @@ import { createBooking } from '../../api/booking';
 import { joinWaitlist } from '../../api/waitlist';
 import Alert from '../../components/common/Alert';
 import Button from '../../components/common/Button';
-import SeatGrid from '../../components/seats/SeatGrid';
-import CollaborationArea from '../../components/seats/CollaborationArea';
+import SeatGrid from '../../components/seats/MasoroSeatGrid';
 import SeatDetailsModal from '../../components/seats/SeatDetailsModal';
 import ScheduleStatusBanner from '../../components/admin/ScheduleManagement/ScheduleStatusBanner';
 import './Seats.css';
@@ -21,7 +20,9 @@ const SeatsPage = () => {
   const [selectedSeat, setSelectedSeat] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [nearbySeats, setNearbySeats] = useState([]);
+  const [activeFloor, setActiveFloor] = useState(1);
   const [filters, setFilters] = useState({
+    floor: 'ALL',
     zoneType: 'ALL',
     timeRange: 'ALL',
     hasDesktop: false,
@@ -40,23 +41,21 @@ const SeatsPage = () => {
           getUserActiveBookings()
         ]);
         
-        // Enhance seats with booking information consistently
+        // Enhance seats with booking information and floor data
         const enhancedSeats = seatsData.map(seat => {
-          // Check if the seat has any active bookings
           const relatedBookings = userBookingsData.filter(
             booking => booking.seatId === seat.id
           );
           
           return {
             ...seat,
-            // Add the bookings array that all components expect
             bookings: relatedBookings.length > 0 ? relatedBookings : [],
-            // Make sure isDisabled is defined
             isDisabled: seat.isDisabled || false,
-            // Make sure the available property is consistent with bookings
             available: seat.available !== undefined ? seat.available : 
                      !relatedBookings.some(b => 
-                       b.status === 'RESERVED' || b.status === 'CHECKED_IN')
+                       b.status === 'RESERVED' || b.status === 'CHECKED_IN'),
+            // Ensure floor is set (default to 1 if not specified)
+            floor: seat.floor || 1
           };
         });
         
@@ -74,54 +73,66 @@ const SeatsPage = () => {
   
     fetchData();
   }, []);
+
   // Apply filters
   const applyFilters = async () => {
     try {
       setLoading(true);
       
-      // If we're just using local filters (showing only available)
-      if (filters.showOnlyAvailable && filters.zoneType === 'ALL' && filters.timeRange === 'ALL' && !filters.hasDesktop) {
-        const availableSeats = seats.filter(seat => 
+      let filtered = [...seats];
+      
+      // Filter by floor
+      if (filters.floor !== 'ALL') {
+        filtered = filtered.filter(seat => seat.floor === parseInt(filters.floor));
+      }
+      
+      // Filter by zone type
+      if (filters.zoneType !== 'ALL') {
+        filtered = filtered.filter(seat => seat.zoneType === filters.zoneType);
+      }
+      
+      // Filter by desktop requirement
+      if (filters.hasDesktop) {
+        filtered = filtered.filter(seat => seat.hasDesktop);
+      }
+      
+      // Filter by availability
+      if (filters.showOnlyAvailable) {
+        filtered = filtered.filter(seat => 
           !seat.isDisabled && !seat.bookings?.some(booking => 
             booking.status === 'RESERVED' || booking.status === 'CHECKED_IN'
           )
         );
+      }
+
+      // For time-based filtering, use API if needed
+      if (filters.timeRange !== 'ALL') {
+        const filterData = {
+          floor: filters.floor !== 'ALL' ? parseInt(filters.floor) : null,
+          zoneType: filters.zoneType !== 'ALL' ? filters.zoneType : null,
+          hasDesktop: filters.hasDesktop || null,
+          date: filters.date,
+          startTime: null,
+          endTime: null,
+          showOnlyAvailable: filters.showOnlyAvailable
+        };
+
+        if (filters.timeRange === 'MORNING') {
+          filterData.startTime = '08:00';
+          filterData.endTime = '12:00';
+        } else if (filters.timeRange === 'AFTERNOON') {
+          filterData.startTime = '12:00';
+          filterData.endTime = '17:00';
+        } else if (filters.timeRange === 'EVENING') {
+          filterData.startTime = '17:00';
+          filterData.endTime = '22:00';
+        }
+
+        const availableSeats = await findAvailableSeats(filterData);
         setFilteredSeats(availableSeats);
-        setLoading(false);
-        return;
+      } else {
+        setFilteredSeats(filtered);
       }
-      
-      // If no specific filters, just use all seats
-      if (filters.zoneType === 'ALL' && filters.timeRange === 'ALL' && !filters.hasDesktop && !filters.showOnlyAvailable) {
-        setFilteredSeats(seats);
-        setLoading(false);
-        return;
-      }
-
-      // Prepare filter data for API
-      const filterData = {
-        zoneType: filters.zoneType !== 'ALL' ? filters.zoneType : null,
-        hasDesktop: filters.hasDesktop || null,
-        date: filters.date,
-        startTime: null,
-        endTime: null,
-        showOnlyAvailable: filters.showOnlyAvailable
-      };
-
-      // Set time ranges based on selection
-      if (filters.timeRange === 'MORNING') {
-        filterData.startTime = '08:00';
-        filterData.endTime = '12:00';
-      } else if (filters.timeRange === 'AFTERNOON') {
-        filterData.startTime = '12:00';
-        filterData.endTime = '17:00';
-      } else if (filters.timeRange === 'EVENING') {
-        filterData.startTime = '17:00';
-        filterData.endTime = '22:00';
-      }
-
-      const availableSeats = await findAvailableSeats(filterData);
-      setFilteredSeats(availableSeats);
     } catch (err) {
       setError('Failed to apply filters. Please try again.');
       console.error('Error applying filters:', err);
@@ -133,33 +144,63 @@ const SeatsPage = () => {
   // Handle filter changes
   const handleFilterChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFilters({
+    const newFilters = {
       ...filters,
       [name]: type === 'checkbox' ? checked : value
-    });
+    };
+    
+    setFilters(newFilters);
+    
+    // Auto-switch active floor when floor filter changes
+    if (name === 'floar' && value !== 'ALL') {
+      setActiveFloor(parseInt(value));
+    }
+  };
+
+  // Handle floor tab switching
+  const handleFloorSwitch = (floorNumber) => {
+    setActiveFloor(floorNumber);
+    setFilters(prev => ({ ...prev, floor: floorNumber.toString() }));
+  };
+
+  // Get seats for Floor 1 (all seats together)
+  const getFloor1Seats = () => {
+    return filteredSeats.filter(seat => seat.floar === 1);
+  };
+
+  // Get seats for Floor 2 Desktop section
+  const getFloor2DesktopSeats = () => {
+    return filteredSeats.filter(seat => 
+      seat.floar === 2 && seat.hasDesktop
+    );
+  };
+
+  // Get seats for Floor 2 Other section (non-desktop)
+  const getFloor2OtherSeats = () => {
+    return filteredSeats.filter(seat => 
+      seat.floar === 2 && !seat.hasDesktop
+    );
   };
 
   // Find nearby seats for recommendations
   const findNearbySeats = (seat) => {
     if (!seat || !seats.length) return [];
     
-    // Extract row letter and seat number (e.g., "A1" -> row "A", number 1)
+    // Filter seats on the same floor
+    const sameFloorSeats = seats.filter(s => s.floor === seat.floor);
+    
     let rowLetter, seatNumber;
     
-    // Handle different seat numbering formats
     if (seat.seatNumber.includes('-')) {
-      // For collaboration area (e.g., "L1-2")
       const parts = seat.seatNumber.split('-');
       rowLetter = parts[0];
       seatNumber = parseInt(parts[1]);
     } else {
-      // For regular seats (e.g., "A1")
       rowLetter = seat.seatNumber.charAt(0);
       seatNumber = parseInt(seat.seatNumber.substring(1));
     }
     
-    // Find only available seats in same area
-    const availableSeats = seats.filter(s => 
+    const availableSeats = sameFloorSeats.filter(s => 
       !s.isDisabled && 
       !s.bookings?.some(booking => 
         booking.status === 'RESERVED' || booking.status === 'CHECKED_IN'
@@ -167,44 +208,35 @@ const SeatsPage = () => {
       s.zoneType === seat.zoneType
     );
     
-    // Define nearby seats based on numbering pattern
     let nearbySeats = [];
     
     if (seat.seatNumber.includes('-')) {
-      // For collaboration area, find seats in the same table or adjacent tables
       nearbySeats = availableSeats.filter(s => {
         if (!s.seatNumber.includes('-')) return false;
         
         const parts = s.seatNumber.split('-');
         const sRow = parts[0];
-        const sNum = parseInt(parts[1]);
         
-        // Seats in the same table or adjacent tables
         return sRow.charAt(0) === rowLetter.charAt(0) || 
               (rowLetter.startsWith('L') && sRow.startsWith('R')) ||
               (rowLetter.startsWith('R') && sRow.startsWith('L'));
       });
     } else {
-      // For regular seats, find seats in the same row or adjacent rows
       nearbySeats = availableSeats.filter(s => {
         if (s.seatNumber.includes('-')) return false;
         
         const sRow = s.seatNumber.charAt(0);
-        const sNum = parseInt(s.seatNumber.substring(1));
         
-        // Same row or adjacent rows
         return sRow === rowLetter || 
               (sRow.charCodeAt(0) === rowLetter.charCodeAt(0) + 1) ||
               (sRow.charCodeAt(0) === rowLetter.charCodeAt(0) - 1);
       });
     }
     
-    // Sort by proximity (same row first, then by seat number difference)
     return nearbySeats.sort((a, b) => {
       const aRow = a.seatNumber.charAt(0);
       const bRow = b.seatNumber.charAt(0);
       
-      // First compare rows
       if (aRow === rowLetter && bRow !== rowLetter) {
         return -1;
       }
@@ -212,7 +244,6 @@ const SeatsPage = () => {
         return 1;
       }
       
-      // Then compare seat numbers for regular seats
       if (!a.seatNumber.includes('-') && !b.seatNumber.includes('-')) {
         const aNum = parseInt(a.seatNumber.substring(1));
         const bNum = parseInt(b.seatNumber.substring(1));
@@ -220,17 +251,14 @@ const SeatsPage = () => {
       }
       
       return 0;
-    }).slice(0, 6); // Limit to 6 recommendations
+    }).slice(0, 6);
   };
 
   // Handle seat selection
   const handleSeatSelect = (seat) => {
     setSelectedSeat(seat);
-    
-    // Find nearby seats for recommendations
     const nearby = findNearbySeats(seat);
     setNearbySeats(nearby);
-    
     setShowModal(true);
   };
 
@@ -239,7 +267,6 @@ const SeatsPage = () => {
     try {
       await toggleFavoriteSeat(seatId);
       
-      // Update local state
       if (favoriteSeats.includes(seatId)) {
         setFavoriteSeats(favoriteSeats.filter(id => id !== seatId));
       } else {
@@ -256,19 +283,18 @@ const SeatsPage = () => {
     try {
       const response = await createBooking(bookingData);
       
-      // Update user bookings after successful booking
       const updatedBookings = await getUserActiveBookings();
       setUserBookings(updatedBookings);
       
-      // Close modal and update UI
       setShowModal(false);
       
-      // Refresh seat data
       const updatedSeats = await getAllSeatsInMasoro();
-      setSeats(updatedSeats);
-      setFilteredSeats(updatedSeats);
-
-     
+      const enhancedSeats = updatedSeats.map(seat => ({
+        ...seat,
+        floor: seat.floor || 1
+      }));
+      setSeats(enhancedSeats);
+      setFilteredSeats(enhancedSeats);
 
       return { success: true, message: 'Booking successful!' };
     } catch (err) {
@@ -304,15 +330,16 @@ const SeatsPage = () => {
           <div className="filters">
             <select 
               className="filter-select"
-              name="zoneType"
-              value={filters.zoneType}
+              name="floor"
+              value={filters.floor}
               onChange={handleFilterChange}
             >
-              <option value="ALL">All Zones</option>
-              <option value="SILENT">Silent Zone</option>
-              <option value="COLLABORATION">Collaboration Zone</option>
+              <option value="ALL">All Floors</option>
+              <option value="1">Floor 1</option>
+              <option value="2">Floor 2</option>
             </select>
             
+
             <select 
               className="filter-select"
               name="timeRange"
@@ -380,6 +407,22 @@ const SeatsPage = () => {
           </div>
         ) : (
           <div className="seat-container">
+            {/* Floor Navigation Tabs */}
+            <div className="floor-tabs">
+              <button 
+                className={`floor-tab ${activeFloor === 1 ? 'active' : ''}`}
+                onClick={() => handleFloorSwitch(1)}
+              >
+                Floor 1
+              </button>
+              <button 
+                className={`floor-tab ${activeFloor === 2 ? 'active' : ''}`}
+                onClick={() => handleFloorSwitch(2)}
+              >
+                Floor 2
+              </button>
+            </div>
+
             <div className="legend">
               <div className="legend-item">
                 <div className="seat-icon available"></div>
@@ -390,26 +433,57 @@ const SeatsPage = () => {
                 <span>Occupied</span>
               </div>
               <div className="legend-item">
-                <div className="seat-icon fas fa-bookmark "></div>
+                <div className="seat-icon fas fa-bookmark"></div>
                 <span>Favorite</span>
               </div>
             </div>
 
-            <h3 className="section-title">Individual Study Area</h3>
-            <SeatGrid 
-              seats={filteredSeats.filter(seat => seat.zoneType.includes('SILENT'))}
-              onSeatSelect={handleSeatSelect}
-              favoriteSeats={favoriteSeats}
-              userBookings={userBookings}
-            />
+            {/* Floor 1 - All Seats Together */}
+            {activeFloor === 1 && (
+              <div className="floor-content">
+                <h3 className="section-title">All Seats</h3>
+                <SeatGrid 
+                  seats={getFloor1Seats()}
+                  onSeatSelect={handleSeatSelect}
+                  favoriteSeats={favoriteSeats}
+                  userBookings={userBookings}
+                  seatsPerRow={6}
+                />
+              </div>
+            )}
 
-            <h3 className="section-title">Collaboration Area</h3>
-            <CollaborationArea 
-              seats={filteredSeats.filter(seat => seat.zoneType.includes('COLLABORATION'))}
-              onSeatSelect={handleSeatSelect}
-              favoriteSeats={favoriteSeats}
-              userBookings={userBookings}
-            />
+            {/* Floor 2 - Two Sections */}
+            {activeFloor === 2 && (
+              <div className="floor-content">
+                {/* Desktop Section */}
+                {getFloor2DesktopSeats().length > 0 && (
+                  <>
+                    <h3 className="section-title">Laptop Work Space</h3>
+                    <SeatGrid 
+                      seats={getFloor2DesktopSeats()}
+                      onSeatSelect={handleSeatSelect}
+                      favoriteSeats={favoriteSeats}
+                      userBookings={userBookings}
+                      seatsPerRow={6}
+                    />
+                  </>
+                )}
+
+                {/* Other Seats Section */}
+                {getFloor2OtherSeats().length > 0 && (
+                  <>
+                    <h3 className="section-title">Seats</h3>
+                    <SeatGrid 
+                      seats={getFloor2OtherSeats()}
+                      onSeatSelect={handleSeatSelect}
+                      favoriteSeats={favoriteSeats}
+                      userBookings={userBookings}
+                      seatsPerRow={6}
+                    />
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
 

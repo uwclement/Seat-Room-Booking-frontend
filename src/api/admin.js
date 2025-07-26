@@ -112,7 +112,7 @@ export const bulkToggleDesktop = async (seatIds) => {
 
 
 // Get all current bookings
-export const getCurrentAdminBookings = async () => {
+export const getCurrentAdminBookings = async (locationId = null) => {
   return safeApiCall(() => api.get('/admin/bookings/current'));
 };
 

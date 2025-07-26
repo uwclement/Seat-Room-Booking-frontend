@@ -39,6 +39,14 @@ export const AdminProvider = ({ children }) => {
     return isLibrarian() ? getUserLocation() : null;
   }, [isLibrarian, getUserLocation]);
 
+  const normalizeLocation = (location) => {
+  if (!location) return null;
+  if (location.includes('Masoro')) return 'MASORO';
+  if (location.includes('Gishushu')) return 'GISHUSHU';
+  return location; 
+};
+
+
   // Fetch all seats
   const fetchSeats = useCallback(async () => {
     if (!isAuthenticated() || !isAdmin() && !isLibrarian() ) return; // Skip if not authenticated admin
@@ -135,7 +143,7 @@ export const AdminProvider = ({ children }) => {
     try {
       // Add user's location if librarian
       if (isLibrarian()) {
-        seatData.location = getUserLocation();
+        seatData.location = normalizeLocation(getUserLocation());
       }
       
       await createSeat(seatData);
@@ -155,7 +163,7 @@ export const AdminProvider = ({ children }) => {
     try {
       // Add user's location if librarian
       if (isLibrarian()) {
-        bulkCreationData.location = getUserLocation();
+        bulkCreationData.location = normalizeLocation(getUserLocation());
       }
       
       const createdSeats = await bulkCreateSeats(bulkCreationData);
@@ -289,20 +297,20 @@ export const AdminProvider = ({ children }) => {
 };
 
   // delete seat 
-  const handleDeleteSeat = async (seatId) => {
-    setLoading(true);
-    setError('');
-    try {
-      await deleteSeat(seatId);
-      setSuccess('Seat deleted successfully');
-      await fetchSeats();
-    } catch (err) {
-      setError('Failed to delete seat: ' + (err.response?.data?.message || err.message));
-    } finally {
-      setLoading(false);
-      setTimeout(() => setSuccess(''), 3000);
-    }
-  };
+ const handleDeleteSeat = async (seatId) => {
+  setLoading(true);
+  setError('');
+  try {
+    await deleteSeat(seatId);
+    setSuccess('Seat deleted successfully');
+    await fetchSeats();
+  } catch (err) {
+    setError('Failed to delete seat: ' + (err.response?.data?.message || err.message));
+  } finally {
+    setLoading(false);
+    setTimeout(() => setSuccess(''), 3000);
+  }
+};
 
 
   // Load seats when authentication status changes

@@ -16,7 +16,7 @@ import {
 export const AdminSeatBookingContext = createContext();
 
 export const AdminSeatBookingProvider = ({ children }) => {
-  const { isAuthenticated, isAdmin, isLibrarian } = useAuth();
+  const { isAuthenticated, isAdmin, isLibrarian, getUserLocation } = useAuth();
   
   // State for booking management
   const [bookings, setBookings] = useState([]);
@@ -24,6 +24,10 @@ export const AdminSeatBookingProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+   const getUserEffectiveLocation = useCallback(() => {
+      return isLibrarian() ? getUserLocation() : null;
+    }, [isLibrarian, getUserLocation]);
   
   // Filter state
   const [filters, setFilters] = useState({
@@ -45,6 +49,7 @@ export const AdminSeatBookingProvider = ({ children }) => {
     setLoading(true);
     setError('');
     try {
+      const userLocation = getUserEffectiveLocation();
       const data = await getCurrentAdminBookings();
       setBookings(data);
     } catch (err) {
@@ -55,15 +60,16 @@ export const AdminSeatBookingProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, isLibrarian, getUserEffectiveLocation]);
 
   // Fetch bookings by date
   const fetchBookingsByDate = useCallback(async (date) => {
-    if (!isAuthenticated() || !isAdmin()) return;
+    if (!isAuthenticated() || !isAdmin () && !isLibrarian()) return;
     
     setLoading(true);
     setError('');
     try {
+      const userLocation = getUserEffectiveLocation();
       const data = await getBookingsByDate(date);
       setBookings(data);
     } catch (err) {
@@ -74,15 +80,16 @@ export const AdminSeatBookingProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, isLibrarian, getUserEffectiveLocation]);
 
   // Fetch bookings in date range
   const fetchBookingsInRange = useCallback(async (startDate, endDate) => {
-    if (!isAuthenticated() || !isAdmin() ) return;
+    if (!isAuthenticated() || !isAdmin() && !isLibrarian ()) return;
     
     setLoading(true);
     setError('');
     try {
+      const userLocation = getUserEffectiveLocation();
       const data = await getBookingsInRange(startDate, endDate);
       setBookings(data);
     } catch (err) {
@@ -93,7 +100,7 @@ export const AdminSeatBookingProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, isLibrarian, getUserEffectiveLocation]);
 
   // Handle booking selection
   const toggleBookingSelection = (bookingId) => {
@@ -255,7 +262,7 @@ export const AdminSeatBookingProvider = ({ children }) => {
 
   // Load current bookings on mount
   useEffect(() => {
-    if (isAuthenticated() && isAdmin()) {
+    if (isAuthenticated() && isAdmin () || isLibrarian()) {
       fetchCurrentBookings();
     }
   }, [isAuthenticated, isAdmin, fetchCurrentBookings]);
@@ -287,7 +294,8 @@ export const AdminSeatBookingProvider = ({ children }) => {
     getBookingStats,
     setViewMode,
     setError,
-    setSuccess
+    setSuccess,
+    userLocation: getUserEffectiveLocation(),
   };
 
   return (

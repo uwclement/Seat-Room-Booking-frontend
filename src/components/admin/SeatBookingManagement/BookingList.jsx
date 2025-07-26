@@ -140,7 +140,7 @@ const BookingList = () => {
                   </td>
                   <td>
                     <div className="user-info">
-                      <strong>{booking.userName}</strong>
+                      <strong>{booking.identifier}</strong>
                       {/* <div className="user-id">ID: {booking.userId}</div> */}
                     </div>
                   </td>
