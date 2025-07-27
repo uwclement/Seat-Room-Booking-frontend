@@ -324,7 +324,7 @@ const SeatsPage = () => {
   return (
     <div className="seat-page-container">
       <div className="container">
-        <ScheduleStatusBanner />
+        <ScheduleStatusBanner location="MASORO" />
         <div className="content-header">
           <h2>Masoro Seats</h2>
           <div className="filters">

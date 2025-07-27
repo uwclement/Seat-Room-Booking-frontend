@@ -19,7 +19,8 @@ const AdminSidebar = ({ activePage }) => {
     { id: 'schedule', label: 'Schedule Management', icon: 'fa-calendar-alt', path: '/admin/schedule' },
     { id: 'bookings', label: 'Room Bookings', icon: 'fa-bookmark', path: '/admin/Roombookings' },
     { id: 'users', label: 'User Management', icon: 'fa-users', path: '/admin/users' },
-    { id: 'passwords', label: 'Password Management', icon: 'fa-key', path: '/admin/passwords' }
+    { id: 'passwords', label: 'Password Management', icon: 'fa-key', path: '/admin/passwords' },
+    { id: 'Librarian', label: 'Librarian Management', icon: 'fa-users', path: '#' },
   ];
 
    //  Librarian specific items
@@ -71,7 +72,7 @@ const AdminSidebar = ({ activePage }) => {
   if (isLibrarian()) {
     const userLocation = getUserLocation(); 
     console.log("User location:", userLocation);
-    if ( userLocation === "Gishushu Library")
+    if ( userLocation === "GISHUSHU")
     menuItems = [...menuItems, ...GishusuLibrarianAdminItems];
     else{
       menuItems = [...menuItems, ...MasororLibrarianAdminItems];
@@ -80,8 +81,8 @@ const AdminSidebar = ({ activePage }) => {
 
   // Add common items for all admin types
   const commonItems = [
-    { id: 'analytics', label: 'System Analytics', icon: 'fa-chart-bar', path: '/admin/analytics' },
-    { id: 'logs', label: 'Activity Logs', icon: 'fa-history', path: '/admin/logs' }
+    // { id: 'analytics', label: 'System Analytics', icon: 'fa-chart-bar', path: '/admin/analytics' },
+    // { id: 'logs', label: 'Activity Logs', icon: 'fa-history', path: '/admin/logs' }
   ];
   
   menuItems = [...menuItems, ...commonItems];

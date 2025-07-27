@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '../../../hooks/useSchedule';
+import LocationSwitcher from './LocationSwitcher';
 import { format, parseISO } from 'date-fns';
 
 const ScheduleCalendar = () => {
-  const { closureExceptions, schedules, fetchClosureExceptions } = useSchedule();
+  const { 
+    closureExceptions, 
+    schedules, 
+    fetchClosureExceptions,
+    selectedLocation,
+    setSelectedLocation,
+    isAdmin,
+    isLibrarian,
+    userLocation
+  } = useSchedule();
+  
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState([]);
   
@@ -76,6 +87,9 @@ const ScheduleCalendar = () => {
       5: 'FRIDAY',
       6: 'SATURDAY'
     };
+
+    // Get current location context
+    const currentLocation = isLibrarian ? userLocation : (isAdmin ? selectedLocation : userLocation);
     
     // Check schedule and closures for each day
     days.forEach(day => {
@@ -141,7 +155,11 @@ const ScheduleCalendar = () => {
         }
       } else {
         // STEP 2: If no exception, check regular schedule
-        const scheduleForDay = schedules.find(s => s.dayOfWeek === dayOfWeekStr);
+        // NEW: Filter schedules by current location
+        const scheduleForDay = schedules.find(s => 
+          s.dayOfWeek === dayOfWeekStr && 
+          (!currentLocation || s.location === currentLocation)
+        );
         
         if (scheduleForDay) {
           console.log('Found schedule for day:', dayOfWeekStr, scheduleForDay);
@@ -152,7 +170,8 @@ const ScheduleCalendar = () => {
               isClosed: true,
               isException: false,
               reason: scheduleForDay.message || 'Closed (Regular Schedule)',
-              source: 'schedule'
+              source: 'schedule',
+              location: scheduleForDay.location
             };
           } else {
             // Day is open according to regular schedule
@@ -193,7 +212,8 @@ const ScheduleCalendar = () => {
               open: openTime,
               close: closeTime,
               message,
-              source: 'schedule'
+              source: 'schedule',
+              location: scheduleForDay.location
             };
           }
         } else {
@@ -209,7 +229,7 @@ const ScheduleCalendar = () => {
     });
     
     setCalendarDays(days);
-  }, [currentDate, closureExceptions, schedules]);
+  }, [currentDate, closureExceptions, schedules, selectedLocation, isAdmin, isLibrarian, userLocation]);
   
   // Go to previous month
   const prevMonth = () => {
@@ -276,11 +296,34 @@ const ScheduleCalendar = () => {
     
     return classes.join(' ');
   };
+
+  // Get location display name
+  const getLocationDisplayName = (location) => {
+    const names = {
+      'GISHUSHU': 'Gishushu Campus',
+      'MASORO': 'Masoro Campus'
+    };
+    return names[location] || location;
+  };
+
+  // Get current location for display
+  const getCurrentLocationDisplay = () => {
+    const currentLocation = isLibrarian ? userLocation : (isAdmin ? selectedLocation : userLocation);
+    return getLocationDisplayName(currentLocation);
+  };
   
   return (
     <div className="schedule-calendar">
+      {/* NEW: Location Switcher */}
+      <LocationSwitcher 
+        selectedLocation={selectedLocation}
+        setSelectedLocation={setSelectedLocation}
+        isAdmin={isAdmin}
+        userLocation={userLocation}
+      />
+
       <div className="calendar-header">
-        <h3>Library Schedule Calendar</h3>
+        <h3>Library Schedule Calendar - {getCurrentLocationDisplay()}</h3>
         <div className="calendar-controls">
           <button className="btn btn-sm btn-outline-secondary" onClick={prevMonth}>
             <i className="fas fa-chevron-left"></i> Prev
@@ -379,6 +422,291 @@ const ScheduleCalendar = () => {
           <span>Weekend</span>
         </div>
       </div>
+
+      <style jsx>{`
+        .schedule-calendar {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 1.5rem;
+          background: #fff;
+          border-radius: 12px;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .calendar-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 2rem;
+          padding-bottom: 1rem;
+          border-bottom: 2px solid #e9ecef;
+        }
+
+        .calendar-header h3 {
+          margin: 0;
+          color: #212529;
+          font-weight: 600;
+        }
+
+        .calendar-controls {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .btn {
+          padding: 0.5rem 1rem;
+          border: 1px solid #dee2e6;
+          border-radius: 6px;
+          background: #fff;
+          color: #495057;
+          cursor: pointer;
+          font-size: 0.875rem;
+          transition: all 0.2s ease;
+        }
+
+        .btn:hover {
+          border-color: #0d6efd;
+          color: #0d6efd;
+        }
+
+        .btn-outline-primary {
+          border-color: #0d6efd;
+          color: #0d6efd;
+        }
+
+        .btn-outline-primary:hover {
+          background: #0d6efd;
+          color: white;
+        }
+
+        .current-month {
+          font-weight: 600;
+          font-size: 1.1rem;
+          color: #495057;
+          min-width: 180px;
+          text-align: center;
+        }
+
+        .calendar-grid {
+          margin-bottom: 2rem;
+        }
+
+        .calendar-weekdays {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 1px;
+          background: #dee2e6;
+          border-radius: 8px 8px 0 0;
+          overflow: hidden;
+        }
+
+        .weekday {
+          background: #f8f9fa;
+          padding: 1rem;
+          text-align: center;
+          font-weight: 600;
+          color: #495057;
+          font-size: 0.875rem;
+        }
+
+        .calendar-days {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 1px;
+          background: #dee2e6;
+          border-radius: 0 0 8px 8px;
+          overflow: hidden;
+        }
+
+        .calendar-day {
+          background: #fff;
+          min-height: 120px;
+          padding: 0.75rem;
+          position: relative;
+          transition: background-color 0.2s ease;
+        }
+
+        .calendar-day:hover {
+          background: #f8f9fa;
+        }
+
+        .calendar-day.other-month {
+          background: #f8f9fa;
+          color: #6c757d;
+        }
+
+        .calendar-day.today {
+          background: #fff3cd;
+          border: 2px solid #ffc107;
+        }
+
+        .calendar-day.open-day {
+          border-left: 4px solid #198754;
+        }
+
+        .calendar-day.closed-day {
+          border-left: 4px solid #dc3545;
+        }
+
+        .calendar-day.special-hours-day {
+          border-left: 4px solid #fd7e14;
+        }
+
+        .calendar-day.exception-closure {
+          border-left: 4px solid #6f42c1;
+        }
+
+        .calendar-day.exception-hours {
+          border-left: 4px solid #d63384;
+        }
+
+        .calendar-day.weekend {
+          background: #f1f3f4;
+        }
+
+        .day-number {
+          font-weight: 600;
+          font-size: 1rem;
+          color: #212529;
+          margin-bottom: 0.5rem;
+        }
+
+        .day-status {
+          font-size: 0.75rem;
+          line-height: 1.2;
+        }
+
+        .status-indicator {
+          font-weight: 600;
+          color: #198754;
+          display: block;
+          margin-bottom: 0.25rem;
+        }
+
+        .hours-time {
+          color: #495057;
+          font-weight: 500;
+          margin-bottom: 0.25rem;
+        }
+
+        .hours-message {
+          color: #6c757d;
+          font-style: italic;
+        }
+
+        .day-closed .closed-indicator {
+          font-weight: 600;
+          color: #dc3545;
+          display: block;
+          margin-bottom: 0.25rem;
+        }
+
+        .closed-reason {
+          color: #6c757d;
+          font-style: italic;
+        }
+
+        .special-hours .status-indicator {
+          color: #fd7e14;
+        }
+
+        .exception .status-indicator,
+        .exception .closed-indicator {
+          color: #6f42c1;
+        }
+
+        .status-badge {
+          position: absolute;
+          top: 0.5rem;
+          right: 0.5rem;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.625rem;
+          font-weight: 600;
+          color: white;
+        }
+
+        .exception-badge {
+          background: #6f42c1;
+        }
+
+        .calendar-legend {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+          padding: 1rem;
+          background: #f8f9fa;
+          border-radius: 8px;
+          border: 1px solid #e9ecef;
+        }
+
+        .legend-item {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.875rem;
+        }
+
+        .legend-color {
+          width: 16px;
+          height: 16px;
+          border-radius: 3px;
+        }
+
+        .legend-color.today {
+          background: #ffc107;
+        }
+
+        .legend-color.open-day {
+          background: #198754;
+        }
+
+        .legend-color.closed-day {
+          background: #dc3545;
+        }
+
+        .legend-color.special-hours-day {
+          background: #fd7e14;
+        }
+
+        .legend-color.exception-closure {
+          background: #6f42c1;
+        }
+
+        .legend-color.exception-hours {
+          background: #d63384;
+        }
+
+        .legend-color.weekend {
+          background: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+          .calendar-header {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+          }
+
+          .calendar-controls {
+            justify-content: center;
+          }
+
+          .calendar-day {
+            min-height: 80px;
+            padding: 0.5rem;
+          }
+
+          .legend-item {
+            font-size: 0.75rem;
+          }
+        }
+      `}</style>
     </div>
   );
 };

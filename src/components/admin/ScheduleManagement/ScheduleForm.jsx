@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSchedule } from '../../../hooks/useSchedule';
 import TimePicker from '../../common/TimePicker';
+import LocationSwitcher from './LocationSwitcher';
 import { Clock, Calendar, AlertCircle, Check, X } from 'lucide-react';
 
 const dayNameMap = {
@@ -144,7 +145,13 @@ const ScheduleForm = () => {
     handleSetDayClosed, 
     handleSetSpecialClosingTime,
     handleRemoveSpecialClosingTime,
-    loading
+    loading,
+    // NEW: Location context
+    selectedLocation,
+    setSelectedLocation,
+    isAdmin,
+    isLibrarian,
+    userLocation
   } = useSchedule();
 
   const [selectedDay, setSelectedDay] = useState('');
@@ -163,6 +170,14 @@ const ScheduleForm = () => {
   useEffect(() => {
     setHasUnsavedChanges(true);
   }, [openTime, closeTime, specialCloseTime, isOpen, message, showSpecialClose]);
+
+  // Reset selected day when location changes (for admins)
+  useEffect(() => {
+    if (isAdmin) {
+      setSelectedDay('');
+      setHasUnsavedChanges(false);
+    }
+  }, [selectedLocation, isAdmin]);
 
   // Format time to 12-hour format for display
   const formatTimeDisplay = (timeString) => {
@@ -340,6 +355,14 @@ const ScheduleForm = () => {
         type={notification.type}
         message={notification.message}
         onClose={() => setNotification({ type: '', message: '' })}
+      />
+
+      {/* NEW: Location Switcher */}
+      <LocationSwitcher 
+        selectedLocation={selectedLocation}
+        setSelectedLocation={setSelectedLocation}
+        isAdmin={isAdmin}
+        userLocation={userLocation}
       />
 
       <form onSubmit={handleSubmit} noValidate>
@@ -598,6 +621,7 @@ const ScheduleForm = () => {
           display: flex;
           flex-direction: column;
           gap: 0.25rem;
+          position: relative;
         }
 
         .day-button:hover {
@@ -630,6 +654,7 @@ const ScheduleForm = () => {
           font-size: 0.75rem;
           opacity: 0.8;
         }
+
 
         .toggle-group {
           margin-bottom: 1rem;

@@ -2,11 +2,13 @@ import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import {
   getAllSchedules,
+  getSchedulesByLocation,
   updateSchedule,
   setDayClosed,
   setSpecialClosingTime,
   removeSpecialClosingTime,
   getLibraryStatus,
+  getLibraryStatusByLocation,
   getAllClosureExceptions,
   getClosureExceptionsInRange,
   createClosureException,
@@ -28,7 +30,7 @@ import {
 export const ScheduleContext = createContext();
 
 export const ScheduleProvider = ({ children }) => {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, isLibrarian, getUserLocation } = useAuth();
 
   // State for schedules
   const [schedules, setSchedules] = useState([]);
@@ -41,17 +43,40 @@ export const ScheduleProvider = ({ children }) => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Fetch all schedules
+  // Location state for admin location switching
+  const [selectedLocation, setSelectedLocation] = useState('GISHUSHU');
+
+  // Get current effective location
+  const getCurrentLocation = useCallback(() => {
+    if (isLibrarian()) {
+      return getUserLocation(); // Librarian uses their assigned location
+    } else if (isAdmin()) {
+      return selectedLocation; // Admin can switch locations
+    } else {
+      return getUserLocation(); // Regular users use their location
+    }
+  }, [isLibrarian, isAdmin, getUserLocation, selectedLocation]);
+
+  // Fetch schedules based on user location context
   const fetchSchedules = useCallback(async () => {
-    if (!isAuthenticated() || !isAdmin()) return;
+    if (!isAuthenticated() || (!isAdmin() && !isLibrarian())) return;
     
     setLoading(true);
     setError('');
     try {
-      const data = await getAllSchedules();
+      const currentLocation = getCurrentLocation();
+      let data;
+      
+      if (isAdmin()) {
+        // Admin sees all schedules, but filtered by selected location
+        data = await getSchedulesByLocation(currentLocation);
+      } else {
+        // Librarian sees only their location schedules (backend filters automatically)
+        data = await getAllSchedules();
+      }
+      
       setSchedules(data);
     } catch (err) {
-      // Only set error if it's not a 401
       if (err.response && err.response.status !== 401) {
         setError('Failed to fetch schedules. Please try again later.');
         console.error(err);
@@ -59,11 +84,31 @@ export const ScheduleProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
+  }, [isAuthenticated, isAdmin, isLibrarian, getCurrentLocation]);
+
+  // Fetch schedules for specific location (admin only)
+  const fetchSchedulesByLocation = useCallback(async (location) => {
+    if (!isAuthenticated() || !isAdmin()) return;
+    
+    setLoading(true);
+    setError('');
+    try {
+      const data = await getSchedulesByLocation(location);
+      return data;
+    } catch (err) {
+      if (err.response && err.response.status !== 401) {
+        setError('Failed to fetch schedules for location. Please try again later.');
+        console.error(err);
+      }
+      return [];
+    } finally {
+      setLoading(false);
+    }
   }, [isAuthenticated, isAdmin]);
 
   // Fetch closure exceptions
   const fetchClosureExceptions = useCallback(async () => {
-    if (!isAuthenticated() || !isAdmin()) return;
+    if (!isAuthenticated() || (!isAdmin() && !isLibrarian())) return;
     
     setLoading(true);
     setError('');
@@ -71,7 +116,6 @@ export const ScheduleProvider = ({ children }) => {
       const data = await getAllClosureExceptions();
       setClosureExceptions(data);
     } catch (err) {
-      // Only set error if it's not a 401
       if (err.response && err.response.status !== 401) {
         setError('Failed to fetch closure exceptions. Please try again later.');
         console.error(err);
@@ -79,19 +123,28 @@ export const ScheduleProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, isLibrarian]);
 
-  // Fetch library status
+  // Fetch library status for current location
   const fetchLibraryStatus = useCallback(async () => {
-    if (!isAuthenticated() ) return;
+    if (!isAuthenticated()) return;
     
     setLoading(true);
     setError('');
     try {
-      const data = await getLibraryStatus();
+      const currentLocation = getCurrentLocation();
+      let data;
+      
+      if ((isAdmin() || isLibrarian()) && currentLocation) {
+        // Use location-specific status for admin/librarian
+        data = await getLibraryStatusByLocation(currentLocation);
+      } else {
+        // Use user's default location status
+        data = await getLibraryStatus();
+      }
+      
       setLibraryStatus(data);
     } catch (err) {
-      // Only set error if it's not a 401
       if (err.response && err.response.status !== 401) {
         setError('Failed to fetch library status. Please try again later.');
         console.error(err);
@@ -99,11 +152,29 @@ export const ScheduleProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated ]);
+  }, [isAuthenticated, isAdmin, isLibrarian, getCurrentLocation]);
+
+  // NEW: Fetch library status for specific location
+  const fetchLibraryStatusByLocation = useCallback(async (location) => {
+    setLoading(true);
+    setError('');
+    try {
+      const data = await getLibraryStatusByLocation(location);
+      return data;
+    } catch (err) {
+      if (err.response && err.response.status !== 401) {
+        setError('Failed to fetch library status for location. Please try again later.');
+        console.error(err);
+      }
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Fetch schedule message
   const fetchScheduleMessage = useCallback(async () => {
-    if (!isAuthenticated() ) return;
+    if (!isAuthenticated()) return;
     
     setLoading(true);
     setError('');
@@ -119,11 +190,11 @@ export const ScheduleProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated ]);
+  }, [isAuthenticated]);
 
   // Fetch announcements
   const fetchAnnouncements = useCallback(async () => {
-    if (!isAuthenticated() || !isAdmin()) return;
+    if (!isAuthenticated() || (!isAdmin() && !isLibrarian())) return;
     
     setLoading(true);
     setError('');
@@ -131,7 +202,6 @@ export const ScheduleProvider = ({ children }) => {
       const data = await getAllAnnouncements();
       setAnnouncements(data);
     } catch (err) {
-      // Only set error if it's not a 401
       if (err.response && err.response.status !== 401) {
         setError('Failed to fetch announcements. Please try again later.');
         console.error(err);
@@ -139,16 +209,16 @@ export const ScheduleProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, isLibrarian]);
 
- // fetch for public users 
+  // fetch for public users 
   const fetchActiveAnnouncements = useCallback(async () => {
     if (!isAuthenticated()) return;
     
     setLoading(true);
     setError('');
     try {
-      const data = await getActiveAnnouncements ();
+      const data = await getActiveAnnouncements();
       setActiveAnnouncements(data);
     } catch (err) {
       // Only set error if it's not a 401
@@ -311,33 +381,35 @@ export const ScheduleProvider = ({ children }) => {
     }
   };
 
-  // Load data when authentication status changes
+  // Load data when authentication status or location changes
   useEffect(() => {
-  if (!isAuthenticated()) return;
+    if (!isAuthenticated()) return;
 
-  fetchLibraryStatus();        // For all users
-  fetchScheduleMessage();      // For all users
-  fetchActiveAnnouncements();
+    fetchLibraryStatus();
+    fetchScheduleMessage();
+    fetchActiveAnnouncements();
 
-  if (isAdmin()) {
-    fetchSchedules();
-    fetchClosureExceptions();
-    fetchAnnouncements();
-  }
-}, [
-  isAuthenticated,
-  isAdmin,
-  fetchSchedules,
-  fetchClosureExceptions,
-  fetchLibraryStatus,
-  fetchScheduleMessage,
-  fetchAnnouncements
-]);
-
+    if (isAdmin() || isLibrarian()) {
+      fetchSchedules();
+      fetchClosureExceptions();
+      fetchAnnouncements();
+    }
+  }, [
+    isAuthenticated,
+    isAdmin,
+    isLibrarian,
+    selectedLocation, // Refetch when admin changes location
+    fetchSchedules,
+    fetchClosureExceptions,
+    fetchLibraryStatus,
+    fetchScheduleMessage,
+    fetchAnnouncements,
+    fetchActiveAnnouncements
+  ]);
 
   // Refresh library status every 5 minutes
   useEffect(() => {
-    if (!isAuthenticated() ) return;
+    if (!isAuthenticated()) return;
     
     const intervalId = setInterval(() => {
       fetchLibraryStatus();
@@ -358,10 +430,20 @@ export const ScheduleProvider = ({ children }) => {
     error,
     success,
     
+    // NEW: Location context
+    selectedLocation,
+    setSelectedLocation,
+    getCurrentLocation,
+    isLibrarian: isLibrarian(),
+    isAdmin: isAdmin(),
+    userLocation: getUserLocation(),
+    
     // Functions
     fetchSchedules,
+    fetchSchedulesByLocation, // NEW
     fetchClosureExceptions,
     fetchLibraryStatus,
+    fetchLibraryStatusByLocation, // NEW
     fetchScheduleMessage,
     fetchAnnouncements,
     fetchActiveAnnouncements,

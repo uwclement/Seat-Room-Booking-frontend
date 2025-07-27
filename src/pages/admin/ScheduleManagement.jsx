@@ -3,6 +3,7 @@ import { useSchedule } from '../../hooks/useSchedule';
 import ScheduleForm from '../../components/admin/ScheduleManagement/ScheduleForm';
 import RecurringClosureForm from '../../components/admin/ScheduleManagement/RecurringClosureForm';
 import ScheduleStatusBanner from '../../components/admin/ScheduleManagement/ScheduleStatusBanner';
+import { DualLocationBanner } from '../../components/admin/ScheduleManagement/ScheduleStatusBanner';
 import MessagePreview from '../../components/admin/ScheduleManagement/MessagePreview';
 import AnnouncementsManagement from '../../components/admin/AnnouncementsManagement/Announcements';
 import ScheduleCalendar from '../../components/admin/ScheduleManagement/ScheduleCalendar';
@@ -44,7 +45,7 @@ const ScheduleManagement = () => {
           </p>
         </div>
 
-        <ScheduleStatusBanner />
+        <DualLocationBanner />
 
         {error && (
           <Alert
