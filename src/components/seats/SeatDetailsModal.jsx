@@ -141,7 +141,7 @@ const isUserBooking = () => {
       return;
     }
 
-    // NEW VALIDATION 1: Check if start time is in the past (for today's date)
+    //  Check if start time is in the past (for today's date)
     const now = new Date();
     const selectedDate = new Date(bookingDate);
     const startDateTime = new Date(`${bookingDate}T${startTime}:00`);
@@ -155,7 +155,7 @@ const isUserBooking = () => {
       return;
     }
 
-    // NEW VALIDATION 2: Check if end time is earlier than start time
+    //  Check if end time is earlier than start time
     if (startTime >= endTime) {
       setAlert({ 
         type: 'danger', 
@@ -217,7 +217,7 @@ const isUserBooking = () => {
       return;
     }
 
-    // NEW VALIDATION 1: Check if start time is in the past (for today's date)
+    // Check if start time is in the past (for today's date)
     const now = new Date();
     const selectedDate = new Date(bookingDate);
     const startDateTime = new Date(`${bookingDate}T${startTime}:00`);
@@ -231,7 +231,7 @@ const isUserBooking = () => {
       return;
     }
 
-    // NEW VALIDATION 2: Check if end time is earlier than start time
+    // Check if end time is earlier than start time
     if (startTime >= endTime) {
       setAlert({ 
         type: 'danger', 

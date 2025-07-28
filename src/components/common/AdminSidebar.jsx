@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 
 const AdminSidebar = ({ activePage }) => {
-  const { user, isAdmin, isEquipmentAdmin, isHOD, isLibrarian, getUserRole, getUserLocation } = useAuth();
+  const { user, isAdmin, isEquipmentAdmin, isHOD, isLibrarian, isProfessor, getUserRole, getUserLocation } = useAuth();
 
   
   // Base menu items for all admin types
@@ -54,6 +54,15 @@ const AdminSidebar = ({ activePage }) => {
     { id: 'department-overview', label: 'Department Overview', icon: 'fa-building', path: '/admin/department-overview' }
   ];
 
+  // Professor specific items
+  const professorItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt', path: '/professor/dashboard' },
+    { id: 'request-equipment', label: 'Request Equipment', icon: 'fa-tools', path: '/professor/request-equipment' },
+    { id: 'request-courses', label: 'Request Courses', icon: 'fa-book', path: '/professor/request-courses' },
+    { id: 'my-requests', label: 'My Requests', icon: 'fa-list', path: '/professor/my-requests' },
+    { id: 'my-courses', label: 'My Courses', icon: 'fa-graduation-cap', path: '/professor/my-courses' }
+  ];
+
   // Build menu items based on user roles
   let menuItems = [...baseMenuItems];
   
@@ -69,6 +78,10 @@ const AdminSidebar = ({ activePage }) => {
     menuItems = [...menuItems, ...hodItems];
   }
 
+  if (isProfessor()) {
+    menuItems = [...menuItems, ...professorItems];
+  }
+
   if (isLibrarian()) {
     const userLocation = getUserLocation(); 
     console.log("User location:", userLocation);
@@ -79,19 +92,26 @@ const AdminSidebar = ({ activePage }) => {
     }
   }
 
-  // Add common items for all admin types
+  // Add common items for all admin types (except professor)
   const commonItems = [
     // { id: 'analytics', label: 'System Analytics', icon: 'fa-chart-bar', path: '/admin/analytics' },
     // { id: 'logs', label: 'Activity Logs', icon: 'fa-history', path: '/admin/logs' }
   ];
   
-  menuItems = [...menuItems, ...commonItems];
+  if (!isProfessor()) {
+    menuItems = [...menuItems, ...commonItems];
+  }
 
   return (
     <div className="admin-sidebar">
       <div className="sidebar-header">
         <div className="admin-avatar">
-          <i className={`fas ${isHOD() ? 'fa-user-tie' : isEquipmentAdmin() ? 'fa-tools' : 'fa-user-shield'}`}></i>
+          <i className={`fas ${
+            isHOD() ? 'fa-user-tie' : 
+            isEquipmentAdmin() ? 'fa-tools' : 
+            isProfessor() ? 'fa-chalkboard-teacher' :
+            'fa-user-shield'
+          }`}></i>
         </div>
         <div className="admin-info">
           <div className="admin-name">{user?.fullName}</div>

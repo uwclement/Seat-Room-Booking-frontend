@@ -52,7 +52,10 @@ import EquipmentRequestManagement from './components/admin/EquipmentManagement/E
 
 // Professor Components
 import ProfessorDashboard from './components/professor/ProfessorDashboard';
-import EquipmentRequestForm from './components/professor/EquipmentRequestForm';
+import RequestEquipmentPage from './components/professor/RequestEquipmentPage';
+import RequestCoursesPage from './components/professor/RequestCoursesPage';
+import MyRequestsPage from './components/professor/MyRequestsPage';
+import MyCoursesPage from './components/professor/MyCoursesPage';
 
 // HOD Components
 import HODDashboard from './components/hod/HODDashboard';
@@ -83,7 +86,7 @@ import './assets/css/RoomManagementStyle.css';
 import './assets/css/admin-room-booking.css';
 import './assets/css/qr-scanner.css'; 
 import './assets/css/user-management.css';
-
+import './assets/css/professor.css';
 // Protected route component with enhanced role checking
 const ProtectedRoute = ({ children, requiredRole, allowedRoles = [] }) => {
   const { isAuthenticated, isAdmin, isEquipmentAdmin, isProfessor, isHOD, isLibrarian, loading } = useAuth();
@@ -492,7 +495,7 @@ const AppRoutes = () => {
       />
 
       {/* ========== PROFESSOR ROUTES ========== */}
-      <Route
+       <Route
         path="/professor/dashboard"
         element={
           <ProtectedRoute requiredRole="professor">
@@ -513,13 +516,54 @@ const AppRoutes = () => {
             <ProfessorProvider>
               <div className="admin-page-container">
                 <AdminSidebar activePage="request-equipment" />
-                <EquipmentRequestForm />
+                <RequestEquipmentPage />
               </div>
             </ProfessorProvider>
           </ProtectedRoute>
         }
       />
 
+      <Route
+        path="/professor/request-courses"
+        element={
+          <ProtectedRoute requiredRole="professor">
+            <ProfessorProvider>
+              <div className="admin-page-container">
+                <AdminSidebar activePage="request-courses" />
+                <RequestCoursesPage />
+              </div>
+            </ProfessorProvider>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/professor/my-requests"
+        element={
+          <ProtectedRoute requiredRole="professor">
+            <ProfessorProvider>
+              <div className="admin-page-container">
+                <AdminSidebar activePage="my-requests" />
+                <MyRequestsPage />
+              </div>
+            </ProfessorProvider>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/professor/my-courses"
+        element={
+          <ProtectedRoute requiredRole="professor">
+            <ProfessorProvider>
+              <div className="admin-page-container">
+                <AdminSidebar activePage="my-courses" />
+                <MyCoursesPage />
+              </div>
+            </ProfessorProvider>
+          </ProtectedRoute>
+        }
+      />
       {/* ========== HOD ROUTES ========== */}
       <Route
         path="/hod/dashboard"

@@ -594,3 +594,51 @@
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+
+/* Admin Mobile Navigation Styles - Add to your Navbar.css */
+
+/* Admin Header in Mobile Menu */
+.navbar-mobile-admin-header {
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.admin-role-badge {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+/* Admin Menu Items */
+.admin-menu-item {
+  display: flex !important;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.3);
+  background: rgba(59, 130, 246, 0.02);
+  margin-bottom: 0.25rem;
+  border-radius: 6px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.admin-menu-item i {
+  width: 20px;
+  text-align: center;
+  color: #3b82f6;
+  font-size: 1rem;
+}
+
+.admin-menu-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+  color: #1e293b;
+  padding-left: 1.5rem;
+}

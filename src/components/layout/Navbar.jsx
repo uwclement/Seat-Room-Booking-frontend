@@ -6,7 +6,7 @@ import NotificationComponent from './../../components/common/NotificationCompone
 import logo from '../../assets/images/logo.jpeg';
 
 const Navbar = () => {
-  const { user, logout, isAuthenticated, isAdmin, isProfessor, isEquipmentAdmin, isHOD, isLibrarian } = useAuth();
+  const { user, logout, isAuthenticated, isAdmin, isProfessor, isEquipmentAdmin, isHOD, isLibrarian, getUserRole, getUserLocation } = useAuth();
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
@@ -19,7 +19,7 @@ const Navbar = () => {
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
-    setActiveDropdown(null); // Close any open dropdowns when toggling menu
+    setActiveDropdown(null);
   };
 
   const toggleDropdown = (dropdownName) => {
@@ -58,6 +58,83 @@ const Navbar = () => {
     };
   }, [isMobileMenuOpen]);
 
+  // Get admin menu items
+  const getAdminMenuItems = () => {
+    let menuItems = [];
+
+    if (isAdmin()) {
+      menuItems = [
+        { id: 'seats', label: 'Seat Management', icon: 'fa-chair', path: '/admin/seats' },
+        { id: 'seatsBooking', label: 'Seat Bookings', icon: 'fa-calendar-check', path: '/admin/seat-bookings' },
+        { id: 'rooms', label: 'Room Management', icon: 'fa-door-open', path: '/admin/rooms' },
+        { id: 'schedule', label: 'Schedule Management', icon: 'fa-calendar-alt', path: '/admin/schedule' },
+        { id: 'bookings', label: 'Room Bookings', icon: 'fa-bookmark', path: '/admin/Roombookings' },
+        { id: 'users', label: 'User Management', icon: 'fa-users', path: '/admin/users' },
+        { id: 'passwords', label: 'Password Management', icon: 'fa-key', path: '/admin/passwords' }
+      ];
+    }
+
+    if (isEquipmentAdmin()) {
+      menuItems = [
+        ...menuItems,
+        { id: 'equipment-management', label: 'Equipment Management', icon: 'fa-tools', path: '/admin/equipment-management' },
+        { id: 'courses', label: 'Course Management', icon: 'fa-book', path: '/admin/courses' },
+        { id: 'lab-classes', label: 'Lab Classes', icon: 'fa-flask', path: '/admin/lab-classes' },
+        { id: 'equipment-requests', label: 'Equipment Requests', icon: 'fa-clipboard-list', path: '/admin/equipment-requests' }
+      ];
+    }
+
+    if (isHOD()) {
+      menuItems = [
+        ...menuItems,
+        { id: 'professor-approvals', label: 'Professor Approvals', icon: 'fa-user-check', path: '/admin/professor-approvals' },
+        { id: 'course-approvals', label: 'Course Approvals', icon: 'fa-book-open', path: '/admin/course-approvals' },
+        { id: 'escalated-requests', label: 'Escalated Requests', icon: 'fa-exclamation-triangle', path: '/admin/escalated-requests' }
+      ];
+    }
+
+    if (isProfessor()) {
+      menuItems = [
+        { id: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt', path: '/professor/dashboard' },
+        { id: 'request-equipment', label: 'Request Equipment', icon: 'fa-tools', path: '/professor/request-equipment' },
+        { id: 'request-courses', label: 'Request Courses', icon: 'fa-book', path: '/professor/request-courses' },
+        { id: 'my-requests', label: 'My Requests', icon: 'fa-list', path: '/professor/my-requests' },
+        { id: 'my-courses', label: 'My Courses', icon: 'fa-graduation-cap', path: '/professor/my-courses' }
+      ];
+    }
+
+    if (isLibrarian()) {
+      const userLocation = getUserLocation();
+      if (userLocation === "GISHUSHU") {
+        menuItems = [
+          ...menuItems,
+          { id: 'seats', label: 'Seat Management', icon: 'fa-chair', path: '/admin/seats' },
+          { id: 'seatsBooking', label: 'Seat Bookings', icon: 'fa-calendar-check', path: '/admin/seat-bookings' },
+          { id: 'rooms', label: 'Room Management', icon: 'fa-door-open', path: '/admin/rooms' },
+          { id: 'schedule', label: 'Schedule Management', icon: 'fa-calendar-alt', path: '/admin/schedule' },
+          { id: 'bookings', label: 'Room Bookings', icon: 'fa-bookmark', path: '/admin/Roombookings' }
+        ];
+      } else {
+        menuItems = [
+          ...menuItems,
+          { id: 'seats', label: 'Seat Management', icon: 'fa-chair', path: '/admin/seats' },
+          { id: 'seatsBooking', label: 'Seat Bookings', icon: 'fa-calendar-check', path: '/admin/seat-bookings' },
+          { id: 'schedule', label: 'Schedule Management', icon: 'fa-calendar-alt', path: '/admin/schedule' }
+        ];
+      }
+    }
+
+    return menuItems;
+  };
+
+  const isRegularUser = () => {
+    return isAuthenticated() && !isAdmin() && !isProfessor() && !isEquipmentAdmin() && !isHOD() && !isLibrarian();
+  };
+
+  const isAdminUser = () => {
+    return isAuthenticated() && (isAdmin() || isProfessor() || isEquipmentAdmin() || isHOD() || isLibrarian());
+  };
+
   return (
     <>
       <nav className="navbar">
@@ -70,7 +147,7 @@ const Navbar = () => {
 
           {/* Desktop Menu */}
           <div className="navbar-menu">
-            {isAuthenticated() && !isAdmin() && !isProfessor () && !isEquipmentAdmin () && !isHOD () && !isLibrarian ()  && (
+            {isRegularUser() && (
               <>
                 <Link to="/seats" className="navbar-item">Home</Link>
                 
@@ -116,7 +193,7 @@ const Navbar = () => {
           <div className="navbar-auth">
             {isAuthenticated() ? (
               <div className="navbar-user">
-                {!isAdmin() && (
+                {!isAdminUser() && (
                   <div className="navbar-notification">
                     <NotificationComponent />
                   </div> 
@@ -132,7 +209,7 @@ const Navbar = () => {
             )}
 
             {/* Hamburger Menu Button */}
-            {isAuthenticated() && !isAdmin() && (
+            {isAuthenticated() && (
               <button 
                 className={`navbar-hamburger ${isMobileMenuOpen ? 'active' : ''}`}
                 onClick={toggleMobileMenu}
@@ -148,7 +225,7 @@ const Navbar = () => {
       </nav>
 
       {/* Mobile Menu Overlay */}
-      {isAuthenticated() && !isAdmin() && (
+      {isAuthenticated() && (
         <div className={`navbar-mobile-menu ${isMobileMenuOpen ? 'active' : ''}`}>
           {/* Close Button */}
           <button 
@@ -161,121 +238,146 @@ const Navbar = () => {
 
           <div className="navbar-mobile-content">
             <div className="navbar-mobile-navigation">
-              <Link 
-                to="/seats" 
-                className="navbar-mobile-item"
-                onClick={closeMobileMenu}
-              >
-                Home
-              </Link>
-              
-              {/* Mobile Seat Booking Section */}
-              <div className="navbar-mobile-dropdown">
-                <div 
-                  className={`navbar-mobile-dropdown-trigger ${activeDropdown === 'seats' ? 'active' : ''}`}
-                  onClick={() => toggleDropdown('seats')}
-                >
-                  Seats
-                  <i className="fas fa-chevron-down"></i>
-                </div>
-                <div className={`navbar-mobile-dropdown-menu ${activeDropdown === 'seats' ? 'active' : ''}`}>
+              {/* Regular User Navigation */}
+              {isRegularUser() && (
+                <>
                   <Link 
                     to="/seats" 
-                    className="navbar-mobile-dropdown-item"
+                    className="navbar-mobile-item"
                     onClick={closeMobileMenu}
                   >
-                    Seats
+                    Home
                   </Link>
-                  <Link 
-                    to="/bookings" 
-                    className="navbar-mobile-dropdown-item"
-                    onClick={closeMobileMenu}
-                  >
-                    My Bookings
-                  </Link>
-                  <Link 
-                    to="/waitlist" 
-                    className="navbar-mobile-dropdown-item"
-                    onClick={closeMobileMenu}
-                  >
-                    My Waitlist
-                  </Link>
-                </div>
-              </div>
-              
-              {/* Mobile Room Booking Section */}
-              <div className="navbar-mobile-dropdown">
-                <div 
-                  className={`navbar-mobile-dropdown-trigger ${activeDropdown === 'rooms' ? 'active' : ''}`}
-                  onClick={() => toggleDropdown('rooms')}
-                >
-                  Rooms
-                  <i className="fas fa-chevron-down"></i>
-                </div>
-                <div className={`navbar-mobile-dropdown-menu ${activeDropdown === 'rooms' ? 'active' : ''}`}>
-                  <Link 
-                    to="/rooms" 
-                    className="navbar-mobile-dropdown-item"
-                    onClick={closeMobileMenu}
-                  >
-                    Rooms
-                  </Link>
-                  <Link 
-                    to="/room-bookings" 
-                    className="navbar-mobile-dropdown-item"
-                    onClick={closeMobileMenu}
-                  >
-                    My Bookings
-                  </Link>
-                  <Link 
-                    to="/join-bookings" 
-                    className="navbar-mobile-dropdown-item"
-                    onClick={closeMobileMenu}
-                  >
-                    Join Public Bookings
-                  </Link>
-                </div>
-              </div>
+                  
+                  {/* Mobile Seat Booking Section */}
+                  <div className="navbar-mobile-dropdown">
+                    <div 
+                      className={`navbar-mobile-dropdown-trigger ${activeDropdown === 'seats' ? 'active' : ''}`}
+                      onClick={() => toggleDropdown('seats')}
+                    >
+                      Seats
+                      <i className="fas fa-chevron-down"></i>
+                    </div>
+                    <div className={`navbar-mobile-dropdown-menu ${activeDropdown === 'seats' ? 'active' : ''}`}>
+                      <Link 
+                        to="/seats" 
+                        className="navbar-mobile-dropdown-item"
+                        onClick={closeMobileMenu}
+                      >
+                        Seats
+                      </Link>
+                      <Link 
+                        to="/bookings" 
+                        className="navbar-mobile-dropdown-item"
+                        onClick={closeMobileMenu}
+                      >
+                        My Bookings
+                      </Link>
+                      <Link 
+                        to="/waitlist" 
+                        className="navbar-mobile-dropdown-item"
+                        onClick={closeMobileMenu}
+                      >
+                        My Waitlist
+                      </Link>
+                    </div>
+                  </div>
+                  
+                  {/* Mobile Room Booking Section */}
+                  <div className="navbar-mobile-dropdown">
+                    <div 
+                      className={`navbar-mobile-dropdown-trigger ${activeDropdown === 'rooms' ? 'active' : ''}`}
+                      onClick={() => toggleDropdown('rooms')}
+                    >
+                      Rooms
+                      <i className="fas fa-chevron-down"></i>
+                    </div>
+                    <div className={`navbar-mobile-dropdown-menu ${activeDropdown === 'rooms' ? 'active' : ''}`}>
+                      <Link 
+                        to="/rooms" 
+                        className="navbar-mobile-dropdown-item"
+                        onClick={closeMobileMenu}
+                      >
+                        Rooms
+                      </Link>
+                      <Link 
+                        to="/room-bookings" 
+                        className="navbar-mobile-dropdown-item"
+                        onClick={closeMobileMenu}
+                      >
+                        My Bookings
+                      </Link>
+                      <Link 
+                        to="/join-bookings" 
+                        className="navbar-mobile-dropdown-item"
+                        onClick={closeMobileMenu}
+                      >
+                        Join Public Bookings
+                      </Link>
+                    </div>
+                  </div>
+
+                  {/* Mobile Masoro Booking Section */}
+                  <div className="navbar-mobile-dropdown">
+                    <div 
+                      className={`navbar-mobile-dropdown-trigger ${activeDropdown === 'Masoro' ? 'active' : ''}`}
+                      onClick={() => toggleDropdown('Masoro')}
+                    >
+                      Masoro
+                      <i className="fas fa-chevron-down"></i>
+                    </div>
+                    <div className={`navbar-mobile-dropdown-menu ${activeDropdown === 'Masoro' ? 'active' : ''}`}>
+                      <Link 
+                        to="/Masoro-Seats" 
+                        className="navbar-mobile-dropdown-item"
+                        onClick={closeMobileMenu}
+                      >
+                        Seats
+                      </Link>
+                      <Link 
+                        to="/bookings" 
+                        className="navbar-mobile-dropdown-item"
+                        onClick={closeMobileMenu}
+                      >
+                        My Bookings
+                      </Link>
+                      <Link 
+                        to="/waitlist" 
+                        className="navbar-mobile-dropdown-item"
+                        onClick={closeMobileMenu}
+                      >
+                        My Waitlist
+                      </Link>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Admin User Navigation */}
+              {isAdminUser() && (
+                <>
+                  <div className="navbar-mobile-admin-header">
+                    <div className="admin-role-badge">{getUserRole()}</div>
+                  </div>
+                  {getAdminMenuItems().map(item => (
+                    <Link
+                      key={item.id}
+                      to={item.path}
+                      className="navbar-mobile-item admin-menu-item"
+                      onClick={closeMobileMenu}
+                    >
+                      <i className={`fas ${item.icon}`}></i>
+                      <span>{item.label}</span>
+                    </Link>
+                  ))}
+                </>
+              )}
             </div>
 
-             {/* Mobile Masoro Booking Section */}
-              <div className="navbar-mobile-dropdown">
-                <div 
-                  className={`navbar-mobile-dropdown-trigger ${activeDropdown === 'Masoro' ? 'active' : ''}`}
-                  onClick={() => toggleDropdown('Masoro')}
-                >
-                  Masoro
-                  <i className="fas fa-chevron-down"></i>
-                </div>
-                <div className={`navbar-mobile-dropdown-menu ${activeDropdown === 'Masoro' ? 'active' : ''}`}>
-                  <Link 
-                    to="/Masoro-Seats" 
-                    className="navbar-mobile-dropdown-item"
-                    onClick={closeMobileMenu}
-                  >
-                    Seats
-                  </Link>
-                  <Link 
-                    to="/bookings" 
-                    className="navbar-mobile-dropdown-item"
-                    onClick={closeMobileMenu}
-                  >
-                    My Bookings
-                  </Link>
-                  <Link 
-                    to="/waitlist" 
-                    className="navbar-mobile-dropdown-item"
-                    onClick={closeMobileMenu}
-                  >
-                    My Waitlist
-                  </Link>
-                </div>
-              </div>
-
-            {/* Mobile Auth Section - Now always visible */}
+            {/* Mobile Auth Section */}
             <div className="navbar-mobile-auth">
               <div className="navbar-mobile-user">
-                <div className="navbar-mobile-username">{user.studentId}</div>
+                <div className="navbar-mobile-username">{user.identifier}</div>
                 <button onClick={handleLogout} className="navbar-mobile-logout">
                   Logout
                 </button>

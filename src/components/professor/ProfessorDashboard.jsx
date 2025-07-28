@@ -1,10 +1,9 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useProfessor } from '../../context/ProfessorContext';
 import { escalateRequest } from '../../api/equipmentRequests';
 import Alert from '../common/Alert';
 import LoadingSpinner from '../common/LoadingSpinner';
-import EquipmentRequestForm from './EquipmentRequestForm';
-import CourseSelectionForm from './CourseSelectionForm';
 
 const ProfessorDashboard = () => {
   const {
@@ -14,20 +13,13 @@ const ProfessorDashboard = () => {
     loadingDashboard,
     error,
     successMessage,
-    getFilteredRequests,
     showSuccess,
     showError,
     clearMessages,
     updateRequestInState
   } = useProfessor();
 
-  const [showRequestModal, setShowRequestModal] = useState(false);
-  const [showCourseModal, setShowCourseModal] = useState(false); 
   const [processing, setProcessing] = useState(false);
-
-  console.log('myCourses:', myCourses);
-  console.log('myCourses type:', typeof myCourses);
-  console.log('Is array:', Array.isArray(myCourses));
 
   const handleEscalate = async (requestId) => {
     if (!window.confirm('Are you sure you want to escalate this request to the HOD?')) {
@@ -59,178 +51,209 @@ const ProfessorDashboard = () => {
       escalatableRequests: myRequests.filter(req => 
         req.status === 'REJECTED' && !req.escalatedToHod
       ).length,
-      approvedCourses: myCourses.length
+      approvedCourses: Array.isArray(myCourses) ? myCourses.length : 0
     };
   };
 
   const stats = getQuickStats();
 
+  if (loadingDashboard) {
+    return (
+      <div className="professor-dashboard">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
   return (
-    <div className="admin-content">
-      <div className="admin-header">
-        <div className="header-content">
+    <div className="professor-dashboard">
+      {/* Header Section */}
+      <div className="professor-header">
+        <div className="professor-header-content">
           <div>
-            <h1>Professor Dashboard</h1>
-            <p className="admin-subtitle">
-              Manage your equipment requests and course assignments
+            <h1 className="professor-title">Professor Dashboard</h1>
+            <p className="professor-subtitle">
+              Manage your academic resources and equipment requests
             </p>
           </div>
-          <div className="header-actions">
-            <button 
-              className="btn btn-secondary"
-              onClick={() => setShowCourseModal(true)}
-            >
-              <i className="fas fa-book"></i>
-              Request Courses
-            </button>
-            <button 
-              className="btn btn-primary"
-              onClick={() => setShowRequestModal(true)}
-            >
+          <div className="professor-quick-actions">
+            <Link to="/professor/my-courses" className="professor-btn secondary">
+              <i className="fas fa-graduation-cap"></i>
+              My Courses
+            </Link>
+            <Link to="/professor/request-equipment" className="professor-btn primary">
               <i className="fas fa-plus"></i>
               New Request
-            </button>
+            </Link>
           </div>
         </div>
       </div>
-
-      {/* Quick Stats */}
-      <div className="stats-grid">
-        <div className="stat-item available">
-          <div className="stat-value">{stats.totalRequests}</div>
-          <div className="stat-label">Total Requests</div>
-        </div>
-        <div className="stat-item maintenance">
-          <div className="stat-value">{stats.pendingRequests}</div>
-          <div className="stat-label">Pending</div>
-        </div>
-        <div className="stat-item library">
-          <div className="stat-value">{stats.approvedRequests}</div>
-          <div className="stat-label">Approved</div>
-        </div>
-        <div className="stat-item disabled">
-          <div className="stat-value">{stats.rejectedRequests}</div>
-          <div className="stat-label">Rejected</div>
-        </div>
-        <div className="stat-item study">
-          <div className="stat-value">{stats.approvedCourses}</div>
-          <div className="stat-label">My Courses</div>
-        </div>
-      </div>
-
-
-      
 
       {/* Alerts */}
       {error && (
-        <Alert type="danger" message={error} onClose={clearMessages} />
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
+          <Alert type="danger" message={error} onClose={clearMessages} />
+        </div>
       )}
 
       {successMessage && (
-        <Alert type="success" message={successMessage} onClose={clearMessages} />
+        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 1.5rem' }}>
+          <Alert type="success" message={successMessage} onClose={clearMessages} />
+        </div>
       )}
 
       {/* Escalation Notice */}
-      {stats.escalatableRequests > 0 && (
-        <Alert 
-          type="warning" 
-          message={`You have ${stats.escalatableRequests} rejected request(s) that can be escalated to HOD`}
-        />
-      )}
-
-      {loadingDashboard && <LoadingSpinner />}
-
-      {/* My Courses */}
-      <div className="admin-card">
-        <div className="card-header">
-          <h3>My Approved Courses</h3>
+      {/* {stats.escalatableRequests > 0 && (
+        <div className="escalation-alert">
+          <div className="escalation-alert-content">
+            <i className="fas fa-exclamation-triangle"></i>
+            <span>
+              You have {stats.escalatableRequests} rejected request(s) that can be escalated to HOD
+            </span>
+          </div>
         </div>
-        <div className="card-body">
-          {myCourses.length === 0 ? (
-            <div className="empty-state">
-              <i className="fas fa-book"></i>
-              <h4>No Approved Courses</h4>
-              <p>Contact your HOD to get course approvals.</p>
-              <button 
-                className="btn btn-primary"
-                onClick={() => setShowCourseModal(true)}
-              >
-                <i className="fas fa-plus"></i>
-                Request Course Approval
-              </button>
+      )} */}
+
+      {/* Quick Stats */}
+      <div className="professor-stats-grid">
+        <div className="professor-stat-card">
+          <div className="professor-stat-icon">
+            <i className="fas fa-clipboard-list"></i>
+          </div>
+          <div className="professor-stat-value">{stats.totalRequests}</div>
+          <div className="professor-stat-label">Total Requests</div>
+        </div>
+        <div className="professor-stat-card">
+          <div className="professor-stat-icon">
+            <i className="fas fa-clock"></i>
+          </div>
+          <div className="professor-stat-value">{stats.pendingRequests}</div>
+          <div className="professor-stat-label">Pending</div>
+        </div>
+        <div className="professor-stat-card">
+          <div className="professor-stat-icon">
+            <i className="fas fa-check-circle"></i>
+          </div>
+          <div className="professor-stat-value">{stats.approvedRequests}</div>
+          <div className="professor-stat-label">Approved</div>
+        </div>
+        <div className="professor-stat-card">
+          <div className="professor-stat-icon">
+            <i className="fas fa-graduation-cap"></i>
+          </div>
+          <div className="professor-stat-value">{stats.approvedCourses}</div>
+          <div className="professor-stat-label">My Courses</div>
+        </div>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="professor-content-grid">
+        {/* Quick Actions Card */}
+        <div className="professor-content-card">
+          <div className="professor-card-header">
+            <h3 className="professor-card-title">
+              <i className="fas fa-bolt"></i>
+              Quick Actions
+            </h3>
+          </div>
+          <div className="professor-card-body">
+            <div className="quick-actions-grid">
+              <Link to="/professor/request-equipment" className="quick-action-btn">
+                <i className="fas fa-tools"></i>
+                Request Equipment
+              </Link>
+              <Link to="/professor/request-courses" className="quick-action-btn secondary">
+                <i className="fas fa-book"></i>
+                Request Courses
+              </Link>
+              <Link to="/professor/my-requests" className="quick-action-btn secondary">
+                <i className="fas fa-list"></i>
+                View All Requests
+              </Link>
             </div>
-          ) : (
-            <div className="course-grid">
-              {myCourses.map(course => (
-                <div key={course.id} className="course-card">
-                  <div className="course-code">{course.courseCode}</div>
-                  <div className="course-name">{course.courseName}</div>
-                  <div className="course-credits">{course.creditHours} credits</div>
+          </div>
+        </div>
+
+        {/* Recent Equipment Requests */}
+        <div className="professor-content-card">
+          <div className="professor-card-header">
+            <h3 className="professor-card-title">
+              <i className="fas fa-history"></i>
+              Recent Equipment Requests
+            </h3>
+          </div>
+          <div className="professor-card-body">
+            {myRequests.length === 0 ? (
+              <div className="empty-state">
+                <i className="fas fa-clipboard-list"></i>
+                <h4>No Equipment Requests</h4>
+                <p>Create your first equipment request to get started.</p>
+                <Link to="/professor/request-equipment" className="professor-btn primary">
+                  <i className="fas fa-plus"></i>
+                  Create Request
+                </Link>
+              </div>
+            ) : (
+              <>
+                <div className="recent-requests">
+                  {myRequests.slice(0, 5).map(request => (
+                    <ProfessorRequestCard
+                      key={request.id}
+                      request={request}
+                      onEscalate={() => handleEscalate(request.id)}
+                      canEscalate={request.status === 'REJECTED' && !request.escalatedToHod}
+                      processing={processing}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
-          )}
+                {myRequests.length > 5 && (
+                  <div className="view-all-link">
+                    <Link to="/professor/my-requests">
+                      <span>View All Requests</span>
+                      <i className="fas fa-arrow-right"></i>
+                    </Link>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Recent Requests */}
-      <div className="admin-card">
-        <div className="card-header">
-          <h3>Recent Equipment Requests</h3>
-        </div>
-        <div className="card-body">
-          {myRequests.length === 0 ? (
-            <div className="empty-state">
-              <i className="fas fa-clipboard-list"></i>
-              <h4>No Equipment Requests</h4>
-              <p>Create your first equipment request to get started.</p>
-              <button 
-                className="btn btn-primary"
-                onClick={() => setShowRequestModal(true)}
-              >
-                <i className="fas fa-plus"></i>
-                Create Request
-              </button>
-            </div>
-          ) : (
-            <div className="request-list">
-              {myRequests.slice(0, 10).map(request => (
-                <ProfessorRequestCard
-                  key={request.id}
-                  request={request}
-                  onEscalate={() => handleEscalate(request.id)}
-                  canEscalate={request.status === 'REJECTED' && !request.escalatedToHod}
-                  processing={processing}
-                />
-              ))}
-            </div>
-          )}
+      {/* My Courses Section */}
+      <div style={{ maxWidth: '1200px', margin: '2rem auto', padding: '0 1.5rem' }}>
+        <div className="professor-content-card">
+          <div className="professor-card-header">
+            <h3 className="professor-card-title">
+              <i className="fas fa-graduation-cap"></i>
+              My Approved Courses
+            </h3>
+          </div>
+          <div className="professor-card-body">
+            {!Array.isArray(myCourses) || myCourses.length === 0 ? (
+              <div className="empty-state">
+                <i className="fas fa-book"></i>
+                <h4>No Approved Courses</h4>
+                <p>Contact your HOD to get course approvals.</p>
+                <Link to="/professor/request-courses" className="professor-btn primary">
+                  <i className="fas fa-plus"></i>
+                  Request Course Approval
+                </Link>
+              </div>
+            ) : (
+              <div className="course-grid">
+                {myCourses.map(course => (
+                  <div key={course.id} className="course-card">
+                    <div className="course-code">{course.courseCode}</div>
+                    <div className="course-name">{course.courseName}</div>
+                    <div className="course-credits">{course.creditHours} credits</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-
-      {/* Equipment Request Modal */}
-      {showRequestModal && (
-        <EquipmentRequestForm 
-          show={showRequestModal}
-          onClose={() => setShowRequestModal(false)}
-          onSuccess={(message) => {
-            showSuccess(message);
-            setShowRequestModal(false);
-          }}
-        />
-      )}
-
-      {/* Course Selection Modal */}
-      {showCourseModal && (
-        <CourseSelectionForm 
-          show={showCourseModal}
-          onClose={() => setShowCourseModal(false)}
-          onSuccess={(message) => {
-            showSuccess(message);
-            setShowCourseModal(false);
-          }}
-        />
-      )}
     </div>
   );
 };
@@ -241,14 +264,14 @@ const ProfessorRequestCard = ({ request, onEscalate, canEscalate, processing }) 
     switch (status) {
       case 'APPROVED':
       case 'HOD_APPROVED':
-        return 'green';
+        return 'approved';
       case 'REJECTED':
       case 'HOD_REJECTED':
-        return 'red';
+        return 'rejected';
       case 'ESCALATED':
-        return 'orange';
+        return 'escalated';
       default:
-        return 'blue';
+        return 'pending';
     }
   };
 
@@ -262,33 +285,34 @@ const ProfessorRequestCard = ({ request, onEscalate, canEscalate, processing }) 
   };
 
   return (
-    <div className="request-card professor-request">
+    <div className="request-item">
       <div className="request-header">
-        <div className="request-basic-info">
-          <h4>{request.equipmentName}</h4>
+        <div className="request-info">
+          <div className="equipment-name">{request.equipmentName}</div>
           <div className="request-meta">
             {request.courseCode && (
-              <span className="course-badge">{request.courseCode}</span>
+              <span className="course-tag">{request.courseCode}</span>
             )}
             <span className="request-date">{formatDate(request.createdAt)}</span>
           </div>
         </div>
-        <div className="request-status">
-          <span className={`status-badge ${getStatusColor(request.status)}`}>
-            {request.status.replace('_', ' ')}
-          </span>
-        </div>
+        <span className={`status-badge ${getStatusColor(request.status)}`}>
+          {request.status.replace('_', ' ')}
+        </span>
       </div>
 
       <div className="request-details">
-        <div className="request-timing">
+        <div className="time-info">
           <i className="fas fa-calendar"></i>
           {formatDate(request.startTime)} - {formatDate(request.endTime)}
         </div>
         
         {request.rejectionReason && (
           <div className="rejection-reason">
-            <strong>Rejection Reason:</strong> {request.rejectionReason}
+            <i className="fas fa-exclamation-triangle"></i>
+            <div>
+              <strong>Rejection Reason:</strong> {request.rejectionReason}
+            </div>
           </div>
         )}
 
@@ -299,16 +323,14 @@ const ProfessorRequestCard = ({ request, onEscalate, canEscalate, processing }) 
         )}
 
         {canEscalate && (
-          <div className="request-actions">
-            <button 
-              className="btn btn-warning btn-sm"
-              onClick={onEscalate}
-              disabled={processing}
-            >
-              <i className="fas fa-arrow-up"></i>
-              Escalate to HOD
-            </button>
-          </div>
+          <button 
+            className="escalate-btn"
+            onClick={onEscalate}
+            disabled={processing}
+          >
+            <i className="fas fa-arrow-up"></i>
+            Escalate to HOD
+          </button>
         )}
 
         {request.escalatedToHod && (
