@@ -93,3 +93,7 @@ export const getPendingEquipmentRequests = async () => {
 export const getCurrentMonthEquipmentRequests = async () => {
   return safeApiCall(() => api.get('/equipment-requests/current-month'));
 };
+
+export const getHodCurrentMonthEquipmentRequests = async () => {
+  return safeApiCall(() => api.get('/equipment-requests/hod-current-month'));
+};

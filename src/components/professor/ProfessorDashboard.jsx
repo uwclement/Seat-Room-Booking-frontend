@@ -4,11 +4,13 @@ import { useProfessor } from '../../context/ProfessorContext';
 import { escalateRequest } from '../../api/equipmentRequests';
 import Alert from '../common/Alert';
 import LoadingSpinner from '../common/LoadingSpinner';
+import { escalateLabRequest } from '../../api/labRequests';
 
 const ProfessorDashboard = () => {
   const {
     myRequests,
     myCourses,
+    myLabRequests,
     dashboardData,
     loadingDashboard,
     error,
@@ -41,6 +43,7 @@ const ProfessorDashboard = () => {
   const getQuickStats = () => {
     return {
       totalRequests: myRequests.length,
+      totalLabRequests: myLabRequests.length,
       pendingRequests: myRequests.filter(req => req.status === 'PENDING').length,
       approvedRequests: myRequests.filter(req => 
         req.status === 'APPROVED' || req.status === 'HOD_APPROVED'
@@ -166,6 +169,10 @@ const ProfessorDashboard = () => {
                 <i className="fas fa-book"></i>
                 Request Courses
               </Link>
+              <Link to="/professor/request-lab" className="quick-action-btn">
+                <i className="fas fa-flask"></i>
+                Request Lab Class
+             </Link>
               <Link to="/professor/my-requests" className="quick-action-btn secondary">
                 <i className="fas fa-list"></i>
                 View All Requests

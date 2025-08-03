@@ -27,7 +27,7 @@ import {
 export const RoomContext = createContext();
 
 export const RoomProvider = ({ children }) => {
-  const { isAuthenticated, isAdmin } = useAuth();
+  const { isAuthenticated, isAdmin, isLibrarian } = useAuth();
   
   // State for room management
   const [rooms, setRooms] = useState([]);
@@ -71,7 +71,7 @@ export const RoomProvider = ({ children }) => {
 
   // Fetch all data
   const fetchAllData = useCallback(async () => {
-    if (!isAuthenticated() || !isAdmin()) return;
+    if (!isAuthenticated() || !isAdmin() && !isLibrarian ()) return;
     
     setLoading(true);
     setError('');
@@ -96,7 +96,7 @@ export const RoomProvider = ({ children }) => {
 
   // Fetch rooms with filters
   const fetchFilteredRooms = useCallback(async () => {
-    if (!isAuthenticated() || !isAdmin()) return;
+    if (!isAuthenticated() || !isAdmin() && !isLibrarian ()) return;
     
     setLoading(true);
     try {
@@ -460,7 +460,7 @@ export const RoomProvider = ({ children }) => {
 
   // Load data when authentication status changes
   useEffect(() => {
-    if (isAuthenticated() && isAdmin()) {
+    if (isAuthenticated() && isAdmin() || isLibrarian()) {
       fetchAllData();
       loadDraft();
     }

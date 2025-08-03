@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { 
   getPendingProfessorApprovals,
   approveProfessorAccount,
-  approveProfessorCourses
+  approveProfessorCourses,
+  getProfessorsWithPendingCourses, 
+  approveProfessorSpecificCourses 
 } from '../../api/professor';
 import { 
   getEscalatedRequests,
   hodReviewRequest
 } from '../../api/equipmentRequests';
+import { getHodCurrentMonthEquipmentRequests } from '../../api/equipmentAdmin';
 import { getHODDashboard } from '../../api/dashboards';
 import Alert from '../common/Alert';
 import LoadingSpinner from '../common/LoadingSpinner';
@@ -20,6 +23,9 @@ const HODDashboard = () => {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [pendingCourseRequests, setPendingCourseRequests] = useState([]);
+  const [hodEquipmentRequests, setHodEquipmentRequests] = useState([]);
+  const [loadingHodRequests, setLoadingHodRequests] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
@@ -28,19 +34,37 @@ const HODDashboard = () => {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [professors, requests, dashboard] = await Promise.all([
+      const [professors, requests, dashboard, courseRequests] = await Promise.all([
         getPendingProfessorApprovals(),
         getEscalatedRequests(),
-        getHODDashboard()
+        getHODDashboard(),
+        getProfessorsWithPendingCourses()
       ]);
       
       setPendingProfessors(professors);
       setEscalatedRequests(requests);
       setDashboardData(dashboard);
+      setPendingCourseRequests(courseRequests);
+      
+      // Load equipment requests separately
+      await loadHodEquipmentRequests();
     } catch (err) {
       setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Load HOD equipment requests
+  const loadHodEquipmentRequests = async () => {
+    setLoadingHodRequests(true);
+    try {
+      const data = await getHodCurrentMonthEquipmentRequests();
+      setHodEquipmentRequests(data);
+    } catch (err) {
+      setError('Failed to load equipment requests');
+    } finally {
+      setLoadingHodRequests(false);
     }
   };
 
@@ -75,10 +99,30 @@ const HODDashboard = () => {
     
     return {
       pendingProfessors: pendingProfessors.length,
+      pendingCourseRequests: pendingCourseRequests.length, 
       escalatedRequests: escalatedRequests.length,
+      totalEquipmentRequests: hodEquipmentRequests.length,
       totalProfessors: dashboardData.totalProfessors || 0,
       escalationRate: dashboardData.escalationRate || 0
     };
+  };
+
+  const handleApproveCourses = async (professorId, courseIds) => {
+    setProcessing(true);
+    try {
+      await approveProfessorSpecificCourses(professorId, courseIds);
+      setPendingCourseRequests(prev => 
+        prev.map(p => p.id === professorId 
+          ? { ...p, pendingCourseIds: p.pendingCourseIds.filter(id => !courseIds.includes(id)) }
+          : p
+        ).filter(p => p.pendingCourseIds.length > 0)
+      );
+      setSuccessMessage('Courses approved successfully');
+    } catch (err) {
+      setError('Failed to approve courses');
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const stats = getQuickStats();
@@ -100,19 +144,19 @@ const HODDashboard = () => {
       <div className="stats-grid">
         <div className="stat-item maintenance">
           <div className="stat-value">{stats.pendingProfessors}</div>
-          <div className="stat-label">Pending Approvals</div>
+          <div className="stat-label">Pending Professor Approvals</div>
+        </div>
+        <div className="stat-item study">
+          <div className="stat-value">{stats.pendingCourseRequests}</div>
+          <div className="stat-label">Pending Course Requests</div>
         </div>
         <div className="stat-item disabled">
           <div className="stat-value">{stats.escalatedRequests}</div>
           <div className="stat-label">Escalated Requests</div>
         </div>
-        <div className="stat-item available">
-          <div className="stat-value">{stats.totalProfessors}</div>
-          <div className="stat-label">Total Professors</div>
-        </div>
-        <div className="stat-item study">
-          <div className="stat-value">{stats.escalationRate}%</div>
-          <div className="stat-label">Escalation Rate</div>
+        <div className="stat-item library">
+          <div className="stat-value">{stats.totalEquipmentRequests}</div>
+          <div className="stat-label">Equipment Requests</div>
         </div>
       </div>
 
@@ -153,6 +197,33 @@ const HODDashboard = () => {
         </div>
       </div>
 
+      {/* Pending Course Requests */}
+      <div className="admin-card">
+        <div className="card-header">
+          <h3>Pending Course Requests</h3>
+        </div>
+        <div className="card-body">
+          {pendingCourseRequests.length === 0 ? (
+            <div className="empty-state">
+              <i className="fas fa-graduation-cap"></i>
+              <h4>No Pending Course Requests</h4>
+              <p>All course requests have been processed.</p>
+            </div>
+          ) : (
+            <div className="approval-list">
+              {pendingCourseRequests.map(professor => (
+                <CourseRequestCard
+                  key={professor.id}
+                  professor={professor}
+                  onApproveCourses={(courseIds) => handleApproveCourses(professor.id, courseIds)}
+                  processing={processing}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Escalated Equipment Requests */}
       <div className="admin-card">
         <div className="card-header">
@@ -179,6 +250,231 @@ const HODDashboard = () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Equipment Requests Table Component */}
+      <EquipmentRequestsTable
+        equipmentRequests={hodEquipmentRequests}
+        loading={loadingHodRequests}
+        onRefresh={loadHodEquipmentRequests}
+      />
+    </div>
+  );
+};
+
+// Equipment Requests Table Component
+const EquipmentRequestsTable = ({ 
+  equipmentRequests, 
+  loading, 
+  onRefresh 
+}) => {
+  const [selectedRequests, setSelectedRequests] = useState([]);
+  const [filters, setFilters] = useState({ keyword: '' });
+
+  // Filter equipment requests
+  const getFilteredEquipmentRequests = () => {
+    if (!filters.keyword) return equipmentRequests;
+    
+    return equipmentRequests.filter(request => 
+      request.equipmentName?.toLowerCase().includes(filters.keyword.toLowerCase()) ||
+      request.userFullName?.toLowerCase().includes(filters.keyword.toLowerCase()) ||
+      request.courseCode?.toLowerCase().includes(filters.keyword.toLowerCase()) ||
+      request.reason?.toLowerCase().includes(filters.keyword.toLowerCase())
+    );
+  };
+
+  // Selection functions
+  const toggleRequestSelection = (requestId) => {
+    setSelectedRequests(prev => {
+      if (prev.includes(requestId)) {
+        return prev.filter(id => id !== requestId);
+      } else {
+        return [...prev, requestId];
+      }
+    });
+  };
+
+  const selectAllRequests = () => {
+    const filteredRequests = getFilteredEquipmentRequests();
+    setSelectedRequests(filteredRequests.map(request => request.id));
+  };
+
+  const clearRequestSelection = () => {
+    setSelectedRequests([]);
+  };
+
+  // Status badge helper
+  const getStatusBadgeClass = (status) => {
+    switch (status) {
+      case 'APPROVED':
+      case 'HOD_APPROVED':
+        return 'green';
+      case 'REJECTED':
+      case 'HOD_REJECTED':
+        return 'red';
+      case 'PENDING':
+        return 'yellow';
+      case 'ESCALATED':
+        return 'orange';
+      case 'COMPLETED':
+        return 'green';
+      case 'CANCELLED':
+        return 'red';
+      default:
+        return 'gray';
+    }
+  };
+
+  const filteredRequests = getFilteredEquipmentRequests();
+
+  return (
+    <div className="admin-card">
+      <div className="card-header">
+        <h3>Current Month Equipment Requests</h3>
+        <p className="card-subtitle">All equipment requests for the current month</p>
+      </div>
+
+      <div className="card-body">
+        {/* Search Filters */}
+        <div className="equipment-filters">
+          <div className="search-input-container">
+            <input
+              type="text"
+              placeholder="Search by equipment, user, course, or reason..."
+              value={filters.keyword}
+              onChange={(e) => setFilters(prev => ({ ...prev, keyword: e.target.value }))}
+              className="form-control"
+            />
+            <i className="fas fa-search search-icon"></i>
+          </div>
+        </div>
+
+        {/* Bulk Actions */}
+        {selectedRequests.length > 0 && (
+          <div className="bulk-action-toolbar">
+            <div className="bulk-info">
+              <span className="selection-count">{selectedRequests.length} request(s) selected</span>
+            </div>
+            <div className="bulk-actions">
+              <button 
+                className="btn btn-sm btn-secondary"
+                onClick={clearRequestSelection}
+              >
+                Clear Selection
+              </button>
+            </div>
+          </div>
+        )}
+
+        {loading && <LoadingSpinner />}
+
+        {/* Equipment Requests Table */}
+        {filteredRequests.length === 0 ? (
+          <div className="empty-state">
+            <i className="fas fa-calendar-alt"></i>
+            <h3>No Requests Found</h3>
+            <p>
+              {filters.keyword 
+                ? 'No equipment requests match your search criteria.' 
+                : 'No equipment requests for the current month.'}
+            </p>
+          </div>
+        ) : (
+          <div className="table-container">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>
+                    <input
+                      type="checkbox"
+                      checked={selectedRequests.length === filteredRequests.length && filteredRequests.length > 0}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          selectAllRequests();
+                        } else {
+                          clearRequestSelection();
+                        }
+                      }}
+                    />
+                  </th>
+                  <th>Equipment</th>
+                  <th>Requested By</th>
+                  <th>Course</th>
+                  <th>Date & Time</th>
+                  <th>Duration</th>
+                  <th>Quantity</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRequests.map(request => (
+                  <tr key={request.id} className={selectedRequests.includes(request.id) ? 'selected' : ''}>
+                    <td>
+                      <input
+                        type="checkbox"
+                        checked={selectedRequests.includes(request.id)}
+                        onChange={() => toggleRequestSelection(request.id)}
+                      />
+                    </td>
+                    <td>
+                      <div className="equipment-info">
+                        <strong>{request.equipmentName}</strong>
+                        {request.labClassName && (
+                          <div className="lab-info">
+                            <i className="fas fa-flask"></i>
+                            {request.labClassName}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="user-info">
+                        <strong>{request.userFullName}</strong>
+                        <div className="user-role">
+                          <span className={`role-badge ${request.userRole?.toLowerCase()}`}>
+                            {request.userRole}
+                          </span>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      {request.courseCode ? (
+                        <span className="course-badge">{request.courseCode}</span>
+                      ) : (
+                        <span className="text-muted">-</span>
+                      )}
+                    </td>
+                    <td>
+                      <div className="datetime-info">
+                        <div className="date">
+                          {new Date(request.startTime).toLocaleDateString()}
+                        </div>
+                        <div className="time">
+                          {new Date(request.startTime).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="duration">{request.durationHours}h</span>
+                    </td>
+                    <td>
+                      <span className="quantity">{request.requestedQuantity}</span>
+                    </td>
+                    <td>
+                      <span className={`status-badge ${getStatusBadgeClass(request.status)}`}>
+                        <span className="status-dot"></span>
+                        {request.status.replace('_', ' ')}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -212,6 +508,68 @@ const ProfessorApprovalCard = ({ professor, onApprove, processing }) => {
             {professor.courseNames.map((courseName, index) => (
               <span key={index} className="course-tag">{courseName}</span>
             ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Course Request Card Component
+const CourseRequestCard = ({ professor, onApproveCourses, processing }) => {
+  const [selectedCourses, setSelectedCourses] = useState([]);
+
+  const handleCourseToggle = (courseId) => {
+    setSelectedCourses(prev => 
+      prev.includes(courseId)
+        ? prev.filter(id => id !== courseId)
+        : [...prev, courseId]
+    );
+  };
+
+  const handleApproveSelected = () => {
+    if (selectedCourses.length > 0) {
+      onApproveCourses(selectedCourses);
+      setSelectedCourses([]);
+    }
+  };
+
+  return (
+    <div className="approval-card">
+      <div className="approval-header">
+        <div className="professor-info">
+          <h4>{professor.fullName}</h4>
+          <div className="professor-email">{professor.email}</div>
+        </div>
+        <div className="approval-actions">
+          <button 
+            className="btn btn-success"
+            onClick={handleApproveSelected}
+            disabled={processing || selectedCourses.length === 0}
+          >
+            <i className="fas fa-check"></i>
+            Approve Selected ({selectedCourses.length})
+          </button>
+        </div>
+      </div>
+      
+      {professor.pendingCourseNames && professor.pendingCourseNames.length > 0 && (
+        <div className="requested-courses">
+          <strong>Pending Course Requests:</strong>
+          <div className="course-selection">
+            {professor.pendingCourseNames.map((courseName, index) => {
+              const courseId = professor.pendingCourseIds[index];
+              return (
+                <label key={courseId} className="course-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={selectedCourses.includes(courseId)}
+                    onChange={() => handleCourseToggle(courseId)}
+                  />
+                  <span className="course-tag selectable">{courseName}</span>
+                </label>
+              );
+            })}
           </div>
         </div>
       )}

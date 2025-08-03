@@ -1206,6 +1206,33 @@
   transform: none;
 }
 
+
+.cancel-btn {
+  background: #3e66ebe7;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+  background: #3e66ebe7;
+  transform: translateY(-1px);
+}
+
+.cancel-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .view-all-link {
   margin-top: 1rem;
   padding-top: 1rem;

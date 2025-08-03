@@ -154,33 +154,6 @@ const MyCoursesPage = () => {
           ))
         )}
 
-        {/* Quick Actions */}
-        {Array.isArray(myCourses) && myCourses.length > 0 && (
-          <div className="professor-content-card">
-            <div className="professor-card-header">
-              <h3 className="professor-card-title">
-                <i className="fas fa-bolt"></i>
-                Quick Actions
-              </h3>
-            </div>
-            <div className="professor-card-body">
-              <div className="quick-actions-grid">
-                <Link to="/professor/request-equipment" className="quick-action-btn">
-                  <i className="fas fa-tools"></i>
-                  Request Equipment for Course
-                </Link>
-                <Link to="/professor/request-courses" className="quick-action-btn secondary">
-                  <i className="fas fa-plus-circle"></i>
-                  Request Additional Courses
-                </Link>
-                <Link to="/professor/my-requests" className="quick-action-btn secondary">
-                  <i className="fas fa-list"></i>
-                  View My Equipment Requests
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -226,16 +199,6 @@ const CourseCard = ({ course }) => {
         </div>
       </div>
       
-      <div className="course-card-footer">
-        <Link 
-          to="/professor/request-equipment" 
-          state={{ selectedCourse: course }}
-          className="course-action-btn"
-        >
-          <i className="fas fa-tools"></i>
-          Request Equipment
-        </Link>
-      </div>
     </div>
   );
 };

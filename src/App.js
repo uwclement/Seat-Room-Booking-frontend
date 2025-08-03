@@ -15,6 +15,7 @@ import { RoomBookProvider } from './context/RoomBookingContext';
 import { AdminRoomBookingProvider } from './context/AdminRoomBookingContext';
 import { QRCodeProvider } from './context/QRCodeContext';
 import { AdminSeatBookingProvider } from './context/AdminSeatBookingContext';
+import { PublicScheduleProvider } from './context/PublicScheduleContext';
 
 // FontAwesome CSS
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -32,6 +33,7 @@ import UserDashboard from './pages/user/Dashboard';
 import SeatsPage from './pages/seats/Seats';
 import MyBookingsPage from './pages/user/MyBookings';
 import MyWaitlistPage from './pages/user/MyWaitlist';
+import LibrarySchedule from './pages/user/LibrarySchedule';
 
 //Masoro Seats
 import MasoroSeatsPage from './pages/seats/MasoroSeats';
@@ -49,6 +51,12 @@ import EquipmentManagementDashboard from './components/admin/EquipmentManagement
 import CourseManagement from './components/admin/EquipmentManagement/CourseManagement';
 import LabClassManagement from './components/admin/EquipmentManagement/LabClassManagement';
 import EquipmentRequestManagement from './components/admin/EquipmentManagement/EquipmentRequestManagement';
+// Add these imports to your existing imports section
+
+// Lab Request Components
+import RequestLabPage from './components/professor/RequestLabPage';
+import MyLabRequestsPage from './components/professor/MyLabRequestsPage';
+import LabRequestManagement from './components/admin/EquipmentManagement/LabRequestManagement';
 
 // Professor Components
 import ProfessorDashboard from './components/professor/ProfessorDashboard';
@@ -195,6 +203,15 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <AdminRedirect />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/Schedule"
+        element={
+          <ProtectedRoute>
+            <LibrarySchedule />
           </ProtectedRoute>
         }
       />
@@ -494,6 +511,20 @@ const AppRoutes = () => {
         }
       />
 
+      <Route
+  path="/admin/lab-requests"
+  element={
+    <ProtectedRoute requiredRole="equipment-admin">
+      <EquipmentAdminProvider>
+        <div className="admin-page-container">
+          <AdminSidebar activePage="lab-requests" />
+          <LabRequestManagement />
+        </div>
+      </EquipmentAdminProvider>
+    </ProtectedRoute>
+  }
+/>
+
       {/* ========== PROFESSOR ROUTES ========== */}
        <Route
         path="/professor/dashboard"
@@ -564,6 +595,34 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
+      <Route
+  path="/professor/request-lab"
+  element={
+    <ProtectedRoute requiredRole="professor">
+      <ProfessorProvider>
+        <div className="admin-page-container">
+          <AdminSidebar activePage="request-lab" />
+          <RequestLabPage />
+        </div>
+      </ProfessorProvider>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/professor/my-lab-requests"
+  element={
+    <ProtectedRoute requiredRole="professor">
+      <ProfessorProvider>
+        <div className="admin-page-container">
+          <AdminSidebar activePage="my-lab-requests" />
+          <MyLabRequestsPage />
+        </div>
+      </ProfessorProvider>
+    </ProtectedRoute>
+  }
+/>
       {/* ========== HOD ROUTES ========== */}
       <Route
         path="/hod/dashboard"
@@ -612,6 +671,7 @@ function App() {
     <AuthProvider>
       <AdminProvider>
         <ScheduleProvider>
+          <PublicScheduleProvider>
           <QRCodeProvider>
             <Router>
               <div className="app-container">
@@ -622,6 +682,7 @@ function App() {
               </div>
             </Router>
           </QRCodeProvider>
+          </PublicScheduleProvider>
         </ScheduleProvider>
       </AdminProvider>
     </AuthProvider>

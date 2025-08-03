@@ -8,6 +8,11 @@ import {
   getCurrentMonthEquipmentRequests
 } from '../api/equipmentAdmin';
 
+import {
+  getPendingLabRequests,
+  getCurrentMonthLabRequests
+} from '../api/labRequests';
+
 const EquipmentAdminContext = createContext();
 
 export const useEquipmentAdmin = () => {
@@ -34,6 +39,13 @@ export const EquipmentAdminProvider = ({ children }) => {
   const [loadingLabClasses, setLoadingLabClasses] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [loadingEquipmentRequests, setLoadingEquipmentRequests] = useState(false);
+
+
+  // Lab class requests 
+  const [pendingLabRequests, setPendingLabRequests] = useState([]);
+  const [labRequests, setLabRequests] = useState([]);
+  const [loadingLabRequests, setLoadingLabRequests] = useState(false);
+  const [loadingCurrentMonthLabs, setLoadingCurrentMonthLabs] = useState(false);
   
   // Filter and view state
   const [filters, setFilters] = useState({
@@ -125,6 +137,38 @@ export const EquipmentAdminProvider = ({ children }) => {
     }
   };
 
+
+  // Load pending lab requests
+const loadPendingLabRequests = async () => {
+  if (!isEquipmentAdmin()) return;
+  
+  setLoadingLabRequests(true);
+  try {
+    const data = await getPendingLabRequests();
+    setPendingLabRequests(data);
+  } catch (err) {
+    setError('Failed to load pending lab requests');
+  } finally {
+    setLoadingLabRequests(false);
+  }
+};
+
+// Load current month lab requests
+const loadCurrentMonthLabRequests = async () => {
+  if (!isEquipmentAdmin()) return;
+  
+  setLoadingCurrentMonthLabs(true);
+  try {
+    const data = await getCurrentMonthLabRequests();
+    setLabRequests(data);
+  } catch (err) {
+    setError('Failed to load lab requests');
+  } finally {
+    setLoadingCurrentMonthLabs(false);
+  }
+};
+
+
   // Filter functions
   const updateFilters = (newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -151,6 +195,9 @@ export const EquipmentAdminProvider = ({ children }) => {
         break;
       case 'requests':
         dataToFilter = pendingRequests;
+        break;
+      case 'lab-requests':              
+        dataToFilter = pendingLabRequests;
         break;
       default:
         dataToFilter = equipment;
@@ -250,6 +297,8 @@ export const EquipmentAdminProvider = ({ children }) => {
       loadLabClasses(),
       loadPendingRequests(),
       loadEquipmentRequests(),
+      loadPendingLabRequests(),        
+      loadCurrentMonthLabRequests(),
     ]);
   };
 
@@ -267,6 +316,8 @@ export const EquipmentAdminProvider = ({ children }) => {
     labClasses,
     pendingRequests,
     EquipmentRequests,
+    pendingLabRequests,     
+    labRequests,
     
     // Loading states
     loadingEquipment,
@@ -274,6 +325,8 @@ export const EquipmentAdminProvider = ({ children }) => {
     loadingLabClasses,
     loadingRequests,
     loadingEquipmentRequests,
+    loadingLabRequests,        
+    loadingCurrentMonthLabs,
     
     // Filters and view
     filters,
@@ -290,6 +343,8 @@ export const EquipmentAdminProvider = ({ children }) => {
     loadEquipmentRequests,
     loadLabClasses,
     loadPendingRequests,
+    loadPendingLabRequests,        
+    loadCurrentMonthLabRequests,  
     updateFilters,
     clearFilters,
     getFilteredData,

@@ -17,9 +17,19 @@ export const getAllSchedules = async () => {
   return safeApiCall(() => api.get('/admin/schedule'));
 };
 
-// NEW: Get schedules for specific location (admin only)
+// Get all Public library schedules
+export const getAllPublicSchedules = async () => {
+  return safeApiCall(() => api.get('library/schedule'));
+};
+
+// Get schedules for specific location (admin only)
 export const getSchedulesByLocation = async (location) => {
   return safeApiCall(() => api.get(`/admin/schedule/location/${location}`));
+};
+
+// Get schedules for specific location (admin only)
+export const getPublicSchedulesByLocation = async (location) => {
+  return safeApiCall(() => api.get(`/library/schedule/location/${location}`));
 };
 
 export const getLibraryStatusByLocation = async (location) => {
@@ -49,15 +59,6 @@ export const removeSpecialClosingTime = async (id) => {
   return safeApiCall(() => api.delete(`/admin/schedule/${id}/special-close`));
 };
 
-// // Get current library status
-// export const getLibraryStatus = async () => {
-//   return safeApiCall(() => api.get('/admin/schedule/status'));
-// };
-
-// // Get public library status
-// export const getPublicLibraryStatus = async () => {
-//   return safeApiCall(() => api.get('/library/status'));
-// };
 
 //Admin and users get Status
 export const getLibraryStatus = async () => {
@@ -67,6 +68,11 @@ export const getLibraryStatus = async () => {
 // Get all closure exceptions
 export const getAllClosureExceptions = async () => {
   return safeApiCall(() => api.get('/admin/schedule/exceptions'));
+};
+
+// Get all public closure exceptions
+export const getAllPublicClosureExceptions = async () => {
+  return safeApiCall(() => api.get('/library/schedule/exceptions'));
 };
 
 // Get closure exceptions in a date range
@@ -104,4 +110,9 @@ export const setScheduleMessage = async (message) => {
 // Get schedule message
 export const getScheduleMessage = async () => {
   return safeApiCall(() => api.get('/admin/schedule/message'));
+};
+
+// Get public schedule message
+export const getPublicScheduleMessage = async () => {
+  return safeApiCall(() => api.get('/library/schedule/message'));
 };

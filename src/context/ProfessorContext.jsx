@@ -3,6 +3,7 @@ import { useAuth } from '../hooks/useAuth';
 import { getMyEquipmentRequests } from '../api/equipmentRequests';
 import { getMyApprovedCourses } from '../api/professor'; 
 import { getProfessorDashboard } from '../api/dashboards';
+import { getMyLabRequests } from '../api/labRequests';
 
 const ProfessorContext = createContext();
 
@@ -22,6 +23,8 @@ export const ProfessorProvider = ({ children }) => {
   const [myCourses, setMyCourses] = useState([]);
   const [dashboardData, setDashboardData] = useState(null);
   const [selectedRequests, setSelectedRequests] = useState([]);
+  const [myLabRequests, setMyLabRequests] = useState([]);
+  const [loadingLabRequests, setLoadingLabRequests] = useState(false);
   
   // Loading states
   const [loadingRequests, setLoadingRequests] = useState(false);
@@ -34,6 +37,12 @@ export const ProfessorProvider = ({ children }) => {
     equipment: '',
     dateRange: { start: '', end: '' }
   });
+
+  const updateLabRequestInState = (requestId, updates) => {
+  setMyLabRequests(prev => 
+    prev.map(req => req.id === requestId ? { ...req, ...updates } : req)
+  );
+};
   
   // Messages
   const [error, setError] = useState(null);
@@ -84,6 +93,21 @@ export const ProfessorProvider = ({ children }) => {
     }
   };
 
+  // Load my lab requests
+const loadMyLabRequests = async () => {
+  if (!isProfessor()) return;
+  
+  setLoadingLabRequests(true);
+  try {
+    const data = await getMyLabRequests();
+    setMyLabRequests(data);
+  } catch (err) {
+    setError('Failed to load your lab requests');
+  } finally {
+    setLoadingLabRequests(false);
+  }
+};
+
   // Filter functions
   const updateFilters = (newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -104,6 +128,22 @@ export const ProfessorProvider = ({ children }) => {
     
     return filtered;
   };
+
+  const getFilteredLabRequests = () => {
+  let filtered = [...myLabRequests];
+  
+  if (filters.status) {
+    filtered = filtered.filter(req => req.status === filters.status);
+  }
+  
+  if (filters.equipment) {
+    filtered = filtered.filter(req => 
+      req.labClassName.toLowerCase().includes(filters.equipment.toLowerCase())
+    );
+  }
+  
+  return filtered;
+};
 
   // Selection functions
   const toggleRequestSelection = (requestId) => {
@@ -148,7 +188,8 @@ export const ProfessorProvider = ({ children }) => {
     await Promise.all([
       loadMyRequests(),
       loadMyCourses(),
-      loadDashboard()
+      loadDashboard(),
+      loadMyLabRequests() 
     ]);
   };
 
@@ -165,11 +206,13 @@ export const ProfessorProvider = ({ children }) => {
     myCourses,
     dashboardData,
     selectedRequests,
+    myLabRequests, 
     
     // Loading states
     loadingRequests,
     loadingCourses,
     loadingDashboard,
+    loadingLabRequests, 
     
     // Filters
     filters,
@@ -182,6 +225,9 @@ export const ProfessorProvider = ({ children }) => {
     loadMyRequests,
     loadMyCourses,
     loadDashboard,
+    loadMyLabRequests,          
+    getFilteredLabRequests,     
+    updateLabRequestInState,    
     updateFilters,
     getFilteredRequests,
     toggleRequestSelection,

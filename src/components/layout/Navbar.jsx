@@ -99,7 +99,8 @@ const Navbar = () => {
         { id: 'request-equipment', label: 'Request Equipment', icon: 'fa-tools', path: '/professor/request-equipment' },
         { id: 'request-courses', label: 'Request Courses', icon: 'fa-book', path: '/professor/request-courses' },
         { id: 'my-requests', label: 'My Requests', icon: 'fa-list', path: '/professor/my-requests' },
-        { id: 'my-courses', label: 'My Courses', icon: 'fa-graduation-cap', path: '/professor/my-courses' }
+        { id: 'my-courses', label: 'My Courses', icon: 'fa-graduation-cap', path: '/professor/my-courses' },
+        { id: 'lab-classes', label: 'Lab Request', icon: 'fa-flask', path: '/professor/request-lab' }
       ];
     }
 
@@ -186,6 +187,9 @@ const Navbar = () => {
                     <Link to="/waitlist" className="navbar-dropdown-item">My Waitlist</Link>
                   </div>
                 </div>
+
+                <Link to="/Schedule" className="navbar-item">Schedule</Link>
+
               </>
             )}
           </div>

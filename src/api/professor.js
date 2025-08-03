@@ -37,3 +37,20 @@ export const getActiveCourses = async () => {
   return safeApiCall(() => api.get('professor/courses/active'));
 };
 
+export const getProfessorsWithPendingCourses = async () => {
+  return safeApiCall(() => api.get('/professor/pending-course-requests'));
+};
+
+// Approve specific courses for a professor
+export const approveProfessorSpecificCourses = async (professorId, courseIds) => {
+  return safeApiCall(() => api.post(`/professor/${professorId}/approve-courses`, courseIds));
+};
+
+// Reject professor courses
+export const rejectProfessorCourses = async (professorId, courseIds, rejectionReason) => {
+  return safeApiCall(() => api.post(`/professor/${professorId}/reject-courses`, {
+    courseIds,
+    rejectionReason
+  }));
+};
+
