@@ -1,22 +1,9 @@
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import {
-  getAllSchedules,
-  getSchedulesByLocation,
-  updateSchedule,
-  setDayClosed,
-  setSpecialClosingTime,
-  removeSpecialClosingTime,
   getLibraryStatus,
   getLibraryStatusByLocation,
-  getAllClosureExceptions,
-  getClosureExceptionsInRange,
-  createClosureException,
-  updateClosureException,
-  deleteClosureException,
-  createRecurringClosures,
-  setScheduleMessage,
-  getScheduleMessage,
+  // Use public endpoints for students
   getAllPublicSchedules,
   getPublicSchedulesByLocation,
   getAllPublicClosureExceptions,
@@ -24,59 +11,48 @@ import {
 } from '../api/schedule';
 
 import {
-  getAllAnnouncements,
-  getActiveAnnouncements,
-  createAnnouncement,
-  updateAnnouncement,
-  deleteAnnouncement
+  getActiveAnnouncements
 } from '../api/announcements';
 
 export const PublicScheduleContext = createContext();
 
 export const PublicScheduleProvider = ({ children }) => {
-  const { isAuthenticated, isStudent, isLibrarian, getUserLocation } = useAuth();
+  const { isAuthenticated, isStudent, getUserLocation } = useAuth();
 
   // State for schedules
   const [schedules, setSchedules] = useState([]);
   const [closureExceptions, setClosureExceptions] = useState([]);
   const [libraryStatus, setLibraryStatus] = useState(null);
   const [scheduleMessage, setScheduleMessageState] = useState('');
-  const [announcements, setAnnouncements] = useState([]);
   const [Activeannouncements, setActiveAnnouncements] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
-  // Location state for admin location switching
-  const [selectedLocation, setSelectedLocation] = useState('GISHUSHU');
+  // ULocation state - students can switch locations like admins
+  const [selectedLocation, setSelectedLocation] = useState(null); // Start with null to show all locations
 
-  // Get current effective location
+  //  Simple location logic - students can switch locations
   const getCurrentLocation = useCallback(() => {
-    if (isLibrarian()) {
-      return getUserLocation(); // Librarian uses their assigned location
-    } else if (isStudent()) {
-      return selectedLocation; // Admin can switch locations
-    } else {
-      return getUserLocation(); // Regular users use their location
-    }
-  }, [isLibrarian, isStudent, getUserLocation, selectedLocation]);
+    // Priority: selectedLocation > userLocation > null (show all)
+    return selectedLocation || getUserLocation();
+  }, [selectedLocation, getUserLocation]);
 
-  // Fetch schedules based on user location context
+  //  Fetch ALL schedules for students (like admin behavior)
   const fetchSchedules = useCallback(async () => {
-    if (!isAuthenticated() || (!isStudent() && !isLibrarian())) return;
+    if (!isAuthenticated() || !isStudent()) return;
     
     setLoading(true);
     setError('');
     try {
-      const currentLocation = getCurrentLocation();
       let data;
       
-      if (isStudent()) {
-        // Admin sees all schedules, but filtered by selected location
-        data = await getPublicSchedulesByLocation(currentLocation);
+      // CStudents now get all schedules, not just their location
+      if (selectedLocation) {
+        // If a specific location is selected, get schedules for that location
+        data = await getPublicSchedulesByLocation(selectedLocation);
       } else {
-        // Librarian sees only their location schedules (backend filters automatically)
-        data = await getAllSchedules();
+        // If no location selected, get ALL schedules from all locations
+        data = await getAllPublicSchedules();
       }
       
       setSchedules(data);
@@ -88,16 +64,16 @@ export const PublicScheduleProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, isStudent, isLibrarian, getCurrentLocation]);
+  }, [isAuthenticated, isStudent, selectedLocation]);
 
-  // Fetch schedules for specific location (admin only)
+  //  Students can fetch schedules for any location
   const fetchSchedulesByLocation = useCallback(async (location) => {
-    if (!isAuthenticated() || !isStudent()) return;
+    if (!isAuthenticated() || !isStudent()) return [];
     
     setLoading(true);
     setError('');
     try {
-      const data = await getSchedulesByLocation(location);
+      const data = await getPublicSchedulesByLocation(location);
       return data;
     } catch (err) {
       if (err.response && err.response.status !== 401) {
@@ -110,26 +86,27 @@ export const PublicScheduleProvider = ({ children }) => {
     }
   }, [isAuthenticated, isStudent]);
 
-  // Fetch closure exceptions
-  const fetchClosureExceptions = useCallback(async () => {
-    if (!isAuthenticated() || (!isStudent() && !isLibrarian())) return;
+  //  Fetch ALL closure exceptions for students
+  // const fetchClosureExceptions = useCallback(async () => {
+  //   if (!isAuthenticated() || !isStudent()) return;
     
-    setLoading(true);
-    setError('');
-    try {
-      const data = await getAllClosureExceptions();
-      setClosureExceptions(data);
-    } catch (err) {
-      if (err.response && err.response.status !== 401) {
-        setError('Failed to fetch closure exceptions. Please try again later.');
-        console.error(err);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [isAuthenticated, isStudent, isLibrarian]);
+  //   setLoading(true);
+  //   setError('');
+  //   try {
+  //     // Students get ALL closure exceptions from all locations
+  //     const data = await getAllPublicClosureExceptions();
+  //     setClosureExceptions(data);
+  //   } catch (err) {
+  //     if (err.response && err.response.status !== 401) {
+  //       setError('Failed to fetch closure exceptions. Please try again later.');
+  //       console.error(err);
+  //     }
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }, [isAuthenticated, isStudent]);
 
-  // Fetch library status for current location
+  // Fetch library status (can be for specific location or general)
   const fetchLibraryStatus = useCallback(async () => {
     if (!isAuthenticated()) return;
     
@@ -139,11 +116,11 @@ export const PublicScheduleProvider = ({ children }) => {
       const currentLocation = getCurrentLocation();
       let data;
       
-      if ((isStudent() || isLibrarian()) && currentLocation) {
-        // Use location-specific status for admin/librarian
+      if (currentLocation) {
+        // Get status for specific location
         data = await getLibraryStatusByLocation(currentLocation);
       } else {
-        // Use user's default location status
+        // Get general library status
         data = await getLibraryStatus();
       }
       
@@ -156,9 +133,9 @@ export const PublicScheduleProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, isStudent, isLibrarian, getCurrentLocation]);
+  }, [isAuthenticated, getCurrentLocation]);
 
-  // NEW: Fetch library status for specific location
+  // Fetch library status for specific location
   const fetchLibraryStatusByLocation = useCallback(async (location) => {
     setLoading(true);
     setError('');
@@ -176,17 +153,17 @@ export const PublicScheduleProvider = ({ children }) => {
     }
   }, []);
 
-  // Fetch schedule message
+  // Fetch public schedule message
   const fetchScheduleMessage = useCallback(async () => {
     if (!isAuthenticated()) return;
     
     setLoading(true);
     setError('');
     try {
-      const response = await getScheduleMessage();
+      // Use public endpoint for schedule message
+      const response = await getPublicScheduleMessage();
       setScheduleMessageState(response.message);
     } catch (err) {
-      // Only set error if it's not a 401
       if (err.response && err.response.status !== 401) {
         setError('Failed to fetch schedule message. Please try again later.');
         console.error(err);
@@ -196,26 +173,7 @@ export const PublicScheduleProvider = ({ children }) => {
     }
   }, [isAuthenticated]);
 
-  // Fetch announcements
-  const fetchAnnouncements = useCallback(async () => {
-    if (!isAuthenticated() || (!isStudent() && !isLibrarian())) return;
-    
-    setLoading(true);
-    setError('');
-    try {
-      const data = await getAllAnnouncements();
-      setAnnouncements(data);
-    } catch (err) {
-      if (err.response && err.response.status !== 401) {
-        setError('Failed to fetch announcements. Please try again later.');
-        console.error(err);
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [isAuthenticated, isStudent, isLibrarian]);
-
-  // fetch for public users 
+  // Fetch active announcements (unchanged)
   const fetchActiveAnnouncements = useCallback(async () => {
     if (!isAuthenticated()) return;
     
@@ -225,7 +183,6 @@ export const PublicScheduleProvider = ({ children }) => {
       const data = await getActiveAnnouncements();
       setActiveAnnouncements(data);
     } catch (err) {
-      // Only set error if it's not a 401
       if (err.response && err.response.status !== 401) {
         setError('Failed to fetch announcements. Please try again later.');
         console.error(err);
@@ -235,179 +192,24 @@ export const PublicScheduleProvider = ({ children }) => {
     }
   }, [isAuthenticated]);
 
-  // Update a schedule
-  const handleUpdateSchedule = async (id, scheduleData) => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    try {
-      await updateSchedule(id, scheduleData);
-      await fetchSchedules();
-      await fetchLibraryStatus();
-      setSuccess('Schedule updated successfully');
-    } catch (err) {
-      setError('Failed to update schedule. Please try again later.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setTimeout(() => setSuccess(''), 3000);
-    }
-  };
-
-  // Mark a day as closed
-  const handleSetDayClosed = async (id, message) => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    try {
-      await setDayClosed(id, message);
-      await fetchSchedules();
-      await fetchLibraryStatus();
-      setSuccess('Day marked as closed successfully');
-    } catch (err) {
-      setError('Failed to mark day as closed. Please try again later.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setTimeout(() => setSuccess(''), 3000);
-    }
-  };
-
-  // Set special closing time
-  const handleSetSpecialClosingTime = async (id, specialCloseTime, message) => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    try {
-      await setSpecialClosingTime(id, specialCloseTime, message);
-      await fetchSchedules();
-      await fetchLibraryStatus();
-      setSuccess('Special closing time set successfully');
-    } catch (err) {
-      setError('Failed to set special closing time. Please try again later.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setTimeout(() => setSuccess(''), 3000);
-    }
-  };
-
-  // Remove special closing time
-  const handleRemoveSpecialClosingTime = async (id) => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    try {
-      await removeSpecialClosingTime(id);
-      await fetchSchedules();
-      await fetchLibraryStatus();
-      setSuccess('Special closing time removed successfully');
-    } catch (err) {
-      setError('Failed to remove special closing time. Please try again later.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setTimeout(() => setSuccess(''), 3000);
-    }
-  };
-
-  // Create a new closure exception
-  const handleCreateClosureException = async (exceptionData) => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    try {
-      await createClosureException(exceptionData);
-      await fetchClosureExceptions();
-      await fetchLibraryStatus();
-      setSuccess('Closure exception created successfully');
-    } catch (err) {
-      setError('Failed to create closure exception. Please try again later.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setTimeout(() => setSuccess(''), 3000);
-    }
-  };
-
-  // Create recurring closures
-  const handleCreateRecurringClosures = async (recurringClosureData) => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    try {
-      await createRecurringClosures(recurringClosureData);
-      await fetchClosureExceptions();
-      await fetchLibraryStatus();
-      setSuccess('Recurring closures created successfully');
-    } catch (err) {
-      setError('Failed to create recurring closures. Please try again later.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setTimeout(() => setSuccess(''), 3000);
-    }
-  };
-
-  // Set schedule message
-  const handleSetScheduleMessage = async (message) => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    try {
-      await setScheduleMessage(message);
-      setScheduleMessageState(message);
-      setSuccess('Schedule message updated successfully');
-    } catch (err) {
-      setError('Failed to update schedule message. Please try again later.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setTimeout(() => setSuccess(''), 3000);
-    }
-  };
-
-  // Create a new announcement
-  const handleCreateAnnouncement = async (announcementData) => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-    try {
-      await createAnnouncement(announcementData);
-      await fetchAnnouncements();
-      setSuccess('Announcement created successfully');
-    } catch (err) {
-      setError('Failed to create announcement. Please try again later.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setTimeout(() => setSuccess(''), 3000);
-    }
-  };
-
   // Load data when authentication status or location changes
   useEffect(() => {
-    if (!isAuthenticated()) return;
+    if (!isAuthenticated() || !isStudent()) return;
 
+    // Students now get all data like admins do
     fetchLibraryStatus();
     fetchScheduleMessage();
     fetchActiveAnnouncements();
-
-    if (isStudent() || isLibrarian()) {
-      fetchSchedules();
-      fetchClosureExceptions();
-      fetchAnnouncements();
-    }
+    fetchSchedules();           // Now loads all locations
+    // fetchClosureExceptions();   // Now loads all locations
   }, [
     isAuthenticated,
     isStudent,
-    isLibrarian,
-    selectedLocation, // Refetch when admin changes location
+    selectedLocation, // Refetch when student changes location
     fetchSchedules,
-    fetchClosureExceptions,
+    // fetchClosureExceptions,
     fetchLibraryStatus,
     fetchScheduleMessage,
-    fetchAnnouncements,
     fetchActiveAnnouncements
   ]);
 
@@ -428,37 +230,26 @@ export const PublicScheduleProvider = ({ children }) => {
     closureExceptions,
     libraryStatus,
     scheduleMessage,
-    announcements,
     Activeannouncements,
     loading,
     error,
-    success,
     
-    // NEW: Location context
+    // ULocation context available to students
     selectedLocation,
     setSelectedLocation,
     getCurrentLocation,
-    isLibrarian: isLibrarian(),
     isStudent: isStudent(),
     userLocation: getUserLocation(),
+    isAuthenticated: isAuthenticated(),
     
-    // Functions
+    // Functions - available to students
     fetchSchedules,
-    fetchSchedulesByLocation, // NEW
-    fetchClosureExceptions,
+    fetchSchedulesByLocation,
+    // fetchClosureExceptions,
     fetchLibraryStatus,
-    fetchLibraryStatusByLocation, // NEW
+    fetchLibraryStatusByLocation,
     fetchScheduleMessage,
-    fetchAnnouncements,
     fetchActiveAnnouncements,
-    handleUpdateSchedule,
-    handleSetDayClosed,
-    handleSetSpecialClosingTime,
-    handleRemoveSpecialClosingTime,
-    handleCreateClosureException,
-    handleCreateRecurringClosures,
-    handleSetScheduleMessage,
-    handleCreateAnnouncement,
     setError
   };
 

@@ -10,7 +10,7 @@ const LibrarySchedule = () => {
   const { error, success, setError, scheduleMessage } = usePublicSchedule();
   const [currentMessage, setCurrentMessage] = useState(scheduleMessage);
   const [previewData, setPreviewData] = useState(null);
-  const [activeTab, setActiveTab] = useState('form'); // 'form' or 'calendar'
+  const [activeTab, setActiveTab] = useState('form'); // 
   const [activeSection, setActiveSection] = useState('schedule'); // 'schedule', 'closures', or 'announcements'
 
 
@@ -25,7 +25,7 @@ const LibrarySchedule = () => {
           </p>
         </div>
 
-        <DualLocationBanner />
+        {/* <DualLocationBanner /> */}
 
         {error && (
           <Alert

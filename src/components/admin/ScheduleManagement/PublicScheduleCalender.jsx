@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useSchedule } from '../../../hooks/useSchedule';
+// : Import the public schedule hook instead of regular schedule hook
+import { usePublicSchedule } from '../../../hooks/usePublicSchedule'; // Create this hook
 import LocationSwitcher from './LocationSwitcher';
 import { format, parseISO } from 'date-fns';
 
@@ -7,22 +8,21 @@ const PublicScheduleCalendar = () => {
   const { 
     closureExceptions, 
     schedules, 
-    fetchClosureExceptions,
+    // fetchClosureExceptions,
     selectedLocation,
     setSelectedLocation,
-    isAdmin,
-    isLibrarian,
+    isStudent,        // : Use isStudent instead of isAdmin
     userLocation,
-    isAuthenticated // Add this if available, or remove if not needed
-  } = useSchedule();
+    isAuthenticated   // From PublicScheduleContext
+  } = usePublicSchedule(); // : Use public schedule context
   
   const [currentDate, setCurrentDate] = useState(new Date());
   const [calendarDays, setCalendarDays] = useState([]);
   
   // Fetch closure exceptions when component mounts
-  useEffect(() => {
-    fetchClosureExceptions();
-  }, [fetchClosureExceptions]);
+  // useEffect(() => {
+  //   fetchClosureExceptions();
+  // }, [fetchClosureExceptions]);
   
   // Generate calendar days for current month
   useEffect(() => {
@@ -89,9 +89,9 @@ const PublicScheduleCalendar = () => {
       6: 'SATURDAY'
     };
 
-    // UPDATED: Get current location context - now available to all authenticated users
-    // Priority: selectedLocation > userLocation > first available location
-    const currentLocation = selectedLocation || userLocation || (schedules.length > 0 ? schedules[0].location : null);
+    // : Location logic for students - they can see all locations
+    // Priority: selectedLocation > userLocation > show all (null means show all locations)
+    const currentLocation = selectedLocation || null; // Students can view all locations
     
     // Check schedule and closures for each day
     days.forEach(day => {
@@ -103,7 +103,7 @@ const PublicScheduleCalendar = () => {
       const exceptionForDay = closureExceptions.find(ex => {
         // Check if the dates match (ignoring time)
         const matchesDate = ex.date && ex.date.startsWith(formattedDate);
-        // UPDATED: Also match location if specified, or show if no location filter
+        // : For students, show exceptions for selected location or all if no location selected
         const matchesLocation = !currentLocation || !ex.location || ex.location === currentLocation;
         return matchesDate && matchesLocation;
       });
@@ -162,7 +162,7 @@ const PublicScheduleCalendar = () => {
         }
       } else {
         // STEP 2: If no exception, check regular schedule
-        // UPDATED: Filter schedules by current location (available to all users)
+        // : For students, filter by selected location or show all
         const scheduleForDay = schedules.find(s => 
           s.dayOfWeek === dayOfWeekStr && 
           (!currentLocation || s.location === currentLocation)
@@ -224,11 +224,11 @@ const PublicScheduleCalendar = () => {
             };
           }
         } else {
-          // If no schedule exists for this day, mark as closed
+          // : For students viewing all locations, only show "no schedule" if no location is selected
           day.status = { 
             isClosed: true,
             isException: false,
-            reason: 'No schedule defined',
+            reason: currentLocation ? 'No schedule defined' : 'Select a location to view schedule',
             source: 'default'
           };
         }
@@ -313,27 +313,39 @@ const PublicScheduleCalendar = () => {
     return names[location] || location;
   };
 
-  // UPDATED: Get current location for display - available to all users
+  // : Get current location for display - students can view all locations
   const getCurrentLocationDisplay = () => {
-    const currentLocation = selectedLocation || userLocation;
-    return currentLocation ? getLocationDisplayName(currentLocation) : 'All Locations';
+    return selectedLocation ? getLocationDisplayName(selectedLocation) : 'All Locations';
   };
 
-  // UPDATED: Show available locations from schedules to all users
+  // : Show available locations from schedules - students can see all
   const getAvailableLocations = () => {
     const locations = [...new Set(schedules.map(s => s.location).filter(Boolean))];
     return locations;
   };
+
+  // : Check if user is authenticated student
+  if (!isAuthenticated) {
+    return (
+      <div className="schedule-calendar">
+        <div className="text-center p-4">
+          <h4>Please log in to view library schedules</h4>
+          <p className="text-muted">You need to be logged in to access schedule information.</p>
+        </div>
+      </div>
+    );
+  }
   
   return (
     <div className="schedule-calendar">
-      {/* UPDATED: Location Switcher now available to all authenticated users */}
+      {/* : Location Switcher - students get all the same functionality */}
       <LocationSwitcher 
         selectedLocation={selectedLocation}
         setSelectedLocation={setSelectedLocation}
-        isAdmin={true} // Always allow location switching for authenticated users
+        isAdmin={true} // : Students get admin-like location switching
         userLocation={userLocation}
-        availableLocations={getAvailableLocations()} // Pass available locations
+        availableLocations={getAvailableLocations()}
+        showAllOption={true} // : Students can view all locations
       />
 
       <div className="calendar-header">
@@ -351,6 +363,14 @@ const PublicScheduleCalendar = () => {
           </button>
         </div>
       </div>
+      
+      {/* : Add helpful message for students */}
+      {!selectedLocation && (
+        <div className="location-hint">
+          <i className="fas fa-info-circle"></i>
+          <span>Viewing schedules for all campus locations. Select a specific campus above to filter results.</span>
+        </div>
+      )}
       
       <div className="calendar-grid">
         <div className="calendar-weekdays">
@@ -379,7 +399,7 @@ const PublicScheduleCalendar = () => {
                         : day.status.message}
                     </div>
                   )}
-                  {/* UPDATED: Show location info for all users */}
+                  {/* : Always show location info for students */}
                   {day.status.location && (
                     <div className="location-info" title={`Location: ${getLocationDisplayName(day.status.location)}`}>
                       <small>{getLocationDisplayName(day.status.location)}</small>
@@ -398,7 +418,7 @@ const PublicScheduleCalendar = () => {
                         : day.status.reason}
                     </div>
                   )}
-                  {/* UPDATED: Show location info for all users */}
+                  {/* : Always show location info for students */}
                   {day.status.location && (
                     <div className="location-info" title={`Location: ${getLocationDisplayName(day.status.location)}`}>
                       <small>{getLocationDisplayName(day.status.location)}</small>
@@ -457,6 +477,23 @@ const PublicScheduleCalendar = () => {
           background: #fff;
           border-radius: 12px;
           box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .location-hint {
+          background: #e7f3ff;
+          border: 1px solid #b8daff;
+          border-radius: 8px;
+          padding: 1rem;
+          margin-bottom: 1.5rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          color: #004085;
+          font-size: 0.9rem;
+        }
+
+        .location-hint i {
+          color: #0066cc;
         }
 
         .calendar-header {
@@ -739,6 +776,11 @@ const PublicScheduleCalendar = () => {
 
           .legend-item {
             font-size: 0.75rem;
+          }
+
+          .location-hint {
+            font-size: 0.8rem;
+            padding: 0.75rem;
           }
         }
       `}</style>
