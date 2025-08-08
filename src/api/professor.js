@@ -54,3 +54,8 @@ export const rejectProfessorCourses = async (professorId, courseIds, rejectionRe
   }));
 };
 
+export const rejectProfessorAccount = async (professorId, rejectionReason) => {
+  return safeApiCall(() => api.post(`/professor/${professorId}/reject-account`, {
+    rejectionReason
+  }));
+};

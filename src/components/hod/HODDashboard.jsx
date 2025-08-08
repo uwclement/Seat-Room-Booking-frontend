@@ -2,9 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   getPendingProfessorApprovals,
   approveProfessorAccount,
-  approveProfessorCourses,
-  getProfessorsWithPendingCourses, 
-  approveProfessorSpecificCourses 
+  rejectProfessorAccount
 } from '../../api/professor';
 import { 
   getEscalatedRequests,
@@ -23,7 +21,6 @@ const HODDashboard = () => {
   const [processing, setProcessing] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [pendingCourseRequests, setPendingCourseRequests] = useState([]);
   const [hodEquipmentRequests, setHodEquipmentRequests] = useState([]);
   const [loadingHodRequests, setLoadingHodRequests] = useState(false);
 
@@ -34,17 +31,15 @@ const HODDashboard = () => {
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      const [professors, requests, dashboard, courseRequests] = await Promise.all([
+      const [professors, requests, dashboard] = await Promise.all([
         getPendingProfessorApprovals(),
         getEscalatedRequests(),
-        getHODDashboard(),
-        getProfessorsWithPendingCourses()
+        getHODDashboard()
       ]);
       
       setPendingProfessors(professors);
       setEscalatedRequests(requests);
       setDashboardData(dashboard);
-      setPendingCourseRequests(courseRequests);
       
       // Load equipment requests separately
       await loadHodEquipmentRequests();
@@ -73,9 +68,22 @@ const HODDashboard = () => {
     try {
       await approveProfessorAccount(professorId);
       setPendingProfessors(prev => prev.filter(p => p.id !== professorId));
-      setSuccessMessage('Professor approved successfully');
+      setSuccessMessage('Professor account approved successfully');
     } catch (err) {
       setError('Failed to approve professor');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleRejectProfessor = async (professorId, rejectionReason) => {
+    setProcessing(true);
+    try {
+      await rejectProfessorAccount(professorId, rejectionReason);
+      setPendingProfessors(prev => prev.filter(p => p.id !== professorId));
+      setSuccessMessage('Professor account rejected');
+    } catch (err) {
+      setError('Failed to reject professor');
     } finally {
       setProcessing(false);
     }
@@ -99,30 +107,11 @@ const HODDashboard = () => {
     
     return {
       pendingProfessors: pendingProfessors.length,
-      pendingCourseRequests: pendingCourseRequests.length, 
       escalatedRequests: escalatedRequests.length,
       totalEquipmentRequests: hodEquipmentRequests.length,
       totalProfessors: dashboardData.totalProfessors || 0,
       escalationRate: dashboardData.escalationRate || 0
     };
-  };
-
-  const handleApproveCourses = async (professorId, courseIds) => {
-    setProcessing(true);
-    try {
-      await approveProfessorSpecificCourses(professorId, courseIds);
-      setPendingCourseRequests(prev => 
-        prev.map(p => p.id === professorId 
-          ? { ...p, pendingCourseIds: p.pendingCourseIds.filter(id => !courseIds.includes(id)) }
-          : p
-        ).filter(p => p.pendingCourseIds.length > 0)
-      );
-      setSuccessMessage('Courses approved successfully');
-    } catch (err) {
-      setError('Failed to approve courses');
-    } finally {
-      setProcessing(false);
-    }
   };
 
   const stats = getQuickStats();
@@ -146,10 +135,6 @@ const HODDashboard = () => {
           <div className="stat-value">{stats.pendingProfessors}</div>
           <div className="stat-label">Pending Professor Approvals</div>
         </div>
-        <div className="stat-item study">
-          <div className="stat-value">{stats.pendingCourseRequests}</div>
-          <div className="stat-label">Pending Course Requests</div>
-        </div>
         <div className="stat-item disabled">
           <div className="stat-value">{stats.escalatedRequests}</div>
           <div className="stat-label">Escalated Requests</div>
@@ -157,6 +142,10 @@ const HODDashboard = () => {
         <div className="stat-item library">
           <div className="stat-value">{stats.totalEquipmentRequests}</div>
           <div className="stat-label">Equipment Requests</div>
+        </div>
+        <div className="stat-item study">
+          <div className="stat-value">{stats.totalProfessors}</div>
+          <div className="stat-label">Total Professors</div>
         </div>
       </div>
 
@@ -174,6 +163,7 @@ const HODDashboard = () => {
       <div className="admin-card">
         <div className="card-header">
           <h3>Pending Professor Approvals</h3>
+          <p className="card-subtitle">Review professor accounts with assigned courses</p>
         </div>
         <div className="card-body">
           {pendingProfessors.length === 0 ? (
@@ -189,33 +179,7 @@ const HODDashboard = () => {
                   key={professor.id}
                   professor={professor}
                   onApprove={() => handleApproveProfessor(professor.id)}
-                  processing={processing}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Pending Course Requests */}
-      <div className="admin-card">
-        <div className="card-header">
-          <h3>Pending Course Requests</h3>
-        </div>
-        <div className="card-body">
-          {pendingCourseRequests.length === 0 ? (
-            <div className="empty-state">
-              <i className="fas fa-graduation-cap"></i>
-              <h4>No Pending Course Requests</h4>
-              <p>All course requests have been processed.</p>
-            </div>
-          ) : (
-            <div className="approval-list">
-              {pendingCourseRequests.map(professor => (
-                <CourseRequestCard
-                  key={professor.id}
-                  professor={professor}
-                  onApproveCourses={(courseIds) => handleApproveCourses(professor.id, courseIds)}
+                  onReject={(reason) => handleRejectProfessor(professor.id, reason)}
                   processing={processing}
                 />
               ))}
@@ -262,7 +226,239 @@ const HODDashboard = () => {
   );
 };
 
-// Equipment Requests Table Component
+// Professor Approval Card Component (Updated)
+const ProfessorApprovalCard = ({ professor, onApprove, onReject, processing }) => {
+  const [showRejectModal, setShowRejectModal] = useState(false);
+
+  const handleReject = (reason) => {
+    onReject(reason);
+    setShowRejectModal(false);
+  };
+
+  return (
+    <>
+      <div className="approval-card">
+        <div className="approval-header">
+          <div className="professor-info">
+            <h4>{professor.fullName}</h4>
+            <div className="professor-email">{professor.email}</div>
+            <div className="professor-id">Employee ID: {professor.employeeId}</div>
+          </div>
+          <div className="approval-actions">
+            <button 
+              className="btn btn-success"
+              onClick={onApprove}
+              disabled={processing}
+            >
+              <i className="fas fa-check"></i>
+              Approve
+            </button>
+            <button 
+              className="btn btn-danger"
+              onClick={() => setShowRejectModal(true)}
+              disabled={processing}
+            >
+              <i className="fas fa-times"></i>
+              Reject
+            </button>
+          </div>
+        </div>
+
+        {/* Show assigned courses */}
+        {professor.assignedCourses && professor.assignedCourses.length > 0 ? (
+          <div className="assigned-courses">
+            <strong>Assigned Courses ({professor.assignedCourses.length}):</strong>
+            <div className="course-list">
+              {professor.assignedCourses.map((course, index) => (
+                <div key={index} className="course-item">
+                  <span className="course-code">{course.courseCode}</span>
+                  <span className="course-name">{course.courseName}</span>
+                  <span className="course-credits">({course.creditHours} credits)</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="no-courses">
+            <small className="text-muted">No courses assigned</small>
+          </div>
+        )}
+      </div>
+
+      <ProfessorRejectionModal
+        show={showRejectModal}
+        professor={professor}
+        onClose={() => setShowRejectModal(false)}
+        onSubmit={handleReject}
+      />
+    </>
+  );
+};
+
+// Professor Rejection Modal Component
+const ProfessorRejectionModal = ({ show, professor, onClose, onSubmit }) => {
+  const [rejectionReason, setRejectionReason] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!rejectionReason.trim()) return;
+    onSubmit(rejectionReason);
+    setRejectionReason('');
+  };
+
+  if (!show) return null;
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal-container">
+        <div className="modal-header">
+          <h3>Reject Professor Account</h3>
+          <button className="close-button" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            <div className="professor-info">
+              <p><strong>Professor:</strong> {professor?.fullName}</p>
+              <p><strong>Email:</strong> {professor?.email}</p>
+            </div>
+            
+            <div className="form-group">
+              <label>Rejection Reason *</label>
+              <textarea
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                className="form-control"
+                rows="4"
+                placeholder="Provide reason for rejection (will be sent to admin for review)..."
+                required
+              />
+            </div>
+          </div>
+
+          <div className="modal-footer">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-danger" disabled={!rejectionReason.trim()}>
+              <i className="fas fa-times"></i>
+              Reject Professor
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Escalated Request Card Component (unchanged)
+const EscalatedRequestCard = ({ request, onApprove, onReject, processing }) => {
+  const [showRejectModal, setShowRejectModal] = useState(false);
+
+  return (
+    <div className="escalation-card">
+      <div className="escalation-header">
+        <div className="request-info">
+          <h4>{request.equipmentName}</h4>
+          <div className="professor-name">Professor: {request.userFullName}</div>
+          <div className="escalation-date">
+            Escalated: {new Date(request.escalatedAt).toLocaleDateString()}
+          </div>
+        </div>
+        <div className="escalation-actions">
+          <button 
+            className="btn btn-success"
+            onClick={onApprove}
+            disabled={processing}
+          >
+            <i className="fas fa-check"></i>
+            Approve
+          </button>
+          <button 
+            className="btn btn-danger"
+            onClick={() => setShowRejectModal(true)}
+            disabled={processing}
+          >
+            <i className="fas fa-times"></i>
+            Reject
+          </button>
+        </div>
+      </div>
+
+      <div className="original-rejection">
+        <strong>Original Rejection Reason:</strong> {request.rejectionReason}
+      </div>
+
+      {showRejectModal && (
+        <HODRejectionModal
+          show={showRejectModal}
+          onClose={() => setShowRejectModal(false)}
+          onSubmit={(reason) => {
+            onReject(reason);
+            setShowRejectModal(false);
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// HOD Rejection Modal Component (unchanged)
+const HODRejectionModal = ({ show, onClose, onSubmit }) => {
+  const [reason, setReason] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!reason.trim()) return;
+    onSubmit(reason);
+    setReason('');
+  };
+
+  if (!show) return null;
+
+  return (
+    <div className="modal-backdrop">
+      <div className="modal-container">
+        <div className="modal-header">
+          <h3>Final Rejection</h3>
+          <button className="close-button" onClick={onClose}>
+            <i className="fas fa-times"></i>
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            <div className="form-group">
+              <label>Final Rejection Reason *</label>
+              <textarea
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                className="form-control"
+                rows="4"
+                placeholder="Provide final reason for rejecting this escalated request..."
+                required
+              />
+            </div>
+          </div>
+
+          <div className="modal-footer">
+            <button type="button" className="btn btn-secondary" onClick={onClose}>
+              Cancel
+            </button>
+            <button type="submit" className="btn btn-danger" disabled={!reason.trim()}>
+              <i className="fas fa-times"></i>
+              Final Reject
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// Equipment Requests Table Component (unchanged)
 const EquipmentRequestsTable = ({ 
   equipmentRequests, 
   loading, 
@@ -475,208 +671,6 @@ const EquipmentRequestsTable = ({
             </table>
           </div>
         )}
-      </div>
-    </div>
-  );
-};
-
-// Professor Approval Card Component
-const ProfessorApprovalCard = ({ professor, onApprove, processing }) => {
-  return (
-    <div className="approval-card">
-      <div className="approval-header">
-        <div className="professor-info">
-          <h4>{professor.fullName}</h4>
-          <div className="professor-email">{professor.email}</div>
-        </div>
-        <div className="approval-actions">
-          <button 
-            className="btn btn-success"
-            onClick={onApprove}
-            disabled={processing}
-          >
-            <i className="fas fa-check"></i>
-            Approve
-          </button>
-        </div>
-      </div>
-      
-      {professor.courseNames && professor.courseNames.length > 0 && (
-        <div className="requested-courses">
-          <strong>Requested Courses:</strong>
-          <div className="course-tags">
-            {professor.courseNames.map((courseName, index) => (
-              <span key={index} className="course-tag">{courseName}</span>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Course Request Card Component
-const CourseRequestCard = ({ professor, onApproveCourses, processing }) => {
-  const [selectedCourses, setSelectedCourses] = useState([]);
-
-  const handleCourseToggle = (courseId) => {
-    setSelectedCourses(prev => 
-      prev.includes(courseId)
-        ? prev.filter(id => id !== courseId)
-        : [...prev, courseId]
-    );
-  };
-
-  const handleApproveSelected = () => {
-    if (selectedCourses.length > 0) {
-      onApproveCourses(selectedCourses);
-      setSelectedCourses([]);
-    }
-  };
-
-  return (
-    <div className="approval-card">
-      <div className="approval-header">
-        <div className="professor-info">
-          <h4>{professor.fullName}</h4>
-          <div className="professor-email">{professor.email}</div>
-        </div>
-        <div className="approval-actions">
-          <button 
-            className="btn btn-success"
-            onClick={handleApproveSelected}
-            disabled={processing || selectedCourses.length === 0}
-          >
-            <i className="fas fa-check"></i>
-            Approve Selected ({selectedCourses.length})
-          </button>
-        </div>
-      </div>
-      
-      {professor.pendingCourseNames && professor.pendingCourseNames.length > 0 && (
-        <div className="requested-courses">
-          <strong>Pending Course Requests:</strong>
-          <div className="course-selection">
-            {professor.pendingCourseNames.map((courseName, index) => {
-              const courseId = professor.pendingCourseIds[index];
-              return (
-                <label key={courseId} className="course-checkbox">
-                  <input
-                    type="checkbox"
-                    checked={selectedCourses.includes(courseId)}
-                    onChange={() => handleCourseToggle(courseId)}
-                  />
-                  <span className="course-tag selectable">{courseName}</span>
-                </label>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Escalated Request Card Component
-const EscalatedRequestCard = ({ request, onApprove, onReject, processing }) => {
-  const [showRejectModal, setShowRejectModal] = useState(false);
-
-  return (
-    <div className="escalation-card">
-      <div className="escalation-header">
-        <div className="request-info">
-          <h4>{request.equipmentName}</h4>
-          <div className="professor-name">Professor: {request.userFullName}</div>
-          <div className="escalation-date">
-            Escalated: {new Date(request.escalatedAt).toLocaleDateString()}
-          </div>
-        </div>
-        <div className="escalation-actions">
-          <button 
-            className="btn btn-success"
-            onClick={onApprove}
-            disabled={processing}
-          >
-            <i className="fas fa-check"></i>
-            Approve
-          </button>
-          <button 
-            className="btn btn-danger"
-            onClick={() => setShowRejectModal(true)}
-            disabled={processing}
-          >
-            <i className="fas fa-times"></i>
-            Reject
-          </button>
-        </div>
-      </div>
-
-      <div className="original-rejection">
-        <strong>Original Rejection Reason:</strong> {request.rejectionReason}
-      </div>
-
-      {showRejectModal && (
-        <HODRejectionModal
-          show={showRejectModal}
-          onClose={() => setShowRejectModal(false)}
-          onSubmit={(reason) => {
-            onReject(reason);
-            setShowRejectModal(false);
-          }}
-        />
-      )}
-    </div>
-  );
-};
-
-// HOD Rejection Modal Component
-const HODRejectionModal = ({ show, onClose, onSubmit }) => {
-  const [reason, setReason] = useState('');
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!reason.trim()) return;
-    onSubmit(reason);
-    setReason('');
-  };
-
-  if (!show) return null;
-
-  return (
-    <div className="modal-backdrop">
-      <div className="modal-container">
-        <div className="modal-header">
-          <h3>Final Rejection</h3>
-          <button className="close-button" onClick={onClose}>
-            <i className="fas fa-times"></i>
-          </button>
-        </div>
-
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            <div className="form-group">
-              <label>Final Rejection Reason *</label>
-              <textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                className="form-control"
-                rows="4"
-                placeholder="Provide final reason for rejecting this escalated request..."
-                required
-              />
-            </div>
-          </div>
-
-          <div className="modal-footer">
-            <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Cancel
-            </button>
-            <button type="submit" className="btn btn-danger" disabled={!reason.trim()}>
-              <i className="fas fa-times"></i>
-              Final Reject
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );

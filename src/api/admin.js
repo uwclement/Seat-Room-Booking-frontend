@@ -153,3 +153,16 @@ export const getDefaultPassword = async (userId) => {
   const response = await api.get(`/admin/users/${userId}/default-password`);
   return response.data.data; // This will have the password from DefaultPasswordResponse
 };
+
+export const createStaffUser = async (staffData) => {
+  return safeApiCall(() => api.post('/admin/users/staff', staffData));
+};
+
+export const updateStaffUserCourses = async (userId, courseIds) => {
+  return safeApiCall(() => api.put(`/admin/users/staff/${userId}/courses`, { courseIds }));
+};
+
+// Get user courses (for edit modal)
+export const getUserCourses = async (userId) => {
+  return safeApiCall(() => api.get(`/admin/users/${userId}/courses`));
+};

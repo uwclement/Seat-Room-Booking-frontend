@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useUserManagement } from '../../../hooks/useUserManagement';
 import { 
   checkEmailAvailability, 
@@ -7,9 +7,12 @@ import {
 import Input from '../../common/Input';
 import Button from '../../common/Button';
 import Alert from '../../common/Alert';
+import { getActiveCourses } from '../../../api/professor';
 
 const CreateStaffModal = ({ show, onClose }) => {
   const { handleCreateStaff, loading } = useUserManagement();
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -20,7 +23,8 @@ const CreateStaffModal = ({ show, onClose }) => {
     role: 'LIBRARIAN',
     workingDay: '',
     activeToday: false,
-    isDefault: false
+    isDefault: false,
+    courseIds: [] 
   });
   
   const [errors, setErrors] = useState({});
@@ -41,6 +45,37 @@ const CreateStaffModal = ({ show, onClose }) => {
     { value: 'NYANZA', label: 'Nyanza' },
     { value: 'MUSANZE', label: 'Musanze' }
   ];
+
+  useEffect(() => {
+    if (formData.role === 'PROFESSOR') {
+      loadCourses();
+    }
+  }, [formData.role]);
+
+
+  const loadCourses = async () => {
+  setLoadingCourses(true);
+    try {
+    const courses = await getActiveCourses();
+    setAvailableCourses(courses);
+    } catch (error) {
+     console.error('Error loading courses:', error);
+    } finally {
+    setLoadingCourses(false);
+   }
+  };
+
+  const handleCourseSelection = (e) => {
+  const courseId = parseInt(e.target.value);
+  const isChecked = e.target.checked;
+  
+  setFormData(prev => ({
+    ...prev,
+    courseIds: isChecked 
+      ? [...prev.courseIds, courseId]
+      : prev.courseIds.filter(id => id !== courseId)
+  }));
+};
 
   const validateField = async (field, value) => {
     const newErrors = { ...errors };
@@ -295,6 +330,51 @@ const CreateStaffModal = ({ show, onClose }) => {
               </div>
             </div>
 
+            {/* Professor Course Selection */}
+{formData.role === 'PROFESSOR' && (
+  <div className="form-section">
+    <h4>Course Assignment</h4>
+    <p className="form-help">Select courses to assign to this professor</p>
+    
+    {loadingCourses ? (
+      <div className="loading-courses">Loading courses...</div>
+    ) : (
+      <div className="course-dropdown-container">
+        {availableCourses.length === 0 ? (
+          <p>No courses available</p>
+        ) : (
+          <>
+            <select
+              multiple
+              value={formData.courseIds.map(String)}
+              onChange={(e) => {
+                const selectedCourseIds = Array.from(e.target.selectedOptions, option => parseInt(option.value));
+                setFormData(prev => ({ ...prev, courseIds: selectedCourseIds }));
+              }}
+              className="form-control course-select"
+              size="6"
+            >
+              {availableCourses.map(course => (
+                <option key={course.id} value={course.id}>
+                  {course.courseCode} - {course.courseName} ({course.creditHours} credits)
+                </option>
+              ))}
+            </select>
+            <small className="form-help">
+              Hold Ctrl/Cmd to select multiple courses
+            </small>
+          </>
+        )}
+      </div>
+    )}
+    
+    {formData.courseIds.length > 0 && (
+      <div className="selected-courses-summary">
+        <small>{formData.courseIds.length} course(s) selected</small>
+      </div>
+    )}
+  </div>
+)}
             {/* Librarian-specific fields */}
             {needsWorkingDay && (
               <>
