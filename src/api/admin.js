@@ -159,7 +159,9 @@ export const createStaffUser = async (staffData) => {
 };
 
 export const updateStaffUserCourses = async (userId, courseIds) => {
-  return safeApiCall(() => api.put(`/admin/users/staff/${userId}/courses`, { courseIds }));
+  return safeApiCall(() => api.put(`/admin/users/staff/${userId}/courses`, { 
+    courseIds: courseIds 
+  }));
 };
 
 // Get user courses (for edit modal)

@@ -226,6 +226,8 @@ const HODDashboard = () => {
   );
 };
 
+
+
 // Professor Approval Card Component (Updated)
 const ProfessorApprovalCard = ({ professor, onApprove, onReject, processing }) => {
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -235,6 +237,27 @@ const ProfessorApprovalCard = ({ professor, onApprove, onReject, processing }) =
     setShowRejectModal(false);
   };
 
+  const getCoursesData = () => {
+    // Check if we have assignedCourses array (full course objects)
+    if (professor.assignedCourses && Array.isArray(professor.assignedCourses)) {
+      return professor.assignedCourses;
+    }
+    
+    // Check if we have courseIds and courseNames arrays
+    if (professor.courseIds && professor.courseNames && Array.isArray(professor.courseIds)) {
+      return professor.courseIds.map((id, index) => ({
+        id: id,
+        courseCode: professor.courseCodes ? professor.courseCodes[index] : `Course-${id}`,
+        courseName: professor.courseNames[index] || 'Unknown Course',
+        creditHours: professor.creditHours ? professor.creditHours[index] : 3
+      }));
+    }
+    
+    return [];
+  };
+
+  const coursesData = getCoursesData();
+
   return (
     <>
       <div className="approval-card">
@@ -242,7 +265,7 @@ const ProfessorApprovalCard = ({ professor, onApprove, onReject, processing }) =
           <div className="professor-info">
             <h4>{professor.fullName}</h4>
             <div className="professor-email">{professor.email}</div>
-            <div className="professor-id">Employee ID: {professor.employeeId}</div>
+            {/* <div className="professor-id">Employee ID: {professor.identifier}</div> */}
           </div>
           <div className="approval-actions">
             <button 
@@ -265,11 +288,11 @@ const ProfessorApprovalCard = ({ professor, onApprove, onReject, processing }) =
         </div>
 
         {/* Show assigned courses */}
-        {professor.assignedCourses && professor.assignedCourses.length > 0 ? (
+        {coursesData.length > 0 ? (
           <div className="assigned-courses">
-            <strong>Assigned Courses ({professor.assignedCourses.length}):</strong>
+            <strong>Assigned Courses ({coursesData.length}):</strong>
             <div className="course-list">
-              {professor.assignedCourses.map((course, index) => (
+              {coursesData.map((course, index) => (
                 <div key={index} className="course-item">
                   <span className="course-code">{course.courseCode}</span>
                   <span className="course-name">{course.courseName}</span>

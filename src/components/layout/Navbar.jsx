@@ -197,11 +197,12 @@ const Navbar = () => {
           <div className="navbar-auth">
             {isAuthenticated() ? (
               <div className="navbar-user">
-                {!isAdminUser() && (
-                  <div className="navbar-notification">
+                {/* {!isAdminUser() && (
+                  
+                )} */}
+                <div className="navbar-notification">
                     <NotificationComponent />
                   </div> 
-                )}
                 <span className="navbar-username">{user.identifier}</span>
                 <button onClick={handleLogout} className="navbar-logout">Logout</button>
               </div>

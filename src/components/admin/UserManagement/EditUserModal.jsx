@@ -13,6 +13,7 @@ const EditUserModal = ({ show, user, onClose }) => {
     identifier: '',
     fullName: '',
     email: '',
+    employeeId: '',
     phone: '',
     location: '',
     workingDay: '',
@@ -38,6 +39,7 @@ const EditUserModal = ({ show, user, onClose }) => {
         identifier: user.identifier || '',
         fullName: user.fullName || '',
         email: user.email || '',
+        employeeId: user.identifier || '',
         phone: user.phone || '',
         location: user.location || '',
         workingDay: user.workingDay || '',
@@ -188,6 +190,15 @@ const EditUserModal = ({ show, user, onClose }) => {
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  required
+                  disabled
+                />
+
+                <Input
+                  label="Employee ID"
+                  type="text"
+                  value={formData.employeeId}
+                  onChange={(e) => setFormData({...formData, employeeId: e.target.value})}
                   required
                   disabled
                 />

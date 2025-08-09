@@ -59,7 +59,6 @@ const AdminSidebar = ({ activePage }) => {
   const professorItems = [
     { id: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt', path: '/professor/dashboard' },
     { id: 'request-equipment', label: 'Request Equipment', icon: 'fa-tools', path: '/professor/request-equipment' },
-    { id: 'request-courses', label: 'Request Courses', icon: 'fa-book', path: '/professor/request-courses' },
     { id: 'my-requests', label: 'My Requests', icon: 'fa-list', path: '/professor/my-requests' },
     { id: 'my-courses', label: 'My Courses', icon: 'fa-graduation-cap', path: '/professor/my-courses' },
     { id: 'lab-requests', label: 'Lab Request', icon: 'fa-flask', path: '/professor/my-lab-requests' },

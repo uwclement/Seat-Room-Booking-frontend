@@ -61,7 +61,6 @@ import LabRequestManagement from './components/admin/EquipmentManagement/LabRequ
 // Professor Components
 import ProfessorDashboard from './components/professor/ProfessorDashboard';
 import RequestEquipmentPage from './components/professor/RequestEquipmentPage';
-import RequestCoursesPage from './components/professor/RequestCoursesPage';
 import MyRequestsPage from './components/professor/MyRequestsPage';
 import MyCoursesPage from './components/professor/MyCoursesPage';
 
@@ -554,19 +553,6 @@ const AppRoutes = () => {
         }
       />
 
-      <Route
-        path="/professor/request-courses"
-        element={
-          <ProtectedRoute requiredRole="professor">
-            <ProfessorProvider>
-              <div className="admin-page-container">
-                <AdminSidebar activePage="request-courses" />
-                <RequestCoursesPage />
-              </div>
-            </ProfessorProvider>
-          </ProtectedRoute>
-        }
-      />
 
       <Route
         path="/professor/my-requests"

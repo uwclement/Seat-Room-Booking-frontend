@@ -57,10 +57,6 @@ const MyCoursesPage = () => {
               <i className="fas fa-arrow-left"></i>
               Back to Dashboard
             </Link>
-            <Link to="/professor/request-courses" className="professor-btn primary">
-              <i className="fas fa-plus"></i>
-              Request More Courses
-            </Link>
           </div>
         </div>
       </div>
