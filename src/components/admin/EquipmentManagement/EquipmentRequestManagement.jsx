@@ -1,6 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useEquipmentAdmin } from '../../../context/EquipmentAdminContext';
-import { approveEquipmentRequest } from '../../../api/equipmentRequests';
+import { 
+  approveEquipmentRequest, 
+  markEquipmentReturned, 
+  handleExtensionRequest, 
+  completeRequest,
+  getActiveRequests,
+  getExtensionRequests
+} from '../../../api/equipmentRequests';
 import Alert from '../../common/Alert';
 import LoadingSpinner from '../../common/LoadingSpinner';
 
@@ -30,7 +37,33 @@ const EquipmentRequestManagement = () => {
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [processing, setProcessing] = useState(false);
-  const [bulkAction, setBulkAction] = useState('');
+  const [activeRequests, setActiveRequests] = useState([]);
+  const [extensionRequests, setExtensionRequests] = useState([]);
+  const [activeTab, setActiveTab] = useState('current-month');
+
+  // Load additional data
+  useEffect(() => {
+    loadActiveRequestsData();
+    loadExtensionRequestsData();
+  }, []);
+
+  const loadActiveRequestsData = async () => {
+    try {
+      const data = await getActiveRequests();
+      setActiveRequests(data);
+    } catch (err) {
+      console.error('Failed to load active requests');
+    }
+  };
+
+  const loadExtensionRequestsData = async () => {
+    try {
+      const data = await getExtensionRequests();
+      setExtensionRequests(data);
+    } catch (err) {
+      console.error('Failed to load extension requests');
+    }
+  };
 
   const handleApproveReject = async (requestId, approved, reason = '', suggestion = '') => {
     setProcessing(true);
@@ -42,12 +75,78 @@ const EquipmentRequestManagement = () => {
       });
       
       await loadPendingRequests();
-      await loadEquipmentRequests(); // Refresh current month requests
+      await loadEquipmentRequests();
+      await loadActiveRequestsData();
       showSuccess(`Request ${approved ? 'approved' : 'rejected'} successfully`);
       setShowApprovalModal(false);
       setSelectedRequest(null);
     } catch (err) {
       showError('Failed to process request');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleMarkReturned = async (requestId, returnData) => {
+    setProcessing(true);
+    try {
+      await markEquipmentReturned(requestId, returnData);
+      
+      // Update state
+      updateItemInState(requestId, {
+        status: 'RETURNED',
+        returnedAt: new Date().toISOString(),
+        ...returnData
+      });
+      
+      await loadActiveRequestsData();
+      await loadEquipmentRequests();
+      showSuccess('Equipment marked as returned successfully');
+    } catch (err) {
+      showError('Failed to mark equipment as returned');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleExtension = async (requestId, approved, rejectionReason = null) => {
+    setProcessing(true);
+    try {
+      await handleExtensionRequest(requestId, {
+        approved,
+        rejectionReason
+      });
+      
+      updateItemInState(requestId, {
+        extensionStatus: approved ? 'APPROVED' : 'REJECTED',
+        extensionApprovedAt: new Date().toISOString()
+      });
+      
+      await loadExtensionRequestsData();
+      await loadActiveRequestsData();
+      await loadEquipmentRequests();
+      showSuccess(`Extension ${approved ? 'approved' : 'rejected'} successfully`);
+    } catch (err) {
+      showError('Failed to process extension request');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleCompleteRequest = async (requestId) => {
+    setProcessing(true);
+    try {
+      await completeRequest(requestId);
+      
+      updateItemInState(requestId, {
+        status: 'COMPLETED'
+      });
+      
+      await loadActiveRequestsData();
+      await loadEquipmentRequests();
+      showSuccess('Request completed successfully');
+    } catch (err) {
+      showError('Failed to complete request');
     } finally {
       setProcessing(false);
     }
@@ -65,14 +164,30 @@ const EquipmentRequestManagement = () => {
         const hoursSince = (Date.now() - requestDate.getTime()) / (1000 * 60 * 60);
         return hoursSince > 24;
       }).length,
-      professors: pendingRequests.filter(req => req.userRole === 'PROFESSOR').length
+      professors: pendingRequests.filter(req => req.userRole === 'PROFESSOR').length,
+      active: activeRequests.length,
+      extensions: extensionRequests.length
     };
   };
 
-  const getFilteredEquipmentRequests = () => {
-    if (!filters.keyword) return EquipmentRequests;
+  const getCurrentTabData = () => {
+    switch (activeTab) {
+      case 'current-month':
+        return EquipmentRequests;
+      case 'active':
+        return activeRequests;
+      case 'extensions':
+        return extensionRequests;
+      default:
+        return EquipmentRequests;
+    }
+  };
+
+  const getFilteredRequests = () => {
+    const data = getCurrentTabData();
+    if (!filters.keyword) return data;
     
-    return EquipmentRequests.filter(request => 
+    return data.filter(request => 
       request.equipmentName?.toLowerCase().includes(filters.keyword.toLowerCase()) ||
       request.userFullName?.toLowerCase().includes(filters.keyword.toLowerCase()) ||
       request.courseCode?.toLowerCase().includes(filters.keyword.toLowerCase()) ||
@@ -86,9 +201,8 @@ const EquipmentRequestManagement = () => {
       return;
     }
 
-    // Filter selected items to only include valid requests for the action
     const validRequests = selectedItems.filter(requestId => {
-      const request = EquipmentRequests.find(r => r.id === requestId);
+      const request = getCurrentTabData().find(r => r.id === requestId);
       if (!request) return false;
       
       const endTime = new Date(request.endTime);
@@ -96,7 +210,6 @@ const EquipmentRequestManagement = () => {
       const isTimeValid = endTime > now;
       
       if (action === 'approve') {
-        // Equipment admin can only approve PENDING or REJECTED (not HOD_REJECTED)
         return (request.status === 'PENDING' || request.status === 'REJECTED') && isTimeValid;
       } else if (action === 'reject') {
         return (request.status === 'PENDING' || request.status === 'APPROVED') && isTimeValid;
@@ -128,6 +241,7 @@ const EquipmentRequestManagement = () => {
       
       await loadPendingRequests();
       await loadEquipmentRequests();
+      await loadActiveRequestsData();
       clearSelection();
       showSuccess(`Bulk ${action} completed successfully for ${validRequests.length} request(s)`);
     } catch (err) {
@@ -149,6 +263,10 @@ const EquipmentRequestManagement = () => {
         return 'yellow';
       case 'ESCALATED':
         return 'orange';
+      case 'IN_USE':
+        return 'blue';
+      case 'RETURNED':
+        return 'purple';
       case 'COMPLETED':
         return 'green';
       case 'CANCELLED':
@@ -159,22 +277,30 @@ const EquipmentRequestManagement = () => {
   };
 
   const canReprocess = (request) => {
-    // Can reprocess rejected requests if end time hasn't passed yet
-    // BUT NOT if HOD has rejected it (Equipment admin cannot override HOD decision)
     const endTime = new Date(request.endTime);
     const now = new Date();
     return request.status === 'REJECTED' && endTime > now;
   };
 
   const canReject = (request) => {
-    // Can reject pending or approved requests if end time hasn't passed yet
     const endTime = new Date(request.endTime);
     const now = new Date();
     return (request.status === 'PENDING' || request.status === 'APPROVED') && endTime > now;
   };
 
+  const canMarkReturned = (request) => {
+    return (request.status === 'APPROVED' || 
+            request.status === 'IN_USE' || 
+            request.status === 'HOD_APPROVED') && 
+            !request.returnedAt;
+  };
+
+  const canComplete = (request) => {
+    return request.status === 'RETURNED';
+  };
+
   const stats = getRequestStats();
-  const filteredEquipmentRequests = getFilteredEquipmentRequests();
+  const filteredRequests = getFilteredRequests();
 
   return (
     <div className="admin-content">
@@ -189,7 +315,7 @@ const EquipmentRequestManagement = () => {
         </div>
       </div>
 
-      {/* Quick Stats */}
+      {/* Enhanced Quick Stats */}
       <div className="stats-grid">
         <div className="stat-item available">
           <div className="stat-value">{stats.total}</div>
@@ -206,6 +332,14 @@ const EquipmentRequestManagement = () => {
         <div className="stat-item study">
           <div className="stat-value">{stats.professors}</div>
           <div className="stat-label">From Professors</div>
+        </div>
+        <div className="stat-item active">
+          <div className="stat-value">{stats.active}</div>
+          <div className="stat-label">Active Bookings</div>
+        </div>
+        <div className="stat-item extensions">
+          <div className="stat-value">{stats.extensions}</div>
+          <div className="stat-label">Extension Requests</div>
         </div>
       </div>
 
@@ -247,11 +381,32 @@ const EquipmentRequestManagement = () => {
         </div>
       </div>
 
-      {/* Current Month Equipment Requests Table */}
+      {/* Enhanced Equipment Requests Table with Tabs */}
       <div className="admin-card">
         <div className="card-header">
-          <h3>Current Month Equipment Requests</h3>
-          <p className="card-subtitle">All equipment requests for the current month</p>
+          <h3>Equipment Requests Management</h3>
+          
+          {/* Tab Navigation */}
+          <div className="tab-navigation">
+            <button 
+              className={`tab-btn ${activeTab === 'current-month' ? 'active' : ''}`}
+              onClick={() => setActiveTab('current-month')}
+            >
+              Current Month ({EquipmentRequests.length})
+            </button>
+            <button 
+              className={`tab-btn ${activeTab === 'active' ? 'active' : ''}`}
+              onClick={() => setActiveTab('active')}
+            >
+              Active Bookings ({activeRequests.length})
+            </button>
+            <button 
+              className={`tab-btn ${activeTab === 'extensions' ? 'active' : ''}`}
+              onClick={() => setActiveTab('extensions')}
+            >
+              Extension Requests ({extensionRequests.length})
+            </button>
+          </div>
         </div>
 
         {/* Search and Filters */}
@@ -305,14 +460,14 @@ const EquipmentRequestManagement = () => {
 
         {/* Equipment Requests Table */}
         <div className="card-body">
-          {filteredEquipmentRequests.length === 0 ? (
+          {filteredRequests.length === 0 ? (
             <div className="empty-state">
               <i className="fas fa-calendar-alt"></i>
               <h3>No Requests Found</h3>
               <p>
                 {filters.keyword 
                   ? 'No equipment requests match your search criteria.' 
-                  : 'No equipment requests for the current month.'}
+                  : `No ${activeTab.replace('-', ' ')} requests found.`}
               </p>
             </div>
           ) : (
@@ -323,7 +478,7 @@ const EquipmentRequestManagement = () => {
                     <th>
                       <input
                         type="checkbox"
-                        checked={selectedItems.length === filteredEquipmentRequests.length && filteredEquipmentRequests.length > 0}
+                        checked={selectedItems.length === filteredRequests.length && filteredRequests.length > 0}
                         onChange={(e) => {
                           if (e.target.checked) {
                             selectAllItems();
@@ -344,123 +499,27 @@ const EquipmentRequestManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredEquipmentRequests.map(request => (
-                    <tr key={request.id} className={selectedItems.includes(request.id) ? 'selected' : ''}>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={selectedItems.includes(request.id)}
-                          onChange={() => toggleItemSelection(request.id)}
-                        />
-                      </td>
-                      <td>
-                        <div className="equipment-info">
-                          <strong>{request.equipmentName}</strong>
-                          {request.labClassName && (
-                            <div className="lab-info">
-                              <i className="fas fa-flask"></i>
-                              {request.labClassName}
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="user-info">
-                          <strong>{request.userFullName}</strong>
-                          <div className="user-role">
-                            <span className={`role-badge ${request.userRole?.toLowerCase()}`}>
-                              {request.userRole}
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        {request.courseCode ? (
-                          <span className="course-badge">{request.courseCode}</span>
-                        ) : (
-                          <span className="text-muted">-</span>
-                        )}
-                      </td>
-                      <td>
-                        <div className="datetime-info">
-                          <div className="date">
-                            {new Date(request.startTime).toLocaleDateString()}
-                          </div>
-                          <div className="time">
-                            {new Date(request.startTime).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </div>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="duration">{request.durationHours}h</span>
-                      </td>
-                      <td>
-                        <span className="quantity">{request.requestedQuantity}</span>
-                      </td>
-                      <td>
-                        <span className={`status-badge ${getStatusBadgeClass(request.status)}`}>
-                          <span className="status-dot"  ></span>
-                          {request.status.replace('_', ' ')}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="action-buttons">
-                          {request.status === 'PENDING' && (
-                            <>
-                              <button 
-                                className="btn btn-sm btn-success"
-                                onClick={() => handleApproveReject(request.id, true)}
-                                disabled={processing}
-                                title="Approve Request"
-                              >
-                                <i className="fas fa-check"></i>
-                              </button>
-                              <button 
-                                className="btn btn-sm btn-danger"
-                                onClick={() => {
-                                  setSelectedRequest(request);
-                                  setShowApprovalModal(true);
-                                }}
-                                disabled={processing}
-                                title="Reject Request"
-                              >
-                                <i className="fas fa-times"></i>
-                              </button>
-                            </>
-                          )}
-                          
-                          {canReprocess(request) && (
-                            <button 
-                              className="btn btn-sm btn-success"
-                              onClick={() => handleApproveReject(request.id, true)}
-                              disabled={processing}
-                              title="Approve Request"
-                            >
-                              <i className="fas fa-check"></i>
-                              Approve
-                            </button>
-                          )}
-                          
-                          {canReject(request) && request.status !== 'PENDING' && (
-                            <button 
-                              className="btn btn-sm btn-danger"
-                              onClick={() => {
-                                setSelectedRequest(request);
-                                setShowApprovalModal(true);
-                              }}
-                              disabled={processing}
-                              title="Reject Request"
-                            >
-                              <i className="fas fa-times"></i>
-                              Reject
-                            </button> 
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+                  {filteredRequests.map(request => (
+                    <EnhancedTableRow
+                      key={request.id}
+                      request={request}
+                      selectedItems={selectedItems}
+                      toggleItemSelection={toggleItemSelection}
+                      onApprove={() => handleApproveReject(request.id, true)}
+                      onReject={() => {
+                        setSelectedRequest(request);
+                        setShowApprovalModal(true);
+                      }}
+                      onMarkReturned={handleMarkReturned}
+                      onHandleExtension={handleExtension}
+                      onComplete={handleCompleteRequest}
+                      processing={processing}
+                      canReprocess={canReprocess}
+                      canReject={canReject}
+                      canMarkReturned={canMarkReturned}
+                      canComplete={canComplete}
+                      getStatusBadgeClass={getStatusBadgeClass}
+                    />
                   ))}
                 </tbody>
               </table>
@@ -483,6 +542,286 @@ const EquipmentRequestManagement = () => {
         loading={processing}
       />
     </div>
+  );
+};
+
+// Enhanced Table Row Component
+const EnhancedTableRow = ({ 
+  request, 
+  selectedItems, 
+  toggleItemSelection, 
+  onApprove, 
+  onReject, 
+  onMarkReturned, 
+  onHandleExtension, 
+  onComplete,
+  processing,
+  canReprocess,
+  canReject,
+  canMarkReturned,
+  canComplete,
+  getStatusBadgeClass
+}) => {
+  const [showReturnForm, setShowReturnForm] = useState(false);
+  const [returnCondition, setReturnCondition] = useState('GOOD');
+  const [returnNotes, setReturnNotes] = useState('');
+  const [localProcessing, setLocalProcessing] = useState(false);
+
+  const handleMarkReturned = async () => {
+    setLocalProcessing(true);
+    try {
+      await onMarkReturned(request.id, {
+        returnCondition,
+        returnNotes
+      });
+      setShowReturnForm(false);
+      setReturnCondition('GOOD');
+      setReturnNotes('');
+    } catch (error) {
+      console.error('Failed to mark as returned');
+    } finally {
+      setLocalProcessing(false);
+    }
+  };
+
+  const handleExtensionApproval = async (approved) => {
+    setLocalProcessing(true);
+    try {
+      await onHandleExtension(request.id, approved, approved ? null : 'Admin decision');
+    } catch (error) {
+      console.error('Failed to process extension');
+    } finally {
+      setLocalProcessing(false);
+    }
+  };
+
+  return (
+    <>
+      <tr className={selectedItems.includes(request.id) ? 'selected' : ''}>
+        <td>
+          <input
+            type="checkbox"
+            checked={selectedItems.includes(request.id)}
+            onChange={() => toggleItemSelection(request.id)}
+          />
+        </td>
+        <td>
+          <div className="equipment-info">
+            <strong>{request.equipmentName}</strong>
+            {request.labClassName && (
+              <div className="lab-info">
+                <i className="fas fa-flask"></i>
+                {request.labClassName}
+              </div>
+            )}
+          </div>
+        </td>
+        <td>
+          <div className="user-info">
+            <strong>{request.userFullName}</strong>
+            <div className="user-role">
+              <span className={`role-badge ${request.userRole?.toLowerCase()}`}>
+                {request.userRole}
+              </span>
+            </div>
+          </div>
+        </td>
+        <td>
+          {request.courseCode ? (
+            <span className="course-badge">{request.courseCode}</span>
+          ) : (
+            <span className="text-muted">-</span>
+          )}
+        </td>
+        <td>
+          <div className="datetime-info">
+            <div className="date">
+              {new Date(request.startTime).toLocaleDateString()}
+            </div>
+            <div className="time">
+              {new Date(request.startTime).toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </div>
+            {request.originalEndTime && request.endTime !== request.originalEndTime && (
+              <div className="extension-info">
+                <i className="fas fa-clock text-info"></i>
+                Extended
+              </div>
+            )}
+          </div>
+        </td>
+        <td>
+          <span className="duration">{request.durationHours}h</span>
+        </td>
+        <td>
+          <span className="quantity">{request.requestedQuantity}</span>
+        </td>
+        <td>
+          <span className={`status-badge ${getStatusBadgeClass(request.status)}`}>
+            <span className="status-dot"></span>
+            {request.status.replace('_', ' ')}
+          </span>
+          {request.returnedAt && (
+            <div className="return-status">
+              <i className="fas fa-check-circle text-success"></i>
+              {request.returnCondition}
+            </div>
+          )}
+        </td>
+        <td>
+          <div className="action-buttons">
+            {/* Extension Actions */}
+            {request.extensionStatus === 'PENDING' && (
+              <div className="extension-actions">
+                <button 
+                  className="btn btn-sm btn-success"
+                  onClick={() => handleExtensionApproval(true)}
+                  disabled={processing || localProcessing}
+                  title="Approve Extension"
+                >
+                  <i className="fas fa-clock"></i>
+                  Approve Ext
+                </button>
+                <button 
+                  className="btn btn-sm btn-danger"
+                  onClick={() => handleExtensionApproval(false)}
+                  disabled={processing || localProcessing}
+                  title="Reject Extension"
+                >
+                  <i className="fas fa-times"></i>
+                  Reject Ext
+                </button>
+              </div>
+            )}
+
+            {/* Return Actions */}
+            {canMarkReturned(request) && (
+              <button 
+                className="btn btn-sm btn-info"
+                onClick={() => setShowReturnForm(true)}
+                disabled={processing || localProcessing}
+                title="Mark as Returned"
+              >
+                <i className="fas fa-undo"></i>
+                Return
+              </button>
+            )}
+
+            {/* Complete Action */}
+            {canComplete(request) && (
+              <button 
+                className="btn btn-sm btn-success"
+                onClick={() => onComplete(request.id)}
+                disabled={processing || localProcessing}
+                title="Complete Request"
+              >
+                <i className="fas fa-check"></i>
+                Complete
+              </button>
+            )}
+
+            {/* Standard Actions */}
+            {request.status === 'PENDING' && (
+              <>
+                <button 
+                  className="btn btn-sm btn-success"
+                  onClick={onApprove}
+                  disabled={processing || localProcessing}
+                  title="Approve Request"
+                >
+                  <i className="fas fa-check"></i>
+                </button>
+                <button 
+                  className="btn btn-sm btn-danger"
+                  onClick={onReject}
+                  disabled={processing || localProcessing}
+                  title="Reject Request"
+                >
+                  <i className="fas fa-times"></i>
+                </button>
+              </>
+            )}
+            
+            {canReprocess(request) && (
+              <button 
+                className="btn btn-sm btn-success"
+                onClick={onApprove}
+                disabled={processing || localProcessing}
+                title="Approve Request"
+              >
+                <i className="fas fa-check"></i>
+                Approve
+              </button>
+            )}
+            
+            {canReject(request) && request.status !== 'PENDING' && (
+              <button 
+                className="btn btn-sm btn-danger"
+                onClick={onReject}
+                disabled={processing || localProcessing}
+                title="Reject Request"
+              >
+                <i className="fas fa-times"></i>
+                Reject
+              </button> 
+            )}
+          </div>
+        </td>
+      </tr>
+
+      {/* Return Form Row */}
+      {showReturnForm && (
+        <tr className="return-form-row">
+          <td colSpan="9">
+            <div className="return-form">
+              <h5>Mark Equipment as Returned</h5>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Condition:</label>
+                  <select 
+                    value={returnCondition}
+                    onChange={(e) => setReturnCondition(e.target.value)}
+                    className="form-control"
+                  >
+                    <option value="GOOD">Good Condition</option>
+                    <option value="DAMAGED">Damaged</option>
+                    <option value="MISSING_PARTS">Missing Parts</option>
+                    <option value="LOST">Lost</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Notes:</label>
+                  <textarea
+                    value={returnNotes}
+                    onChange={(e) => setReturnNotes(e.target.value)}
+                    className="form-control"
+                    rows="2"
+                    placeholder="Additional notes about the equipment condition..."
+                  />
+                </div>
+                <div className="form-actions">
+                  <button 
+                    className="btn btn-success"
+                    onClick={handleMarkReturned}
+                    disabled={localProcessing}
+                  >
+                    {localProcessing ? 'Processing...' : 'Mark as Returned'}
+                  </button>
+                  <button 
+                    className="btn btn-secondary"
+                    onClick={() => setShowReturnForm(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 };
 
@@ -586,6 +925,8 @@ const RejectionModal = ({ show, request, onClose, onSubmit, loading }) => {
     e.preventDefault();
     if (!reason.trim()) return;
     onSubmit(reason, suggestion);
+    setReason('');
+    setSuggestion('');
   };
 
   if (!show) return null;

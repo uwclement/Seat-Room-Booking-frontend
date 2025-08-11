@@ -56,3 +56,60 @@ export const getPublicLabClasses = async () => {
 export const getPublicActiveCourses = async () => {
   return safeApiCall(() => api.get('/public/courses/active'));
 };
+
+
+// Suggestion Response (Professor)
+export const respondToSuggestion = async (requestId, responseData) => {
+  console.log('Sending suggestion response:', responseData); // Debug log
+  return safeApiCall(() => api.post(`/equipment-requests/${requestId}/respond-suggestion`, {
+    suggestionAcknowledged: responseData.suggestionAcknowledged,
+    suggestionResponseReason: responseData.suggestionResponseReason || null
+  }));
+};
+
+// Extension Request (Professor)
+export const requestExtension = async (requestId, extensionData) => {
+  console.log('Sending extension request:', extensionData); // Debug log
+  return safeApiCall(() => api.post(`/equipment-requests/${requestId}/request-extension`, {
+    extensionHoursRequested: extensionData.extensionHoursRequested,
+    extensionReason: extensionData.extensionReason
+  }));
+};
+
+// Equipment Return (Equipment Admin)
+export const markEquipmentReturned = async (requestId, returnData) => {
+  console.log('Marking equipment returned:', returnData); // Debug log
+  return safeApiCall(() => api.post(`/equipment-requests/${requestId}/mark-returned`, {
+    returnCondition: returnData.returnCondition,
+    returnNotes: returnData.returnNotes || null
+  }));
+};
+
+// Handle Extension (Equipment Admin)
+export const handleExtensionRequest = async (requestId, approvalData) => {
+  console.log('Handling extension request:', approvalData); // Debug log
+  return safeApiCall(() => api.post(`/equipment-requests/${requestId}/handle-extension`, {
+    approved: approvalData.approved,
+    rejectionReason: approvalData.rejectionReason || null
+  }));
+}
+
+// Get Active Requests (Equipment Admin)
+export const getActiveRequests = async () => {
+  return safeApiCall(() => api.get('/equipment-requests/active'));
+};
+
+// Get Extension Requests (Equipment Admin)
+export const getExtensionRequests = async () => {
+  return safeApiCall(() => api.get('/equipment-requests/extension-requests'));
+};
+
+// Cancel Request (Professor)
+export const cancelRequest = async (requestId) => {
+  return safeApiCall(() => api.post(`/equipment-requests/${requestId}/cancel`));
+};
+
+// Complete Request (Equipment Admin)
+export const completeRequest = async (requestId) => {
+  return safeApiCall(() => api.post(`/equipment-requests/${requestId}/complete`));
+};

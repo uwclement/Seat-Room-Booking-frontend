@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useProfessor } from '../../context/ProfessorContext';
-import { escalateRequest } from '../../api/equipmentRequests';
+import { escalateRequest, respondToSuggestion, requestExtension, cancelRequest } from '../../api/equipmentRequests';
 import Alert from '../../components/common/Alert';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
@@ -41,7 +41,7 @@ const MyRequestsPage = () => {
   const getFilteredAndSortedRequests = () => {
     let filtered = myRequests;
 
-    // Filter by status
+    // Filter by status - Enhanced with new statuses
     if (filterStatus !== 'all') {
       filtered = filtered.filter(request => {
         switch (filterStatus) {
@@ -53,6 +53,10 @@ const MyRequestsPage = () => {
             return request.status === 'REJECTED' || request.status === 'HOD_REJECTED';
           case 'escalated':
             return request.status === 'ESCALATED';
+          case 'active':
+            return request.status === 'IN_USE' || request.status === 'APPROVED';
+          case 'completed':
+            return request.status === 'RETURNED' || request.status === 'COMPLETED';
           default:
             return true;
         }
@@ -88,7 +92,13 @@ const MyRequestsPage = () => {
       rejected: myRequests.filter(req => 
         req.status === 'REJECTED' || req.status === 'HOD_REJECTED'
       ).length,
-      escalated: myRequests.filter(req => req.status === 'ESCALATED').length
+      escalated: myRequests.filter(req => req.status === 'ESCALATED').length,
+      active: myRequests.filter(req => 
+        req.status === 'IN_USE' || req.status === 'APPROVED'
+      ).length,
+      completed: myRequests.filter(req => 
+        req.status === 'RETURNED' || req.status === 'COMPLETED'
+      ).length
     };
   };
 
@@ -138,7 +148,7 @@ const MyRequestsPage = () => {
           <Alert type="success" message={successMessage} onClose={clearMessages} />
         )}
 
-        {/* Filters and Stats */}
+        {/* Enhanced Filters and Stats */}
         <div className="professor-content-card">
           <div className="professor-card-header">
             <h3 className="professor-card-title">
@@ -147,14 +157,16 @@ const MyRequestsPage = () => {
             </h3>
           </div>
           <div className="professor-card-body">
-            {/* Status Filter Tabs */}
+            {/* Enhanced Status Filter Tabs */}
             <div className="status-filter-tabs">
               {[
                 { key: 'all', label: 'All Requests', count: statusCounts.all },
                 { key: 'pending', label: 'Pending', count: statusCounts.pending },
                 { key: 'approved', label: 'Approved', count: statusCounts.approved },
+                { key: 'active', label: 'Active', count: statusCounts.active },
                 { key: 'rejected', label: 'Rejected', count: statusCounts.rejected },
-                { key: 'escalated', label: 'Escalated', count: statusCounts.escalated }
+                { key: 'escalated', label: 'Escalated', count: statusCounts.escalated },
+                { key: 'completed', label: 'Completed', count: statusCounts.completed }
               ].map(tab => (
                 <button
                   key={tab.key}
@@ -219,6 +231,7 @@ const MyRequestsPage = () => {
                     onEscalate={() => handleEscalate(request.id)}
                     canEscalate={request.status === 'REJECTED' && !request.escalatedToHod}
                     processing={processing}
+                    onUpdateRequest={updateRequestInState}
                   />
                 ))}
               </div>
@@ -230,8 +243,16 @@ const MyRequestsPage = () => {
   );
 };
 
-// Request Card Component
-const RequestCard = ({ request, onEscalate, canEscalate, processing }) => {
+// Enhanced Request Card Component
+const RequestCard = ({ request, onEscalate, canEscalate, processing, onUpdateRequest }) => {
+  const [showSuggestionResponse, setShowSuggestionResponse] = useState(false);
+  const [showExtensionForm, setShowExtensionForm] = useState(false);
+  const [suggestionResponse, setSuggestionResponse] = useState('');
+  const [suggestionAcknowledged, setSuggestionAcknowledged] = useState(null);
+  const [extensionHours, setExtensionHours] = useState('');
+  const [extensionReason, setExtensionReason] = useState('');
+  const [localProcessing, setLocalProcessing] = useState(false);
+
   const getStatusColor = (status) => {
     switch (status) {
       case 'APPROVED':
@@ -242,6 +263,12 @@ const RequestCard = ({ request, onEscalate, canEscalate, processing }) => {
         return 'rejected';
       case 'ESCALATED':
         return 'escalated';
+      case 'IN_USE':
+        return 'in-use';
+      case 'RETURNED':
+        return 'returned';
+      case 'COMPLETED':
+        return 'completed';
       default:
         return 'pending';
     }
@@ -256,6 +283,112 @@ const RequestCard = ({ request, onEscalate, canEscalate, processing }) => {
       minute: '2-digit'
     });
   };
+
+const handleSuggestionResponse = async () => {
+  if (suggestionAcknowledged === null) {
+    alert('Please select whether you acknowledge or reject the suggestion');
+    return;
+  }
+  
+  setLocalProcessing(true);
+  try {
+    // Prepare the request data exactly as expected by backend
+    const requestData = {
+      suggestionAcknowledged: suggestionAcknowledged,
+      suggestionResponseReason: suggestionAcknowledged === false ? suggestionResponse : null
+    };
+    
+    console.log('Sending suggestion response:', requestData); // Debug log
+    
+    await respondToSuggestion(request.id, requestData);
+    
+    // Update local state
+    onUpdateRequest(request.id, {
+      suggestionAcknowledged: suggestionAcknowledged,
+      suggestionResponseReason: requestData.suggestionResponseReason,
+      suggestionResponseAt: new Date().toISOString()
+    });
+    
+    setShowSuggestionResponse(false);
+    setSuggestionAcknowledged(null);
+    setSuggestionResponse('');
+    
+    alert('Response submitted successfully');
+  } catch (error) {
+    console.error('Failed to respond to suggestion:', error);
+    alert(error.response?.data?.message || 'Failed to respond to suggestion');
+  } finally {
+    setLocalProcessing(false);
+  }
+};
+
+const handleExtensionRequest = async () => {
+  if (!extensionHours || !extensionReason) {
+    alert('Please fill in both extension hours and reason');
+    return;
+  }
+  
+  const hours = parseFloat(extensionHours);
+  if (isNaN(hours) || hours < 0.1 || hours > 3.0) {
+    alert('Extension must be between 0.1 and 3.0 hours');
+    return;
+  }
+  
+  setLocalProcessing(true);
+  try {
+    const requestData = {
+      extensionHoursRequested: hours,
+      extensionReason: extensionReason.trim()
+    };
+    
+    console.log('Sending extension request:', requestData); // Debug log
+    
+    await requestExtension(request.id, requestData);
+    
+    // Update local state
+    onUpdateRequest(request.id, {
+      extensionStatus: 'PENDING',
+      extensionHoursRequested: hours,
+      extensionReason: extensionReason.trim(),
+      extensionRequestedAt: new Date().toISOString()
+    });
+    
+    setShowExtensionForm(false);
+    setExtensionHours('');
+    setExtensionReason('');
+    
+    alert('Extension request submitted successfully');
+  } catch (error) {
+    console.error('Failed to request extension:', error);
+    alert(error.response?.data?.message || 'Failed to request extension');
+  } finally {
+    setLocalProcessing(false);
+  }
+};
+
+  const handleCancelRequest = async () => {
+    if (!window.confirm('Are you sure you want to cancel this request?')) return;
+    
+    setLocalProcessing(true);
+    try {
+      await cancelRequest(request.id);
+      onUpdateRequest(request.id, { status: 'CANCELLED' });
+    } catch (error) {
+      alert('Failed to cancel request');
+    } finally {
+      setLocalProcessing(false);
+    }
+  };
+
+  // Check if user can respond to suggestion
+  const canRespondToSuggestion = request.adminSuggestion && 
+    request.suggestionAcknowledged === null && 
+    request.status !== 'HOD_REJECTED';
+
+  // Check if user can request extension
+  const canRequestExtension = (request.status === 'APPROVED' || request.status === 'IN_USE') &&
+    (!request.extensionStatus || request.extensionStatus === 'REJECTED') &&
+    (request.remainingExtensionHours || 3.0) > 0;
 
   return (
     <div className="request-card-detailed">
@@ -275,6 +408,11 @@ const RequestCard = ({ request, onEscalate, canEscalate, processing }) => {
           <span className={`status-badge ${getStatusColor(request.status)}`}>
             {request.status.replace('_', ' ')}
           </span>
+          {request.returnedAt && (
+            <span className="return-info">
+              Returned: {formatDate(request.returnedAt)}
+            </span>
+          )}
         </div>
       </div>
 
@@ -297,6 +435,13 @@ const RequestCard = ({ request, onEscalate, canEscalate, processing }) => {
             <div className="detail-item">
               <label>Lab Class:</label>
               <span>{request.labClassName}</span>
+            </div>
+          )}
+
+          {request.extensionHoursRequested && (
+            <div className="detail-item">
+              <label>Extension:</label>
+              <span>{request.extensionHoursRequested}h ({request.extensionStatus})</span>
             </div>
           )}
         </div>
@@ -322,6 +467,83 @@ const RequestCard = ({ request, onEscalate, canEscalate, processing }) => {
             <div>
               <strong>Admin Suggestion:</strong>
               <p>{request.adminSuggestion}</p>
+              
+              {/* Suggestion Response Section */}
+              {request.suggestionAcknowledged !== null ? (
+                <div className="suggestion-response">
+                  <strong>Your Response:</strong> 
+                  <span className={request.suggestionAcknowledged ? 'acknowledged' : 'rejected'}>
+                    {request.suggestionAcknowledged ? 'Acknowledged' : 'Rejected'}
+                  </span>
+                  {request.suggestionResponseReason && (
+                    <p>Reason: {request.suggestionResponseReason}</p>
+                  )}
+                </div>
+              ) : canRespondToSuggestion && (
+                <div className="suggestion-response-form">
+                  {!showSuggestionResponse ? (
+                    <button 
+                      className="btn btn-sm btn-primary"
+                      onClick={() => setShowSuggestionResponse(true)}
+                    >
+                      Respond to Suggestion
+                    </button>
+                  ) : (
+                    <div className="response-form">
+                      <div className="response-options">
+                        <label>
+                          <input 
+                            type="radio" 
+                            name={`suggestion-response-${request.id}`} 
+                            value="acknowledge"
+                            checked={suggestionAcknowledged === true}
+                            onChange={() => setSuggestionAcknowledged(true)}
+                          />
+                          Acknowledge
+                        </label>
+                        <label>
+                          <input 
+                            type="radio" 
+                            name={`suggestion-response-${request.id}`} 
+                            value="reject"
+                            checked={suggestionAcknowledged === false}
+                            onChange={() => setSuggestionAcknowledged(false)}
+                          />
+                          Reject
+                        </label>
+                      </div>
+                      {suggestionAcknowledged === false && (
+                        <textarea
+                          placeholder="Why do you reject this suggestion? (optional)"
+                          value={suggestionResponse}
+                          onChange={(e) => setSuggestionResponse(e.target.value)}
+                          className="form-control"
+                          rows="2"
+                        />
+                      )}
+                      <div className="response-actions">
+                        <button 
+                          className="btn btn-sm btn-success"
+                          onClick={handleSuggestionResponse}
+                          disabled={localProcessing || suggestionAcknowledged === null}
+                        >
+                          Submit Response
+                        </button>
+                        <button 
+                          className="btn btn-sm btn-secondary"
+                          onClick={() => {
+                            setShowSuggestionResponse(false);
+                            setSuggestionAcknowledged(null);
+                            setSuggestionResponse('');
+                          }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -333,8 +555,73 @@ const RequestCard = ({ request, onEscalate, canEscalate, processing }) => {
           </div>
         )}
 
-        {canEscalate && (
-          <div className="request-actions">
+        {/* Extension Section */}
+        {canRequestExtension && (
+          <div className="extension-section">
+            {!showExtensionForm ? (
+              <button 
+                className="btn btn-sm btn-info"
+                onClick={() => setShowExtensionForm(true)}
+              >
+                <i className="fas fa-clock"></i>
+                Request Extension
+              </button>
+            ) : (
+              <div className="extension-form">
+                <h5>Request Extension</h5>
+                <p className="extension-limit">
+                  Daily limit: {(request.remainingExtensionHours || 3.0).toFixed(1)} hours remaining
+                </p>
+                <div className="form-group">
+                  <label>Extension Hours (0.1 - 3.0):</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0.1"
+                    max={request.remainingExtensionHours || 3.0}
+                    value={extensionHours}
+                    onChange={(e) => setExtensionHours(e.target.value)}
+                    className="form-control"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Reason:</label>
+                  <textarea
+                    value={extensionReason}
+                    onChange={(e) => setExtensionReason(e.target.value)}
+                    className="form-control"
+                    rows="3"
+                    placeholder="Why do you need this extension?"
+                    required
+                  />
+                </div>
+                <div className="extension-actions">
+                  <button 
+                    className="btn btn-sm btn-success"
+                    onClick={handleExtensionRequest}
+                    disabled={localProcessing || !extensionHours || !extensionReason}
+                  >
+                    Request Extension
+                  </button>
+                  <button 
+                    className="btn btn-sm btn-secondary"
+                    onClick={() => {
+                      setShowExtensionForm(false);
+                      setExtensionHours('');
+                      setExtensionReason('');
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="request-actions">
+          {canEscalate && (
             <button 
               className="escalate-btn"
               onClick={onEscalate}
@@ -343,8 +630,19 @@ const RequestCard = ({ request, onEscalate, canEscalate, processing }) => {
               <i className="fas fa-arrow-up"></i>
               Escalate to HOD
             </button>
-          </div>
-        )}
+          )}
+          
+          {request.status === 'PENDING' && (
+            <button 
+              className="btn btn-sm btn-danger"
+              onClick={handleCancelRequest}
+              disabled={localProcessing}
+            >
+              <i className="fas fa-times"></i>
+              Cancel Request
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

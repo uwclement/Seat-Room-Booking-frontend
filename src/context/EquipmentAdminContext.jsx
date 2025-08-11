@@ -13,6 +13,11 @@ import {
   getCurrentMonthLabRequests
 } from '../api/labRequests';
 
+import {
+  getActiveRequests,
+  getExtensionRequests
+} from '../api/equipmentRequests';
+
 const EquipmentAdminContext = createContext();
 
 export const useEquipmentAdmin = () => {
@@ -46,6 +51,12 @@ export const EquipmentAdminProvider = ({ children }) => {
   const [labRequests, setLabRequests] = useState([]);
   const [loadingLabRequests, setLoadingLabRequests] = useState(false);
   const [loadingCurrentMonthLabs, setLoadingCurrentMonthLabs] = useState(false);
+
+  //requests 
+  const [activeRequests, setActiveRequests] = useState([]);
+  const [extensionRequests, setExtensionRequests] = useState([]);
+  const [loadingActiveRequests, setLoadingActiveRequests] = useState(false);
+  const [loadingExtensionRequests, setLoadingExtensionRequests] = useState(false);
   
   // Filter and view state
   const [filters, setFilters] = useState({
@@ -104,6 +115,62 @@ export const EquipmentAdminProvider = ({ children }) => {
       setError('Failed to load EquipmentRequests');
     } finally {
       setLoadingEquipmentRequests(false);
+    }
+  };
+
+
+  const updateEquipmentRequestInState = (requestId, updates) => {
+  setEquipmentRequests(prev => 
+    prev.map(req => req.id === requestId ? { ...req, ...updates } : req)
+  );
+  
+  setPendingRequests(prev => 
+    prev.map(req => req.id === requestId ? { ...req, ...updates } : req)
+  );
+
+  setActiveRequests(prev => 
+      prev.map(req => req.id === requestId ? { ...req, ...updates } : req)
+  );
+
+  setExtensionRequests(prev => 
+      prev.map(req => req.id === requestId ? { ...req, ...updates } : req)
+  );
+  
+  // Auto-refresh to get latest data
+  setTimeout(() => {
+    loadEquipmentRequests();
+    loadPendingRequests();
+    loadActiveRequests();
+    loadExtensionRequests();
+  }, 1000);
+};
+
+
+ const loadExtensionRequests = async () => {
+    if (!isEquipmentAdmin()) return;
+    
+    setLoadingExtensionRequests(true);
+    try {
+      const data = await getExtensionRequests();
+      setExtensionRequests(data);
+    } catch (err) {
+      setError('Failed to load extension requests');
+    } finally {
+      setLoadingExtensionRequests(false);
+    }
+  };
+// Load active requests  
+  const loadActiveRequests = async () => {
+    if (!isEquipmentAdmin()) return;
+    
+    setLoadingActiveRequests(true);
+    try {
+      const data = await getActiveRequests();
+      setActiveRequests(data);
+    } catch (err) {
+      setError('Failed to load active requests');
+    } finally {
+      setLoadingActiveRequests(false);
     }
   };
 
@@ -299,6 +366,8 @@ const loadCurrentMonthLabRequests = async () => {
       loadEquipmentRequests(),
       loadPendingLabRequests(),        
       loadCurrentMonthLabRequests(),
+      loadActiveRequests(),           
+      loadExtensionRequests(),
     ]);
   };
 
@@ -318,6 +387,9 @@ const loadCurrentMonthLabRequests = async () => {
     EquipmentRequests,
     pendingLabRequests,     
     labRequests,
+    extensionRequests,
+    activeRequests,
+    
     
     // Loading states
     loadingEquipment,
@@ -327,6 +399,8 @@ const loadCurrentMonthLabRequests = async () => {
     loadingEquipmentRequests,
     loadingLabRequests,        
     loadingCurrentMonthLabs,
+    loadingActiveRequests,
+    loadingExtensionRequests,
     
     // Filters and view
     filters,
@@ -344,7 +418,10 @@ const loadCurrentMonthLabRequests = async () => {
     loadLabClasses,
     loadPendingRequests,
     loadPendingLabRequests,        
-    loadCurrentMonthLabRequests,  
+    loadCurrentMonthLabRequests, 
+    loadExtensionRequests,
+    loadActiveRequests,
+    updateEquipmentRequestInState, 
     updateFilters,
     clearFilters,
     getFilteredData,

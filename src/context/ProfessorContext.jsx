@@ -108,6 +108,7 @@ const loadMyLabRequests = async () => {
   }
 };
 
+
   // Filter functions
   const updateFilters = (newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
@@ -165,6 +166,9 @@ const loadMyLabRequests = async () => {
     setMyRequests(prev => 
       prev.map(req => req.id === requestId ? { ...req, ...updates } : req)
     );
+     setTimeout(() => {
+    loadMyRequests();
+  }, 1000);
   };
 
   // Message functions
