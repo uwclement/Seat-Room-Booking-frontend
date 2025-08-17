@@ -36,7 +36,7 @@ const Login = () => {
     }
     
     if (userRoles.includes('ROLE_ADMIN')) {
-      return '/admin/users'; // Direct to user management for admins
+      return '/admin/analytics'; // Direct to user management for admins
     }
     
     // Location-based routing for librarians

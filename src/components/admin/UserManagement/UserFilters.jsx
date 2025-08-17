@@ -165,46 +165,7 @@ const UserFilters = ({ activeTab }) => {
         </div>
       </div>
 
-      {/* Quick Filter Chips */}
-      <div className="quick-filters">
-        <span className="quick-filter-label">Quick filters:</span>
-        <button 
-          className="quick-filter-chip"
-          onClick={() => {
-            setLocalFilters(prev => ({ ...prev, location: 'GISHUSHU', role: 'ROLE_LIBRARIAN' }));
-            handleApplyFilters({ ...localFilters, location: 'GISHUSHU', role: 'ROLE_LIBRARIAN' });
-          }}
-        >
-          Gishushu Librarians
-        </button>
-        <button 
-          className="quick-filter-chip"
-          onClick={() => {
-            setLocalFilters(prev => ({ ...prev, location: 'MASORO', role: 'ROLE_LIBRARIAN' }));
-            handleApplyFilters({ ...localFilters, location: 'MASORO', role: 'ROLE_LIBRARIAN' });
-          }}
-        >
-          Masoro Librarians
-        </button>
-        <button 
-          className="quick-filter-chip"
-          onClick={() => {
-            setLocalFilters(prev => ({ ...prev, role: 'ROLE_PROFESSOR' }));
-            handleApplyFilters({ ...localFilters, role: 'ROLE_PROFESSOR' });
-          }}
-        >
-          Professors
-        </button>
-        <button 
-          className="quick-filter-chip"
-          onClick={() => {
-            setLocalFilters(prev => ({ ...prev, active: 'false' }));
-            handleApplyFilters({ ...localFilters, active: 'false' });
-          }}
-        >
-          Inactive Users
-        </button>
-      </div>
+
     </div>
   );
 };

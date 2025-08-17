@@ -6,7 +6,7 @@
   
   .admin-sidebar {
     width: 250px;
-    background-color: #1f2937;
+    background-color: #183e74;
     color: #f3f4f6;
     padding: 1.5rem 0;
     position: fixed;
@@ -848,4 +848,89 @@
   .admin-page-container {
     flex-direction: column;
   }
+}
+
+.units-selection {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.units-selection.error {
+  border-color: #dc3545;
+}
+
+.units-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.unit-item {
+  display: flex;
+  align-items: center;
+}
+
+.unit-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.unit-checkbox:hover {
+  background-color: #f8f9fa;
+}
+
+.unit-checkbox input[type="checkbox"] {
+  margin: 0;
+}
+
+.unit-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.unit-condition {
+  font-size: 0.85em;
+  color: #666;
+}
+
+.unit-date {
+  font-size: 0.8em;
+  color: #999;
+}
+
+.no-units {
+  text-align: center;
+  color: #666;
+  padding: 20px;
+}
+
+.selected-summary {
+  margin-top: 10px;
+  padding: 10px;
+  background-color: #e3f2fd;
+  border-radius: 4px;
+}
+
+.selected-units {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 5px;
+}
+
+.selected-unit-tag {
+  background-color: #2196f3;
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8em;
 }

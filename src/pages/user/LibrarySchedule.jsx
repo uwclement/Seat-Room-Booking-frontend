@@ -5,6 +5,7 @@ import PublicScheduleCalendar from '../../components/admin/ScheduleManagement/Pu
 import Alert from '../../components/common/Alert';
 import '../../assets/css/admin.css';
 import '../user/LibrarySchedule.css';  
+import ActiveLibrariansCard from './ActiveLibrariansCard';
 
 const LibrarySchedule = () => {
   const { error, success, setError, scheduleMessage } = usePublicSchedule();
@@ -16,45 +17,17 @@ const LibrarySchedule = () => {
 
 
   return (
-    <div className="admin-page-container">
-      <div className="admin-content">
-        <div className="admin-header">
-          <h1>Library Schedules</h1>
-          <p className="admin-subtitle">
-             Masoro and GIshushu Schedules
-          </p>
-        </div>
-
-        {/* <DualLocationBanner /> */}
-
-        {error && (
-          <Alert
-            type="danger"
-            message={error}
-            onClose={() => setError('')}
-          />
-        )}
-
-        {success && (
-          <Alert
-            type="success"
-            message={success}
-            onClose={() => {}}
-            autoClose={true}
-          />
-        )}
-        
-
-      <div className="card">
+    <div className="card">
        <div className="card-header">
        </div>
          <div className="card-body">
-          <PublicScheduleCalendar />
-           </div>
-      </div>
+           <PublicScheduleCalendar />
+          </div>
 
+          <div className="card-body">
+           <ActiveLibrariansCard />
+          </div>
       </div>
-    </div>
   );
 };
 

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 
-// MaintenanceModal Component
 const MaintenanceModal = ({ show, onClose, onSubmit, room, loading }) => {
   const [formData, setFormData] = useState({
     startTime: '',

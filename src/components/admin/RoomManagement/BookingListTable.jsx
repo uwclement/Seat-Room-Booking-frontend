@@ -62,6 +62,19 @@ const BookingListTable = ({ bookings, onViewDetails, onManageEquipment, onCancel
     return sortOrder === 'asc' ? 'fas fa-sort-up' : 'fas fa-sort-down';
   };
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'PENDING': return 'orange';
+      case 'CONFIRMED': return 'green';
+      case 'CHECKED_IN': return 'blue';
+      case 'COMPLETED': return 'green';
+      case 'CANCELLED': return 'red';
+      case 'REJECTED': return 'red';
+      case 'NO_SHOW': return 'gray';
+      default: return 'gray';
+    }
+  };
+
   const renderCapacityIndicator = (booking) => {
     if (!booking.participantSummary) return null;
     
@@ -92,7 +105,7 @@ const BookingListTable = ({ bookings, onViewDetails, onManageEquipment, onCancel
     
     return (
       <div className="equipment-status-container">
-        <span className={`equipment-status ${pendingCount > 0 ? 'pending' : 'approved'}`}>
+        <span className={`status-badge ${pendingCount > 0 ? 'pending' : 'approved'}`}>
           {pendingCount > 0 ? `${pendingCount} Pending` : 'Approved'}
         </span>
         <button 
@@ -132,7 +145,7 @@ const BookingListTable = ({ bookings, onViewDetails, onManageEquipment, onCancel
         )}
         
         <button 
-          className="btn btn-sm btn-outline"
+          className="btn btn-sm btn-primary"
           onClick={() => onViewDetails(booking)}
           title="View Details"
         >
@@ -141,7 +154,7 @@ const BookingListTable = ({ bookings, onViewDetails, onManageEquipment, onCancel
         
         {booking.hasEquipmentRequests && (
           <button 
-            className="btn btn-sm btn-outline"
+            className="btn btn-sm btn-secondary"
             onClick={() => onManageEquipment(booking)}
             title="Manage Equipment"
           >
@@ -187,11 +200,11 @@ const BookingListTable = ({ bookings, onViewDetails, onManageEquipment, onCancel
         </div>
       </div>
 
-      <div className="table-responsive">
-        <table className="booking-table">
+      <div className="table-container">
+        <table className="table">
           <thead>
             <tr>
-              <th className="checkbox-column">
+              <th>
                 <input 
                   type="checkbox"
                   checked={selectedBookings.length === bookings.length && bookings.length > 0}
@@ -250,9 +263,9 @@ const BookingListTable = ({ bookings, onViewDetails, onManageEquipment, onCancel
               return (
                 <tr 
                   key={booking.id}
-                  className={`booking-row ${isBookingSelected(booking.id) ? 'selected' : ''} ${booking.hasCapacityWarning ? 'capacity-warning' : ''}`}
+                  className={`${isBookingSelected(booking.id) ? 'selected-row' : ''} ${booking.hasCapacityWarning ? 'capacity-warning' : ''}`}
                 >
-                  <td className="checkbox-column">
+                  <td>
                     <input 
                       type="checkbox"
                       checked={isBookingSelected(booking.id)}
@@ -260,46 +273,46 @@ const BookingListTable = ({ bookings, onViewDetails, onManageEquipment, onCancel
                     />
                   </td>
                   
-                  <td className="booking-details">
-                    <div className="booking-title">{booking.title}</div>
-                    {booking.description && (
-                      <div className="booking-description">{booking.description}</div>
-                    )}
-                    <div className="booking-meta">
-                      Duration: {formatDuration(booking.durationHours)}
-                      {booking.publicBooking && (
-                        <span className="public-badge">Public</span>
+                  <td>
+                    <div className="booking-info">
+                      <div className="booking-title">{booking.title}</div>
+                      {booking.description && (
+                        <div className="booking-description">{booking.description}</div>
                       )}
-                    </div>
-                  </td>
-                  
-                  <td className="datetime-column">
-                    <div className="start-time">
-                      <strong>{dateTime.date}</strong>
-                      <br />
-                      {dateTime.time} - {endDateTime.time}
-                    </div>
-                  </td>
-                  
-                  <td className="room-column">
-                    <div className="room-info">
-                      <div className="room-name">{booking.room.name}</div>
-                      <div className="room-details">
-                        {booking.room.roomNumber} • {booking.building}
-                        <br />
-                        Floor {booking.floor}
+                      <div className="booking-meta">
+                        Duration: {formatDuration(booking.durationHours)}
+                        {booking.publicBooking && (
+                          <span className="category-badge blue">Public</span>
+                        )}
                       </div>
                     </div>
                   </td>
                   
-                  <td className="organizer-column">
+                  <td>
+                    <div className="datetime-info">
+                      <div className="date-text">{dateTime.date}</div>
+                      <div className="time-text">{dateTime.time} - {endDateTime.time}</div>
+                    </div>
+                  </td>
+                  
+                  <td>
+                    <div className="room-info">
+                      <div className="room-name">{booking.room.name}</div>
+                      <div className="room-location">
+                        {booking.room.roomNumber} • {booking.building}
+                        {booking.floor && <span> • Floor {booking.floor}</span>}
+                      </div>
+                    </div>
+                  </td>
+                  
+                  <td>
                     <div className="organizer-info">
                       <div className="organizer-name">{booking.user.fullName}</div>
                       <div className="organizer-email">{booking.user.email}</div>
                     </div>
                   </td>
                   
-                  <td className="capacity-column">
+                  <td>
                     {renderCapacityIndicator(booking)}
                     {booking.hasCapacityWarning && (
                       <div className="capacity-warning-text">
@@ -309,22 +322,25 @@ const BookingListTable = ({ bookings, onViewDetails, onManageEquipment, onCancel
                     )}
                   </td>
                   
-                  <td className="equipment-column">
+                  <td>
                     {renderEquipmentStatus(booking)}
                   </td>
                   
-                  <td className="status-column">
-                    <span className={`status-badge ${statusInfo.class}`}>
-                      {statusInfo.label}
-                    </span>
-                    {booking.approvedAt && (
-                      <div className="approval-info">
-                        Approved {formatDateTime(booking.approvedAt).date}
-                      </div>
-                    )}
+                  <td>
+                    <div className="booking-status">
+                      <span className={`status-badge ${getStatusColor(booking.status)}`}>
+                        <i className="fas fa-circle status-dot"></i>
+                        {statusInfo.label}
+                      </span>
+                      {booking.approvedAt && (
+                        <div className="approval-info">
+                          Approved {formatDateTime(booking.approvedAt).date}
+                        </div>
+                      )}
+                    </div>
                   </td>
                   
-                  <td className="actions-column">
+                  <td>
                     {renderActionButtons(booking)}
                   </td>
                 </tr>

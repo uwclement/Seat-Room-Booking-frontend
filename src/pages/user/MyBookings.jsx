@@ -6,7 +6,7 @@ import Alert from '../../components/common/Alert';
 import Button from '../../components/common/Button';
 import QRScannerModal from '../../components/admin/qr/QRScannerModal';
 import QRValidationModal from '../../components/admin/qr/QRValidationModal';
-import '../../assets/css/dashboard.css';
+import './my-booking.css';
 
 const MyBookingsPage = () => {
   const { user } = useAuth();

@@ -18,6 +18,13 @@ import {
   getExtensionRequests
 } from '../api/equipmentRequests';
 
+// NEW: Import equipment units API
+import {
+  getAllEquipmentUnits,
+  getActiveAssignments,
+  getEquipmentSummary
+} from '../api/equipmentUnits';
+
 const EquipmentAdminContext = createContext();
 
 export const useEquipmentAdmin = () => {
@@ -31,49 +38,69 @@ export const useEquipmentAdmin = () => {
 export const EquipmentAdminProvider = ({ children }) => {
   const { isEquipmentAdmin } = useAuth();
   
-  // Equipment state
+  // Existing state
   const [equipment, setEquipment] = useState([]);
   const [courses, setCourses] = useState([]);
   const [labClasses, setLabClasses] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
   const [EquipmentRequests, setEquipmentRequests] = useState([]);
   
-  // Loading states
+  // NEW: Equipment Units state
+  const [equipmentUnits, setEquipmentUnits] = useState([]);
+  const [assignments, setAssignments] = useState([]);
+  const [equipmentSummary, setEquipmentSummary] = useState({
+    totalUnits: 0,
+    availableUnits: 0,
+    assignedUnits: 0,
+    maintenanceUnits: 0,
+    damagedUnits: 0
+  });
+  
+  // Existing loading states
   const [loadingEquipment, setLoadingEquipment] = useState(false);
   const [loadingCourses, setLoadingCourses] = useState(false);
   const [loadingLabClasses, setLoadingLabClasses] = useState(false);
   const [loadingRequests, setLoadingRequests] = useState(false);
   const [loadingEquipmentRequests, setLoadingEquipmentRequests] = useState(false);
 
+  // NEW: Equipment Units loading states
+  const [loadingEquipmentUnits, setLoadingEquipmentUnits] = useState(false);
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
+  const [loadingSummary, setLoadingSummary] = useState(false);
 
-  // Lab class requests 
+  // Existing lab class requests 
   const [pendingLabRequests, setPendingLabRequests] = useState([]);
   const [labRequests, setLabRequests] = useState([]);
   const [loadingLabRequests, setLoadingLabRequests] = useState(false);
   const [loadingCurrentMonthLabs, setLoadingCurrentMonthLabs] = useState(false);
 
-  //requests 
+  // Existing requests 
   const [activeRequests, setActiveRequests] = useState([]);
   const [extensionRequests, setExtensionRequests] = useState([]);
   const [loadingActiveRequests, setLoadingActiveRequests] = useState(false);
   const [loadingExtensionRequests, setLoadingExtensionRequests] = useState(false);
   
-  // Filter and view state
+  // Enhanced filter state to include equipment units
   const [filters, setFilters] = useState({
     keyword: '',
     availability: '',
     allowedToStudents: '',
-    category: ''
+    category: '',
+    // NEW: Equipment unit filters
+    unitStatus: '',
+    assignmentType: '',
+    serialNumber: ''
   });
   
-  const [viewMode, setViewMode] = useState('equipment'); // equipment, courses, labs, requests
+  // Enhanced view mode to include new views
+  const [viewMode, setViewMode] = useState('equipment'); // equipment, units, assignments, courses, labs, requests
   const [selectedItems, setSelectedItems] = useState([]);
   
   // Messages
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
 
-  // Load equipment
+  // Existing load functions
   const loadEquipment = async () => {
     if (!isEquipmentAdmin()) return;
     
@@ -88,7 +115,6 @@ export const EquipmentAdminProvider = ({ children }) => {
     }
   };
 
-  // Load courses
   const loadCourses = async () => {
     if (!isEquipmentAdmin()) return;
     
@@ -103,7 +129,6 @@ export const EquipmentAdminProvider = ({ children }) => {
     }
   };
 
-  // load the equipment request
   const loadEquipmentRequests = async () => {
     if (!isEquipmentAdmin()) return;
     
@@ -118,35 +143,33 @@ export const EquipmentAdminProvider = ({ children }) => {
     }
   };
 
-
   const updateEquipmentRequestInState = (requestId, updates) => {
-  setEquipmentRequests(prev => 
-    prev.map(req => req.id === requestId ? { ...req, ...updates } : req)
-  );
-  
-  setPendingRequests(prev => 
-    prev.map(req => req.id === requestId ? { ...req, ...updates } : req)
-  );
-
-  setActiveRequests(prev => 
+    setEquipmentRequests(prev => 
       prev.map(req => req.id === requestId ? { ...req, ...updates } : req)
-  );
-
-  setExtensionRequests(prev => 
+    );
+    
+    setPendingRequests(prev => 
       prev.map(req => req.id === requestId ? { ...req, ...updates } : req)
-  );
-  
-  // Auto-refresh to get latest data
-  setTimeout(() => {
-    loadEquipmentRequests();
-    loadPendingRequests();
-    loadActiveRequests();
-    loadExtensionRequests();
-  }, 1000);
-};
+    );
 
+    setActiveRequests(prev => 
+        prev.map(req => req.id === requestId ? { ...req, ...updates } : req)
+    );
 
- const loadExtensionRequests = async () => {
+    setExtensionRequests(prev => 
+        prev.map(req => req.id === requestId ? { ...req, ...updates } : req)
+    );
+    
+    // Auto-refresh to get latest data
+    setTimeout(() => {
+      loadEquipmentRequests();
+      loadPendingRequests();
+      loadActiveRequests();
+      loadExtensionRequests();
+    }, 1000);
+  };
+
+  const loadExtensionRequests = async () => {
     if (!isEquipmentAdmin()) return;
     
     setLoadingExtensionRequests(true);
@@ -159,7 +182,7 @@ export const EquipmentAdminProvider = ({ children }) => {
       setLoadingExtensionRequests(false);
     }
   };
-// Load active requests  
+
   const loadActiveRequests = async () => {
     if (!isEquipmentAdmin()) return;
     
@@ -174,7 +197,6 @@ export const EquipmentAdminProvider = ({ children }) => {
     }
   };
 
-  // Load lab classes
   const loadLabClasses = async () => {
     if (!isEquipmentAdmin()) return;
     
@@ -189,7 +211,6 @@ export const EquipmentAdminProvider = ({ children }) => {
     }
   };
 
-  // Load pending requests
   const loadPendingRequests = async () => {
     if (!isEquipmentAdmin()) return;
     
@@ -204,39 +225,78 @@ export const EquipmentAdminProvider = ({ children }) => {
     }
   };
 
+  const loadPendingLabRequests = async () => {
+    if (!isEquipmentAdmin()) return;
+    
+    setLoadingLabRequests(true);
+    try {
+      const data = await getPendingLabRequests();
+      setPendingLabRequests(data);
+    } catch (err) {
+      setError('Failed to load pending lab requests');
+    } finally {
+      setLoadingLabRequests(false);
+    }
+  };
 
-  // Load pending lab requests
-const loadPendingLabRequests = async () => {
-  if (!isEquipmentAdmin()) return;
-  
-  setLoadingLabRequests(true);
-  try {
-    const data = await getPendingLabRequests();
-    setPendingLabRequests(data);
-  } catch (err) {
-    setError('Failed to load pending lab requests');
-  } finally {
-    setLoadingLabRequests(false);
-  }
-};
+  const loadCurrentMonthLabRequests = async () => {
+    if (!isEquipmentAdmin()) return;
+    
+    setLoadingCurrentMonthLabs(true);
+    try {
+      const data = await getCurrentMonthLabRequests();
+      setLabRequests(data);
+    } catch (err) {
+      setError('Failed to load lab requests');
+    } finally {
+      setLoadingCurrentMonthLabs(false);
+    }
+  };
 
-// Load current month lab requests
-const loadCurrentMonthLabRequests = async () => {
-  if (!isEquipmentAdmin()) return;
-  
-  setLoadingCurrentMonthLabs(true);
-  try {
-    const data = await getCurrentMonthLabRequests();
-    setLabRequests(data);
-  } catch (err) {
-    setError('Failed to load lab requests');
-  } finally {
-    setLoadingCurrentMonthLabs(false);
-  }
-};
+  // NEW: Equipment Units load functions
+  const loadEquipmentUnits = async () => {
+    if (!isEquipmentAdmin()) return;
+    
+    setLoadingEquipmentUnits(true);
+    try {
+      const data = await getAllEquipmentUnits();
+      setEquipmentUnits(data);
+    } catch (err) {
+      setError('Failed to load equipment units');
+    } finally {
+      setLoadingEquipmentUnits(false);
+    }
+  };
 
+  const loadAssignments = async () => {
+    if (!isEquipmentAdmin()) return;
+    
+    setLoadingAssignments(true);
+    try {
+      const data = await getActiveAssignments();
+      setAssignments(data);
+    } catch (err) {
+      setError('Failed to load assignments');
+    } finally {
+      setLoadingAssignments(false);
+    }
+  };
 
-  // Filter functions
+  const loadEquipmentSummary = async () => {
+    if (!isEquipmentAdmin()) return;
+    
+    setLoadingSummary(true);
+    try {
+      const data = await getEquipmentSummary();
+      setEquipmentSummary(data);
+    } catch (err) {
+      setError('Failed to load equipment summary');
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
+  // Enhanced filter functions
   const updateFilters = (newFilters) => {
     setFilters(prev => ({ ...prev, ...newFilters }));
   };
@@ -246,7 +306,10 @@ const loadCurrentMonthLabRequests = async () => {
       keyword: '',
       availability: '',
       allowedToStudents: '',
-      category: ''
+      category: '',
+      unitStatus: '',
+      assignmentType: '',
+      serialNumber: ''
     });
   };
 
@@ -266,41 +329,59 @@ const loadCurrentMonthLabRequests = async () => {
       case 'lab-requests':              
         dataToFilter = pendingLabRequests;
         break;
+      case 'units': // NEW
+        dataToFilter = equipmentUnits;
+        break;
+      case 'assignments': // NEW
+        dataToFilter = assignments;
+        break;
       default:
         dataToFilter = equipment;
     }
     
-    if (!filters.keyword) return dataToFilter;
+    if (!filters.keyword && !filters.unitStatus && !filters.assignmentType && !filters.serialNumber) {
+      return dataToFilter;
+    }
     
     return dataToFilter.filter(item => {
-      const searchFields = [item.name, item.description, item.courseCode, item.labNumber];
-      return searchFields.some(field => 
-        field && field.toLowerCase().includes(filters.keyword.toLowerCase())
-      );
-    });
-  };
-
-  // Selection functions
-  const toggleItemSelection = (itemId) => {
-    setSelectedItems(prev => {
-      if (prev.includes(itemId)) {
-        return prev.filter(id => id !== itemId);
-      } else {
-        return [...prev, itemId];
+      // Keyword search
+      if (filters.keyword) {
+        const searchFields = [
+          item.name, 
+          item.description, 
+          item.courseCode, 
+          item.labNumber,
+          item.serialNumber, // NEW
+          item.equipmentName, // NEW
+          item.assignedToName // NEW
+        ];
+        const matchesKeyword = searchFields.some(field => 
+          field && field.toLowerCase().includes(filters.keyword.toLowerCase())
+        );
+        if (!matchesKeyword) return false;
       }
+      
+      // Unit status filter
+      if (filters.unitStatus && item.status && item.status !== filters.unitStatus) {
+        return false;
+      }
+      
+      // Assignment type filter
+      if (filters.assignmentType && item.assignmentType && item.assignmentType !== filters.assignmentType) {
+        return false;
+      }
+      
+      // Serial number filter
+      if (filters.serialNumber && item.serialNumber && 
+          !item.serialNumber.toLowerCase().includes(filters.serialNumber.toLowerCase())) {
+        return false;
+      }
+      
+      return true;
     });
   };
 
-  const selectAllItems = () => {
-    const filteredData = getFilteredData();
-    setSelectedItems(filteredData.map(item => item.id));
-  };
-
-  const clearSelection = () => {
-    setSelectedItems([]);
-  };
-
-  // Update functions
+  // Enhanced update functions
   const updateItemInState = (itemId, updates, type = 'equipment') => {
     const updateList = (items) =>
       items.map(item => item.id === itemId ? { ...item, ...updates } : item);
@@ -314,6 +395,12 @@ const loadCurrentMonthLabRequests = async () => {
         break;
       case 'requests':
         setPendingRequests(updateList);
+        break;
+      case 'units': // NEW
+        setEquipmentUnits(updateList);
+        break;
+      case 'assignments': // NEW
+        setAssignments(updateList);
         break;
       default:
         setEquipment(updateList);
@@ -333,11 +420,46 @@ const loadCurrentMonthLabRequests = async () => {
       case 'requests':
         setPendingRequests(filterList);
         break;
+      case 'units': // NEW
+        setEquipmentUnits(filterList);
+        break;
+      case 'assignments': // NEW
+        setAssignments(filterList);
+        break;
       default:
         setEquipment(filterList);
     }
     
     setSelectedItems(prev => prev.filter(id => id !== itemId));
+  };
+
+  // NEW: Equipment unit specific functions
+  const addEquipmentUnitToState = (newUnit) => {
+    setEquipmentUnits(prev => [...prev, newUnit]);
+  };
+
+  const addAssignmentToState = (newAssignment) => {
+    setAssignments(prev => [...prev, newAssignment]);
+  };
+
+  // Enhanced selection functions
+  const toggleItemSelection = (itemId) => {
+    setSelectedItems(prev => {
+      if (prev.includes(itemId)) {
+        return prev.filter(id => id !== itemId);
+      } else {
+        return [...prev, itemId];
+      }
+    });
+  };
+
+  const selectAllItems = () => {
+    const filteredData = getFilteredData();
+    setSelectedItems(filteredData.map(item => item.id));
+  };
+
+  const clearSelection = () => {
+    setSelectedItems([]);
   };
 
   // Message functions
@@ -356,7 +478,7 @@ const loadCurrentMonthLabRequests = async () => {
     setSuccessMessage(null);
   };
 
-  // Refresh all data
+  // Enhanced refresh function
   const refreshAll = async () => {
     await Promise.all([
       loadEquipment(),
@@ -368,6 +490,10 @@ const loadCurrentMonthLabRequests = async () => {
       loadCurrentMonthLabRequests(),
       loadActiveRequests(),           
       loadExtensionRequests(),
+      // NEW
+      loadEquipmentUnits(),
+      loadAssignments(),
+      loadEquipmentSummary()
     ]);
   };
 
@@ -379,7 +505,7 @@ const loadCurrentMonthLabRequests = async () => {
   }, [isEquipmentAdmin]);
 
   const contextValue = {
-    // Data
+    // Existing data
     equipment,
     courses,
     labClasses,
@@ -390,8 +516,12 @@ const loadCurrentMonthLabRequests = async () => {
     extensionRequests,
     activeRequests,
     
+    // NEW: Equipment units data
+    equipmentUnits,
+    assignments,
+    equipmentSummary,
     
-    // Loading states
+    // Existing loading states
     loadingEquipment,
     loadingCourses,
     loadingLabClasses,
@@ -402,7 +532,12 @@ const loadCurrentMonthLabRequests = async () => {
     loadingActiveRequests,
     loadingExtensionRequests,
     
-    // Filters and view
+    // NEW: Equipment units loading states
+    loadingEquipmentUnits,
+    loadingAssignments,
+    loadingSummary,
+    
+    // Enhanced filters and view
     filters,
     viewMode,
     selectedItems,
@@ -411,7 +546,7 @@ const loadCurrentMonthLabRequests = async () => {
     error,
     successMessage,
     
-    // Functions
+    // Existing functions
     loadEquipment,
     loadCourses,
     loadEquipmentRequests,
@@ -421,7 +556,16 @@ const loadCurrentMonthLabRequests = async () => {
     loadCurrentMonthLabRequests, 
     loadExtensionRequests,
     loadActiveRequests,
-    updateEquipmentRequestInState, 
+    updateEquipmentRequestInState,
+    
+    // NEW: Equipment units functions
+    loadEquipmentUnits,
+    loadAssignments,
+    loadEquipmentSummary,
+    addEquipmentUnitToState,
+    addAssignmentToState,
+    
+    // Enhanced common functions
     updateFilters,
     clearFilters,
     getFilteredData,

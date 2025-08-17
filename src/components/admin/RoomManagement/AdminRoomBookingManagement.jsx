@@ -101,7 +101,7 @@ const AdminRoomBookingManagement = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="admin-booking-stats">
+      {/* <div className="admin-booking-stats">
         <div className="stat-card">
           <div className="stat-card-icon pending">
             <i className="fas fa-clock"></i>
@@ -141,7 +141,7 @@ const AdminRoomBookingManagement = () => {
             <div className="stat-card-label">Equipment Requests</div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Alerts */}
       {error && (

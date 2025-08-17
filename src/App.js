@@ -16,6 +16,8 @@ import { AdminRoomBookingProvider } from './context/AdminRoomBookingContext';
 import { QRCodeProvider } from './context/QRCodeContext';
 import { AdminSeatBookingProvider } from './context/AdminSeatBookingContext';
 import { PublicScheduleProvider } from './context/PublicScheduleContext';
+import { AnalyticsProvider } from './context/AnalyticsContext';
+import AnalyticsDashboard from './components/admin/Analytics/AnalyticsDashboard';
 
 // FontAwesome CSS
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -25,8 +27,12 @@ import { UserManagementProvider } from './context/UserManagementContext';
 import UserManagementDashboard from './components/admin/UserManagement/UserManagementDashboard';
 import PasswordProtectedRoute from './pages/auth/PasswordProtectedRoute';
 import ChangePassword from './pages/auth/ChangePassword';
-import AdminPasswordManagement from './components/admin/UserManagement/AdminPasswordManagement';
 
+
+// Librarian Management Components
+import AdminLibrarianManagement from './components/admin/LibrarianManagement/AdminLibrarianManagement';
+import LibrarianDashboard from './components/librarian/LibrarianDashboard';
+import ActiveLibrariansCard from './pages/user/ActiveLibrariansCard';
 
 // User Seats pages
 import UserDashboard from './pages/user/Dashboard';
@@ -51,7 +57,9 @@ import EquipmentManagementDashboard from './components/admin/EquipmentManagement
 import CourseManagement from './components/admin/EquipmentManagement/CourseManagement';
 import LabClassManagement from './components/admin/EquipmentManagement/LabClassManagement';
 import EquipmentRequestManagement from './components/admin/EquipmentManagement/EquipmentRequestManagement';
-// Add these imports to your existing imports section
+import EquipmentUnitsPage from './components/admin/EquipmentManagement/EquipmentUnitsPage';
+import AssignmentsPage from './components/admin/EquipmentManagement/AssignmentsPage';
+import EquipmentReportsPage from './components/admin/EquipmentManagement/EquipmentReportsPage';
 
 // Lab Request Components
 import RequestLabPage from './components/professor/RequestLabPage';
@@ -94,10 +102,14 @@ import './assets/css/admin-room-booking.css';
 import './assets/css/qr-scanner.css'; 
 import './assets/css/user-management.css';
 import './assets/css/professor.css';
+import './assets/css/librarian-components.css'; 
+
+
 // Protected route component with enhanced role checking
 const ProtectedRoute = ({ children, requiredRole, allowedRoles = [] }) => {
   const { isAuthenticated, isAdmin, isEquipmentAdmin, isProfessor, isHOD, isLibrarian, loading } = useAuth();
   const navigate = useNavigate();
+  
   if (loading) {
     return (
       <div className="loading-container">
@@ -172,7 +184,7 @@ const AdminRedirect = () => {
   if (isEquipmentAdmin()) return <Navigate to="/equipment-admin/dashboard" replace />;
   if (isProfessor()) return <Navigate to="/professor/dashboard" replace />;
   if (isAdmin()) return <Navigate to="/admin" replace />;
-  if (isLibrarian()) return <Navigate to="/admin/seats" replace />;
+  if (isLibrarian()) return <Navigate to="/librarian/dashboard" replace />;
   
   return <UserDashboard />;
 };
@@ -215,6 +227,7 @@ const AppRoutes = () => {
         }
       />
 
+      {/* ========== USER MANAGEMENT ROUTES ========== */}
       <Route
        path="/admin/users"
         element={
@@ -228,21 +241,32 @@ const AppRoutes = () => {
     </ProtectedRoute>
   }
 />
-      
-       <Route
-  path="/admin/passwords"
-  element={
-    <ProtectedRoute requiredRole="admin">
-      <UserManagementProvider>
-        <div className="admin-page-container">
-          <AdminSidebar activePage="passwords" />
-          <AdminPasswordManagement show={true} onClose={() => Navigate('/admin/users')} />
-        </div>
-      </UserManagementProvider>
-    </ProtectedRoute>
-  }
-/>
 
+      {/* ========== LIBRARIAN MANAGEMENT ROUTES ========== */}
+      <Route
+        path="/admin/librarians"
+        element={
+          <ProtectedRoute requiredRole="admin">
+            <div className="admin-page-container">
+              <AdminSidebar activePage="librarians" />
+              <AdminLibrarianManagement />
+            </div>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ========== LIBRARIAN DASHBOARD ROUTES ========== */}
+      <Route
+        path="/librarian/dashboard"
+        element={
+          <ProtectedRoute requiredRole="librarian">
+            <div className="admin-page-container">
+              <AdminSidebar activePage="dashboard" />
+              <LibrarianDashboard />
+            </div>
+          </ProtectedRoute>
+        }
+      />
 
       {/* ========== STUDENT/USER ROUTES ========== */}
       <Route
@@ -360,7 +384,7 @@ const AppRoutes = () => {
         }
       />
       
-      {/* ========== ROOM ADMIN ROUTES ========== */}
+      {/* ========== ADMIN ROUTES ========== */}
       <Route
         path="/admin"
         element={
@@ -374,7 +398,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/seats"
         element={
-          <ProtectedRoute requiredRoles={["admin", "librarian"]}>
+          <ProtectedRoute allowedRoles={["admin", "librarian"]}>
             <SeatManagement />
           </ProtectedRoute>
         }
@@ -383,7 +407,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/seat-management"
         element={
-          <ProtectedRoute requiredRoles={["admin", "librarian"]}>
+          <ProtectedRoute allowedRoles={["admin", "librarian"]}>
             <AdminSeatManagement />
           </ProtectedRoute>
         }
@@ -392,7 +416,7 @@ const AppRoutes = () => {
       <Route
          path="/admin/seat-bookings"
          element={
-            <ProtectedRoute requiredRoles={["admin", "librarian"]}>
+            <ProtectedRoute allowedRoles={["admin", "librarian"]}>
               <AdminSeatBookingProvider>
               <SeatBookingManagement />
               </AdminSeatBookingProvider>
@@ -403,7 +427,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/schedule"
         element={
-          <ProtectedRoute requiredRoles={["admin", "librarian"]}>
+          <ProtectedRoute allowedRoles={["admin", "librarian"]}>
             <ScheduleManagement />
           </ProtectedRoute>
         }
@@ -412,7 +436,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/qr"
         element={
-          <ProtectedRoute requiredRoles={["admin", "librarian"]}>
+          <ProtectedRoute allowedRoles={["admin", "librarian"]}>
             <QRManagementPage />
           </ProtectedRoute>
         }
@@ -421,7 +445,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/rooms"
         element={
-          <ProtectedRoute requiredRoles={["admin", "librarian"]}>
+          <ProtectedRoute allowedRoles={["admin", "librarian"]}>
             <AdminRoomManagement />
           </ProtectedRoute>
         }
@@ -430,7 +454,7 @@ const AppRoutes = () => {
       <Route
         path="/admin/Roombookings"
         element={
-          <ProtectedRoute requiredRoles={["admin", "librarian"]}>
+          <ProtectedRoute allowedRoles={["admin", "librarian"]}>
             <AdminRoomBookingProvider>
               <div className="admin-page-container">
                 <AdminSidebar activePage="bookings" />
@@ -442,20 +466,6 @@ const AppRoutes = () => {
       />
 
       {/* ========== EQUIPMENT ADMIN ROUTES ========== */}
-      {/* <Route
-        path="/equipment-admin/dashboard"
-        element={
-          <ProtectedRoute requiredRole="equipment-admin">
-            <EquipmentAdminProvider>
-              <div className="admin-page-container">
-                <AdminSidebar activePage="dashboard" />
-                <EquipmentManagementDashboard />
-              </div>
-            </EquipmentAdminProvider>
-          </ProtectedRoute>
-        }
-      /> */}
-
       <Route
         path="/admin/equipment-management"
         element={
@@ -524,6 +534,48 @@ const AppRoutes = () => {
   }
 />
 
+<Route
+  path="/admin/equipment-units"
+  element={
+    <ProtectedRoute allowedRoles={['admin', 'equipment-admin']}>
+      <EquipmentAdminProvider>
+        <div className="admin-page-container">
+          <AdminSidebar activePage="equipment-units" />
+          <EquipmentUnitsPage />
+        </div>
+      </EquipmentAdminProvider>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/equipment-assignments"
+  element={
+    <ProtectedRoute allowedRoles={['admin', 'equipment-admin']}>
+      <EquipmentAdminProvider>
+        <div className="admin-page-container">
+          <AdminSidebar activePage="equipment-assignments" />
+          <AssignmentsPage />
+        </div>
+      </EquipmentAdminProvider>
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/equipment-reports"
+  element={
+    <ProtectedRoute allowedRoles={['admin', 'equipment-admin']}>
+      <EquipmentAdminProvider>
+        <div className="admin-page-container">
+          <AdminSidebar activePage="equipment-reports" />
+          <EquipmentReportsPage />
+        </div>
+      </EquipmentAdminProvider>
+    </ProtectedRoute>
+  }
+/>
+
       {/* ========== PROFESSOR ROUTES ========== */}
        <Route
         path="/professor/dashboard"
@@ -552,7 +604,6 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
-
 
       <Route
         path="/professor/my-requests"
@@ -645,6 +696,20 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+
+      <Route
+  path="/admin/analytics"
+  element={
+    <ProtectedRoute allowedRoles={['admin', 'librarian', 'equipment-admin']}>
+      <AnalyticsProvider>
+        <div className="admin-page-container">
+          <AdminSidebar activePage="analytics" />
+          <AnalyticsDashboard />
+        </div>
+      </AnalyticsProvider>
+    </ProtectedRoute>
+  }
+/>
       
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -162,6 +162,7 @@ const handleQRGenerated = (response) => {
         <div className="room-actions">
           <button 
             className="btn btn-sm btn-primary"
+            title = "Edit"
             onClick={() => onEdit(room)}
           >
             <i className="fas fa-edit"></i>
@@ -309,18 +310,21 @@ const RoomList = ({ rooms, selectedRooms, onSelect, onSelectAll, onEdit, onToggl
                     <button 
                       className="btn btn-sm btn-primary"
                       onClick={() => onEdit(room)}
+                      lable="Edit"
                     >
                       <i className="fas fa-edit"></i>
                     </button>
                     <button 
                       className={`btn btn-sm ${room.available ? 'btn-warning' : 'btn-success'}`}
                       onClick={() => onToggleStatus(room.id)}
+                      title="Enable/Disable"
                     >
                       <i className={`fas ${room.available ? 'fa-pause' : 'fa-play'}`}></i>
                     </button>
                     <button 
                       className="btn btn-sm btn-secondary"
                       onClick={() => onSetMaintenance(room)}
+                      title="Maintenance"
                     >
                       <i className="fas fa-tools"></i>
                     </button>
@@ -328,6 +332,7 @@ const RoomList = ({ rooms, selectedRooms, onSelect, onSelectAll, onEdit, onToggl
                       <button 
                         className="btn btn-sm btn-info"
                         onClick={() => onCalendar(room)}
+                        title="Calender"
                       >
                         <i className="fas fa-calendar"></i>
                       </button>
@@ -335,6 +340,7 @@ const RoomList = ({ rooms, selectedRooms, onSelect, onSelectAll, onEdit, onToggl
                     <button 
                       className="btn btn-sm btn-outline"
                       onClick={() => onDuplicate(room)}
+                      title="Duplicate"
                     >
                       <i className="fas fa-copy"></i>
                     </button>
@@ -342,6 +348,7 @@ const RoomList = ({ rooms, selectedRooms, onSelect, onSelectAll, onEdit, onToggl
                       <button 
                         className="btn btn-sm btn-danger"
                         onClick={() => onDelete(room.id)}
+                        title="Delete"
                       >
                         <i className="fas fa-trash"></i>
                       </button>

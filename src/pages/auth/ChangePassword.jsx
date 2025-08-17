@@ -189,7 +189,7 @@ const ChangePassword = () => {
           </div>
           <h2 className="auth-heading">Password Change Required</h2>
           <p className="auth-subtitle">
-            Welcome, <strong>{user?.fullName}</strong>! You must change your password before accessing the system.
+            Welcome, <strong>{user?.fullName}</strong>
           </p>
         </div>
 
@@ -304,16 +304,6 @@ const ChangePassword = () => {
             </Button>
           </div>
         </form>
-
-        <div className="security-notice">
-          <div className="notice-content">
-            <i className="fas fa-shield-alt"></i>
-            <div>
-              <strong>Security Notice:</strong>
-              <p>Your new password will be used for all future logins. Make sure to choose a strong, unique password that you can remember.</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

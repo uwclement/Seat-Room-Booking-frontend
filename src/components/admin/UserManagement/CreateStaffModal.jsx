@@ -41,9 +41,6 @@ const CreateStaffModal = ({ show, onClose }) => {
   const locationOptions = [
     { value: 'GISHUSHU', label: 'Gishushu Campus' },
     { value: 'MASORO', label: 'Masoro Campus' },
-    { value: 'KIGALI', label: 'Kigali' },
-    { value: 'NYANZA', label: 'Nyanza' },
-    { value: 'MUSANZE', label: 'Musanze' }
   ];
 
   useEffect(() => {

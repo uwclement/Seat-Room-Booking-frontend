@@ -97,3 +97,18 @@ export const getCurrentMonthEquipmentRequests = async () => {
 export const getHodCurrentMonthEquipmentRequests = async () => {
   return safeApiCall(() => api.get('/equipment-requests/hod-current-month'));
 };
+
+export const updateEquipmentStatus = async (id, statusData) => {
+  return safeApiCall(() => api.put(`/equipment-admin/equipment/${id}/status`, statusData));
+};
+
+export const getEquipmentHistory = async (id) => {
+  try {
+    const response = await safeApiCall(() => api.get(`/equipment-admin/equipment/${id}/history`));
+    // Ensure response is always an array
+    return Array.isArray(response) ? response : [];
+  } catch (error) {
+    console.error('Error fetching equipment history:', error);
+    return []; // Return empty array on error
+  }
+};
