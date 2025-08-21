@@ -1,5 +1,4 @@
-// src/pages/auth/Register.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { 
@@ -26,6 +25,19 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState({});
   const [step, setStep] = useState(1); // Step 1: Form, Step 2: Verification message
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState({
+    score: 0,
+    text: 'Enter a password',
+    requirements: {
+      length: false,
+      uppercase: false,
+      lowercase: false,
+      number: false,
+      special: false,
+    }
+  });
 
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -34,6 +46,33 @@ const Register = () => {
     { value: 'GISHUSHU', label: 'Gishushu Campus' },
     { value: 'MASORO', label: 'Masoro Campus' },
   ];
+
+  // Password strength checking
+  const checkPasswordStrength = (password) => {
+    const requirements = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?!]/.test(password),
+    };
+
+    const metRequirements = Object.values(requirements).filter(Boolean).length;
+    let score = metRequirements * 20;
+    let text = 'Enter a password';
+
+    if (score >= 100) {
+      text = 'Strong';
+    } else if (score >= 80) {
+      text = 'Good';
+    } else if (score >= 60) {
+      text = 'Fair';
+    } else if (score > 0) {
+      text = 'Weak';
+    }
+
+    return { score, text, requirements };
+  };
 
   const validateField = async (field, value) => {
     const newErrors = { ...errors };
@@ -65,7 +104,6 @@ const Register = () => {
                 delete newErrors.email;
               }
             } catch (error) {
-              // If check fails, assume available but show warning
               delete newErrors.email;
               console.warn('Email availability check failed:', error);
             }
@@ -86,7 +124,6 @@ const Register = () => {
                 delete newErrors.studentId;
               }
             } catch (error) {
-              // If check fails, assume available but show warning
               delete newErrors.studentId;
               console.warn('Student ID availability check failed:', error);
             }
@@ -94,17 +131,22 @@ const Register = () => {
           break;
 
         case 'password':
+          const strength = checkPasswordStrength(value);
+          setPasswordStrength(strength);
+          
           if (!value) {
             newErrors.password = 'Password is required';
-          } else if (value.length < 6) {
-            newErrors.password = 'Password must be at least 6 characters';
+          } else if (strength.score < 100) {
+            newErrors.password = 'Password must meet all security requirements';
           } else {
             delete newErrors.password;
           }
           break;
 
         case 'confirmPassword':
-          if (value !== formData.password) {
+          if (!value) {
+            newErrors.confirmPassword = 'Please confirm your password';
+          } else if (value !== formData.password) {
             newErrors.confirmPassword = 'Passwords do not match';
           } else {
             delete newErrors.confirmPassword;
@@ -125,11 +167,12 @@ const Register = () => {
   const validateForm = async () => {
     const fields = ['fullName', 'email', 'studentId', 'password', 'confirmPassword'];
     
-    for (const field of fields) {
-      await validateField(field, formData[field]);
-    }
+    await Promise.all(
+      fields.map(field => validateField(field, formData[field]))
+    );
     
-    return Object.keys(errors).length === 0;
+    const hasErrors = Object.values(errors).some(error => error && error.length > 0);
+    return !hasErrors;
   };
 
   const handleChange = (e) => {
@@ -143,6 +186,17 @@ const Register = () => {
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
+    
+    // Clear general message when user makes changes
+    if (message.text) {
+      setMessage({ type: '', text: '' });
+    }
+
+    // Real-time password strength checking
+    if (name === 'password') {
+      const strength = checkPasswordStrength(value);
+      setPasswordStrength(strength);
+    }
   };
 
   const handleBlur = (e) => {
@@ -155,7 +209,13 @@ const Register = () => {
     setMessage({ type: '', text: '' });
     
     const isValid = await validateForm();
-    if (!isValid) return;
+    if (!isValid) {
+      setMessage({ 
+        type: 'danger', 
+        text: 'Please fix the errors above before submitting.' 
+      });
+      return;
+    }
     
     setLoading(true);
     
@@ -169,9 +229,9 @@ const Register = () => {
       });
       
       if (result.success) {
-        setStep(2); // Move to verification message
+        setStep(2);
       } else {
-        setMessage({ type: 'danger', text: result.message });
+        setMessage({ type: 'danger', text: result.message || 'Registration failed. Please try again.' });
       }
     } catch (err) {
       setMessage({
@@ -182,6 +242,34 @@ const Register = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const togglePasswordVisibility = (field) => {
+    if (field === 'password') {
+      setShowPassword(!showPassword);
+    } else if (field === 'confirmPassword') {
+      setShowConfirmPassword(!showConfirmPassword);
+    }
+  };
+
+  const isFormValid = () => {
+    return formData.fullName.trim() && 
+           formData.email && 
+           formData.studentId && 
+           formData.password && 
+           formData.confirmPassword &&
+           passwordStrength.score === 100 &&
+           formData.password === formData.confirmPassword &&
+           Object.keys(errors).length === 0;
+  };
+
+  const getSubmitButtonText = () => {
+    if (loading) return 'Creating account...';
+    if (!formData.password) return 'Enter password';
+    if (passwordStrength.score < 100) return 'Password requirements not met';
+    if (formData.password !== formData.confirmPassword) return 'Passwords do not match';
+    if (!formData.fullName || !formData.email || !formData.studentId) return 'Please fill all fields';
+    return 'Create Student Account';
   };
 
   if (step === 2) {
@@ -220,9 +308,8 @@ const Register = () => {
 
   return (
     <div className="auth-container">
-      <div className="auth-form-container">
+      <div className="auth-form-container register-form">
         <h2 className="auth-heading">Create a new student account</h2>
-        
         
         {message.text && (
           <Alert
@@ -232,7 +319,8 @@ const Register = () => {
           />
         )}
         
-        <form className="auth-form" onSubmit={handleSubmit}>
+        <form className="auth-form register-grid" onSubmit={handleSubmit}>
+          {/* Row 1: Full Name and Student ID */}
           <Input
             label="Full Name *"
             type="text"
@@ -242,19 +330,6 @@ const Register = () => {
             onChange={handleChange}
             onBlur={handleBlur}
             error={errors.fullName}
-            required
-          />
-
-          <Input
-            label="Email Address *"
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={errors.email}
-            loading={validating.email}
             required
           />
 
@@ -269,6 +344,20 @@ const Register = () => {
             error={errors.studentId}
             loading={validating.studentId}
             placeholder="e.g., STU001, 12345"
+            required
+          />
+
+          {/* Row 2: Email and Location */}
+          <Input
+            label="Email Address *"
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={errors.email}
+            loading={validating.email}
             required
           />
 
@@ -293,38 +382,117 @@ const Register = () => {
             </small>
           </div>
 
-          <Input
-            label="Password *"
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={errors.password}
-            required
-          />
+          {/* Row 3: Password fields with strength indicator */}
+          <div className="form-group">
+            <label htmlFor="password">Password *</label>
+            <div className="password-field-container">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className={`form-control ${errors.password ? 'error' : ''}`}
+                placeholder="Enter password"
+                required
+              />
+              <button 
+                type="button" 
+                className="password-toggle"
+                onClick={() => togglePasswordVisibility('password')}
+              >
+                <i className={`fas ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+              </button>
+            </div>
+            
+            <div className="password-strength">
+              <div className="password-strength-label">
+                Password Strength: <span className={`strength-${passwordStrength.text.toLowerCase()}`}>
+                  {passwordStrength.text}
+                </span>
+              </div>
+              <div className="password-strength-bar">
+                <div 
+                  className={`password-strength-progress ${passwordStrength.text.toLowerCase()}`}
+                  style={{ width: `${passwordStrength.score}%` }}
+                ></div>
+              </div>
+              
+              <div className="password-requirements">
+                <div className={`password-requirement ${passwordStrength.requirements.length ? 'met' : 'unmet'}`}>
+                  <i className={`fas ${passwordStrength.requirements.length ? 'fa-check' : 'fa-times'}`}></i>
+                  <span>At least 8 characters</span>
+                </div>
+                <div className={`password-requirement ${passwordStrength.requirements.uppercase ? 'met' : 'unmet'}`}>
+                  <i className={`fas ${passwordStrength.requirements.uppercase ? 'fa-check' : 'fa-times'}`}></i>
+                  <span>At least one uppercase letter</span>
+                </div>
+                <div className={`password-requirement ${passwordStrength.requirements.lowercase ? 'met' : 'unmet'}`}>
+                  <i className={`fas ${passwordStrength.requirements.lowercase ? 'fa-check' : 'fa-times'}`}></i>
+                  <span>At least one lowercase letter</span>
+                </div>
+                <div className={`password-requirement ${passwordStrength.requirements.number ? 'met' : 'unmet'}`}>
+                  <i className={`fas ${passwordStrength.requirements.number ? 'fa-check' : 'fa-times'}`}></i>
+                  <span>At least one number</span>
+                </div>
+                <div className={`password-requirement ${passwordStrength.requirements.special ? 'met' : 'unmet'}`}>
+                  <i className={`fas ${passwordStrength.requirements.special ? 'fa-check' : 'fa-times'}`}></i>
+                  <span>At least one special character (@, #, $, %, etc.)</span>
+                </div>
+              </div>
+            </div>
+            
+            {errors.password && (
+              <div className="error-message">
+                <i className="fas fa-exclamation-triangle"></i>
+                <span>{errors.password}</span>
+              </div>
+            )}
+          </div>
 
-          <Input
-            label="Confirm Password *"
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            error={errors.confirmPassword}
-            required
-          />
+          <div className="form-group">
+            <label htmlFor="confirmPassword">Confirm Password *</label>
+            <div className="password-field-container">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className={`form-control ${errors.confirmPassword ? 'error' : formData.confirmPassword && formData.password === formData.confirmPassword ? 'success' : ''}`}
+                placeholder="Confirm password"
+                required
+              />
+              <button 
+                type="button" 
+                className="password-toggle"
+                onClick={() => togglePasswordVisibility('confirmPassword')}
+              >
+                <i className={`fas ${showConfirmPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+              </button>
+            </div>
+            
+            {errors.confirmPassword && (
+              <div className="error-message">
+                <i className="fas fa-exclamation-triangle"></i>
+                <span>{errors.confirmPassword}</span>
+              </div>
+            )}
+          </div>
 
-          <Button
-            type="submit"
-            variant="primary"
-            fullWidth
-            disabled={loading || Object.keys(errors).length > 0}
-          >
-            {loading ? 'Creating account...' : 'Create Student Account'}
-          </Button>
+          {/* Submit button spans full width */}
+          <div className="full-width">
+            <Button
+              type="submit"
+              variant="primary"
+              fullWidth
+              disabled={!isFormValid() || loading}
+            >
+              {getSubmitButtonText()}
+            </Button>
+          </div>
         </form>
 
         <div className="auth-footer">

@@ -1,122 +1,624 @@
 .auth-container {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 2rem 1rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2rem 1rem;
+  position: relative;
+  
+  /* Background image with overlay */
+  background-image: url('../images/background.jpeg'); 
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+}
+
+/* Add overlay for better readability */
+.auth-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.3); /* Dark overlay */
+  z-index: 1;
+}
+
+.auth-form-container {
+  background-color: rgba(255, 255, 255, 0.95); /* Slightly transparent white */
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px); /* Glass effect */
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 2rem;
+  width: 100%;
+  max-width: 28rem;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+
+/* Register form container with wider layout */
+.auth-form-container.register-form {
+  max-width: 50rem; /* Much wider than default 28rem */
+  width: 90%; /* Use more screen width */
+}
+
+.auth-heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #1f2937;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.auth-form {
+  margin-bottom: 1.5rem;
+}
+
+/* Two-column grid layout for register form */
+.auth-form.register-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Full width items (like submit button) */
+.auth-form.register-grid .full-width {
+  grid-column: 1 / -1;
+}
+
+/* Alert component visibility and positioning */
+.alert {
+  position: relative;
+  z-index: 10; /* Higher z-index to ensure visibility */
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid transparent;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.alert-danger {
+  color: #dc2626;
+  background-color: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.alert-success {
+  color: #059669;
+  background-color: #f0fdf4;
+  border-color: #86efac;
+}
+
+.alert-warning {
+  color: #d97706;
+  background-color: #fffbeb;
+  border-color: #fde68a;
+}
+
+.alert-info {
+  color: #0284c7;
+  background-color: #f0f9ff;
+  border-color: #7dd3fc;
+}
+
+/* Form group styling */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.form-control {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 0.375rem;
+  font-size: 1rem;
+  background-color: #ffffff;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-control.error {
+  border-color: #dc2626;
+}
+
+.form-control.success {
+  border-color: #059669;
+}
+
+.form-text {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+  display: block;
+}
+
+.error-message {
+  color: #dc2626;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Password Field Container */
+.password-field-container {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.875rem;
+  z-index: 5;
+}
+
+.password-toggle:hover {
+  color: #374151;
+}
+
+/* Password Strength Indicator */
+.password-strength {
+  margin-top: 0.5rem;
+}
+
+.password-strength-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  color: #374151;
+}
+
+.password-strength-label .strength-weak {
+  color: #dc2626;
+}
+
+.password-strength-label .strength-fair {
+  color: #f59e0b;
+}
+
+.password-strength-label .strength-good {
+  color: #3b82f6;
+}
+
+.password-strength-label .strength-strong {
+  color: #059669;
+}
+
+.password-strength-bar {
+  width: 100%;
+  height: 4px;
+  background-color: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.password-strength-progress {
+  height: 100%;
+  transition: all 0.3s ease;
+  border-radius: 2px;
+}
+
+.password-strength-progress.weak {
+  background-color: #dc2626;
+}
+
+.password-strength-progress.fair {
+  background-color: #f59e0b;
+}
+
+.password-strength-progress.good {
+  background-color: #3b82f6;
+}
+
+.password-strength-progress.strong {
+  background-color: #059669;
+}
+
+/* Password Requirements */
+.password-requirements {
+  margin-top: 0.5rem;
+}
+
+.password-requirement {
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: color 0.2s ease;
+}
+
+.password-requirement.met {
+  color: #059669;
+}
+
+.password-requirement.unmet {
+  color: #6b7280;
+}
+
+.password-requirement i {
+  width: 12px;
+  font-size: 0.75rem;
+}
+
+/* Rest of existing styles */
+.auth-divider {
+  position: relative;
+  margin: 1.5rem 0;
+  text-align: center;
+}
+
+.auth-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: #e5e7eb;
+}
+
+.auth-divider-text {
+  position: relative;
+  display: inline-block;
+  padding: 0 0.5rem;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.auth-footer a {
+  color: #3b82f6;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.auth-footer a:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}
+
+.auth-success-container {
+  text-align: center;
+  padding: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+.auth-success-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #10b981;
+}
+
+.auth-success-heading {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  color: #1f2937;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.auth-success-message {
+  color: #4b5563;
+  margin-bottom: 1.5rem;
+}
+
+.auth-success-email {
+  font-weight: 500;
+  color: #3b82f6;
+}
+
+.registration-summary {
+  background-color: rgba(249, 250, 251, 0.8);
+  border-radius: 0.375rem;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  text-align: left;
+}
+
+.registration-summary h4 {
+  color: #374151;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.registration-summary ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.registration-summary li {
+  padding: 0.25rem 0;
+  color: #6b7280;
+}
+
+.staff-info {
+  background-color: rgba(249, 250, 251, 0.8);
+  border-radius: 0.375rem;
+  padding: 1rem;
+  margin-top: 1rem;
+  border-left: 4px solid #3b82f6;
+}
+
+.staff-info p {
+  margin: 0;
+  color: #4b5563;
+  font-size: 0.875rem;
+}
+
+.login-type-hint {
+  margin-top: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.login-type-hint .text-muted {
+  color: #6b7280;
+  font-style: italic;
+}
+
+.login-type-hint .fas {
+  margin-right: 0.25rem;
+  color: #3b82f6;
+}
+
+/* FIXED: Responsive design for ALL auth forms */
+@media (max-width: 768px) {
+  .auth-container {
+    padding: 1rem 0.5rem;
+    background-attachment: scroll; /* Better performance on mobile */
   }
   
+  /* FIXED: Apply responsive styles to ALL auth containers */
   .auth-form-container {
-    background-color: white;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    padding: 2rem;
-    width: 100%;
-    max-width: 28rem;
-    margin: 0 auto;
+    padding: 1.5rem;
+    margin: 0.5rem;
+    width: calc(100% - 1rem); /* Account for margins */
+    max-width: calc(100% - 1rem); /* Override fixed max-width on mobile */
+  }
+  
+  .auth-form-container.register-form {
+    max-width: calc(100% - 1rem);
+    width: calc(100% - 1rem);
+    margin: 0.5rem;
+  }
+  
+  /* Stack register form to single column on mobile */
+  .auth-form.register-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
   .auth-heading {
-    font-size: 1.5rem;
-    font-weight: 700;
-    text-align: center;
-    margin-bottom: 2rem;
-    color: #1f2937;
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-container {
+    padding: 0.5rem;
   }
   
-  .auth-form {
+  /* FIXED: Ensure proper mobile alignment for all forms */
+  .auth-form-container {
+    padding: 1rem;
+    margin: 0.25rem;
+    width: calc(100% - 0.5rem);
+    max-width: calc(100% - 0.5rem);
+  }
+  
+  .auth-form-container.register-form {
+    padding: 1rem;
+    margin: 0.25rem;
+    width: calc(100% - 0.5rem);
+    max-width: calc(100% - 0.5rem);
+  }
+  
+  .auth-heading {
+    font-size: 1.125rem;
     margin-bottom: 1.5rem;
   }
-  
-  .auth-divider {
-    position: relative;
-    margin: 1.5rem 0;
-    text-align: center;
+}
+
+/* FIXED: Extra small devices */
+@media (max-width: 480px) {
+  .auth-container {
+    padding: 0.25rem;
   }
   
-  .auth-divider::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background-color: #e5e7eb;
+  .auth-form-container {
+    padding: 0.75rem;
+    margin: 0.125rem;
+    width: calc(100% - 0.25rem);
+    max-width: calc(100% - 0.25rem);
+    border-radius: 0.25rem;
   }
   
-  .auth-divider-text {
-    position: relative;
-    display: inline-block;
-    padding: 0 0.5rem;
-    background-color: white;
-    color: #6b7280;
+  .auth-form-container.register-form {
+    padding: 0.75rem;
+    margin: 0.125rem;
+    width: calc(100% - 0.25rem);
+    max-width: calc(100% - 0.25rem);
+  }
+  
+  .auth-heading {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .form-control {
+    padding: 0.625rem;
     font-size: 0.875rem;
+  }
+  
+  .password-toggle {
+    right: 0.625rem;
+  }
+}
+
+/* Animation for smooth entrance */
+.auth-form-container {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .auth-container {
+    background-image: url('../images/background.jpeg'); /* High res version if available */
+  }
+  
+  .auth-container::before {
+    background-image: url('../images/background.jpeg');
+  }
+}
+
+/* Alternative: If you want the image with lower opacity */
+.auth-container-alt {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2rem 1rem;
+  position: relative;
+  background-color: #f9fafb; /* Fallback color */
+}
+
+.auth-container-alt::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url('../images/background.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.2; /* This gives you the 0.2 opacity you requested */
+  z-index: 1;
+}
+
+/* Button styling overrides for disabled states */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background-color: #9ca3af !important;
+}
+
+/* Loading spinner for input fields */
+.form-group .loading-spinner {
+  position: absolute;
+  right: 2.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid #f3f4f6;
+  border-top: 2px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: translateY(-50%) rotate(0deg); }
+  100% { transform: translateY(-50%) rotate(360deg); }
+}
+
+/* Focus states for better accessibility */
+.password-toggle:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* FIXED: Improved mobile experience for password fields */
+@media (max-width: 768px) {
+  .password-toggle {
+    right: 1rem;
+    padding: 0.25rem;
+  }
+  
+  .password-requirements {
+    font-size: 0.7rem;
+  }
+  
+  .password-requirement {
+    margin-bottom: 0.125rem;
+  }
+}
+
+/* FIXED: Ensure forms are always properly centered */
+@media (max-width: 768px) {
+  .auth-container {
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* FIXED: Additional mobile improvements */
+@media (max-width: 640px) {
+  .alert {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  .form-group {
+    margin-bottom: 0.75rem;
   }
   
   .auth-footer {
-    text-align: center;
-    margin-top: 1.5rem;
-    font-size: 0.875rem;
-    color: #6b7280;
+    font-size: 0.8rem;
   }
   
-  .auth-footer a {
-    color: #3b82f6;
-    font-weight: 500;
+  .staff-info {
+    padding: 0.75rem;
   }
-  
-  .auth-footer a:hover {
-    color: #2563eb;
-  }
-  
-  .auth-success-container {
-    text-align: center;
-    padding: 2rem;
-  }
-  
-  .auth-success-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    color: #10b981;
-  }
-  
-  .auth-success-heading {
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
-    color: #1f2937;
-  }
-  
-  .auth-success-message {
-    color: #4b5563;
-    margin-bottom: 1.5rem;
-  }
-  
-  .auth-success-email {
-    font-weight: 500;
-  }
-
-  .auth-success-container {
-    text-align: center;
-    padding: 2rem;
-  }
-  
-  .auth-success-icon {
-    font-size: 3rem;
-    margin-bottom: 1rem;
-    color: #10b981;
-  }
-  
-  .auth-success-heading {
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
-    color: #1f2937;
-  }
-  
-  .auth-success-message {
-    color: #4b5563;
-    margin-bottom: 1.5rem;
-  }
-  
-  .auth-success-email {
-    font-weight: 500;
-  }
+}

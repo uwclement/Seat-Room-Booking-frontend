@@ -431,10 +431,8 @@ const BulkSeatModal = ({ isOpen, onClose, mode = 'create' }) => {
                   disabled={isSubmitting}
                 />
                 <span className="checkbox-custom"></span>
-                <span className="checkbox-text">
-                  <i className="fas fa-desktop"></i>
-                  Has Desktop Computer
-                </span>
+                <i className="fas fa-desktop"></i>
+                <span className="checkbox-text">Has Desktop Computer</span>
               </label>
             </div>
           )}

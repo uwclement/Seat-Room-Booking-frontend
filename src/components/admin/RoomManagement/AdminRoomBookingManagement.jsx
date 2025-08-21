@@ -83,10 +83,14 @@ const AdminRoomBookingManagement = () => {
     <div className="admin-room-booking-management">
       {/* Header */}
       <div className="admin-booking-header">
-        <div className="admin-booking-title">
-          <h1>Room Booking Management</h1>
-          <p>Manage room bookings, approvals, and capacity utilization</p>
-        </div>
+       <div className="header-content">
+          <div>
+            <h1>Room Booking Management</h1>
+            <p className="admin-subtitle">
+              Manage room bookings, approvals, and capacity utilization
+            </p>
+          </div>
+          </div>
         
         <div className="admin-booking-actions">
           <button 
@@ -161,7 +165,7 @@ const AdminRoomBookingManagement = () => {
       )}
 
       {/* Navigation Tabs */}
-      <div className="admin-booking-tabs">
+      <div className="room-controls">
         <button 
           className={`tab-button ${activeTab === 'all' ? 'active' : ''}`}
           onClick={() => handleTabChange('all')}

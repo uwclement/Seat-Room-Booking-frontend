@@ -427,7 +427,7 @@ const CreateStaffModal = ({ show, onClose }) => {
             )}
 
             {/* Role Information */}
-            <div className="role-info">
+            {/* <div className="role-info">
               <h4>Role Information</h4>
               <div className="info-card">
                 {formData.role === 'LIBRARIAN' && (
@@ -486,7 +486,7 @@ const CreateStaffModal = ({ show, onClose }) => {
                   </div>
                 )}
               </div>
-            </div>
+            </div> */}
           </div>
 
           <div className="modal-footer">

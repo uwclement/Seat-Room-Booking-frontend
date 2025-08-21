@@ -56,11 +56,11 @@
   width: 100%;
 }
 
-/* NEW: Uniform seat row (6 per row) */
+/* Uniform seat row (6 per row) */
 .uniform-seat-row {
   display: flex;
   justify-content: space-between;
-  width: 100%;
+  width: 90%;
   gap: 0.5rem;
 }
 

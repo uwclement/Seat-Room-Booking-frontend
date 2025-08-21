@@ -54,19 +54,19 @@ const BookingFilters = () => {
   };
 
   const activeFilterCount = getActiveFilterCount();
+  const hasActiveFilters = activeFilterCount > 0;
 
   return (
-    <div className="booking-filters">
-      <div className="filters-header">
-        <h3>
-          <i className="fas fa-filter"></i>
-          Filters
+    <div className="room-filters">
+      <div className="filter-header">
+        <h3 className="filter-title">
+          Search & Filter Bookings
           {activeFilterCount > 0 && (
-            <span className="filter-count">{activeFilterCount}</span>
+            <span className="filter-count">({activeFilterCount})</span>
           )}
         </h3>
         
-        <div className="filter-actions">
+        <div className="filter-header-actions">
           <button 
             className="btn btn-sm btn-outline"
             onClick={() => setShowAdvanced(!showAdvanced)}
@@ -75,11 +75,8 @@ const BookingFilters = () => {
             {showAdvanced ? 'Hide' : 'Show'} Advanced
           </button>
           
-          {activeFilterCount > 0 && (
-            <button 
-              className="btn btn-sm btn-secondary"
-              onClick={handleClearFilters}
-            >
+          {hasActiveFilters && (
+            <button className="btn btn-sm btn-outline" onClick={handleClearFilters}>
               <i className="fas fa-times"></i>
               Clear All
             </button>
@@ -87,69 +84,66 @@ const BookingFilters = () => {
         </div>
       </div>
 
-      <div className="filters-content">
+      <div className="filters-container">
         {/* Basic Filters - Always Visible */}
-        <div className="filter-row basic-filters">
-          <div className="filter-group">
-            <label>Status</label>
-            <select 
-              value={localFilters.status}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-              className="form-control"
-            >
-              <option value="">All Statuses</option>
-              <option value="PENDING">Pending</option>
-              <option value="CONFIRMED">Confirmed</option>
-              <option value="CHECKED_IN">Checked In</option>
-              <option value="COMPLETED">Completed</option>
-              <option value="CANCELLED">Cancelled</option>
-              <option value="REJECTED">Rejected</option>
-              <option value="NO_SHOW">No Show</option>
-            </select>
-          </div>
+        <div className="filter-item">
+          <label>Status</label>
+          <select 
+            value={localFilters.status}
+            onChange={(e) => handleFilterChange('status', e.target.value)}
+            className="form-control"
+          >
+            <option value="">All Statuses</option>
+            <option value="PENDING">Pending</option>
+            <option value="CONFIRMED">Confirmed</option>
+            <option value="CHECKED_IN">Checked In</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="NO_SHOW">No Show</option>
+          </select>
+        </div>
 
-          <div className="filter-group">
-            <label>Date Range</label>
-            <div className="date-range-inputs">
-              <input 
-                type="date"
-                value={localFilters.dateRange.start}
-                onChange={(e) => handleDateRangeChange('start', e.target.value)}
-                className="form-control"
-                placeholder="Start Date"
-              />
-              <span className="date-separator">to</span>
-              <input 
-                type="date"
-                value={localFilters.dateRange.end}
-                onChange={(e) => handleDateRangeChange('end', e.target.value)}
-                className="form-control"
-                placeholder="End Date"
-              />
-            </div>
-          </div>
+        <div className="filter-item">
+          <label>Building</label>
+          <select 
+            value={localFilters.building}
+            onChange={(e) => handleFilterChange('building', e.target.value)}
+            className="form-control"
+          >
+            <option value="">All Buildings</option>
+            <option value="Main Building">Main Building</option>
+            <option value="Library">Library</option>
+            <option value="Science Block">Science Block</option>
+            <option value="Engineering Block">Engineering Block</option>
+            <option value="Business School">Business School</option>
+          </select>
+        </div>
 
-          <div className="filter-group">
-            <label>Building</label>
-            <select 
-              value={localFilters.building}
-              onChange={(e) => handleFilterChange('building', e.target.value)}
-              className="form-control"
-            >
-              <option value="">All Buildings</option>
-              <option value="Main Building">Main Building</option>
-              <option value="Library">Library</option>
-              <option value="Science Block">Science Block</option>
-              <option value="Engineering Block">Engineering Block</option>
-              <option value="Business School">Business School</option>
-            </select>
-          </div>
+        <div className="filter-item">
+          <label>Start Date</label>
+          <input 
+            type="date"
+            value={localFilters.dateRange.start}
+            onChange={(e) => handleDateRangeChange('start', e.target.value)}
+            className="form-control"
+          />
+        </div>
+
+        <div className="filter-item">
+          <label>End Date</label>
+          <input 
+            type="date"
+            value={localFilters.dateRange.end}
+            onChange={(e) => handleDateRangeChange('end', e.target.value)}
+            className="form-control"
+          />
         </div>
 
         {/* Advanced Filters - Collapsible */}
         {showAdvanced && (
-          <div className="filter-row advanced-filters">
-            <div className="filter-group">
+          <>
+            <div className="filter-item">
               <label>Room Category</label>
               <select 
                 value={localFilters.roomCategory}
@@ -165,49 +159,45 @@ const BookingFilters = () => {
               </select>
             </div>
 
-            <div className="filter-group checkbox-group">
-              <label className="checkbox-label">
-                <input 
-                  type="checkbox"
-                  checked={localFilters.hasCapacityWarning}
-                  onChange={(e) => handleFilterChange('hasCapacityWarning', e.target.checked)}
-                />
-                <span className="checkmark"></span>
-                Only Capacity Warnings
-              </label>
+            <div className="filter-item filter-checkbox">
+              <input 
+                type="checkbox"
+                id="capacityWarning"
+                checked={localFilters.hasCapacityWarning}
+                onChange={(e) => handleFilterChange('hasCapacityWarning', e.target.checked)}
+              />
+              <label htmlFor="capacityWarning">Only Capacity Warnings</label>
             </div>
 
-            <div className="filter-group checkbox-group">
-              <label className="checkbox-label">
-                <input 
-                  type="checkbox"
-                  checked={localFilters.hasEquipmentRequests}
-                  onChange={(e) => handleFilterChange('hasEquipmentRequests', e.target.checked)}
-                />
-                <span className="checkmark"></span>
-                Only Equipment Requests
-              </label>
+            <div className="filter-item filter-checkbox">
+              <input 
+                type="checkbox"
+                id="equipmentRequests"
+                checked={localFilters.hasEquipmentRequests}
+                onChange={(e) => handleFilterChange('hasEquipmentRequests', e.target.checked)}
+              />
+              <label htmlFor="equipmentRequests">Only Equipment Requests</label>
             </div>
 
-            <div className="filter-group quick-filters">
+            <div className="filter-item quick-filters-container">
               <label>Quick Filters</label>
               <div className="quick-filter-buttons">
                 <button 
-                  className={`btn btn-sm ${localFilters.status === 'PENDING' ? 'btn-primary' : 'btn-outline'}`}
+                  className={`btn btn-xs ${localFilters.status === 'PENDING' ? 'btn-primary' : 'btn-outline'}`}
                   onClick={() => handleFilterChange('status', localFilters.status === 'PENDING' ? '' : 'PENDING')}
                 >
                   Pending Only
                 </button>
                 
                 <button 
-                  className={`btn btn-sm ${localFilters.hasCapacityWarning ? 'btn-warning' : 'btn-outline'}`}
+                  className={`btn btn-xs ${localFilters.hasCapacityWarning ? 'btn-warning' : 'btn-outline'}`}
                   onClick={() => handleFilterChange('hasCapacityWarning', !localFilters.hasCapacityWarning)}
                 >
                   Capacity Issues
                 </button>
                 
                 <button 
-                  className="btn btn-sm btn-outline"
+                  className="btn btn-xs btn-outline"
                   onClick={() => {
                     const today = new Date().toISOString().split('T')[0];
                     handleDateRangeChange('start', today);
@@ -218,7 +208,7 @@ const BookingFilters = () => {
                 </button>
                 
                 <button 
-                  className="btn btn-sm btn-outline"
+                  className="btn btn-xs btn-outline"
                   onClick={() => {
                     const today = new Date();
                     const weekStart = new Date(today.setDate(today.getDate() - today.getDay()));
@@ -231,15 +221,14 @@ const BookingFilters = () => {
                 </button>
               </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 
-      {/* Active Filters Display */}
-      {activeFilterCount > 0 && (
+      {/* Active Filter Tags - Using RoomFilters style */}
+      {hasActiveFilters && (
         <div className="active-filters">
-          <span className="active-filters-label">Active filters:</span>
-          <div className="active-filter-tags">
+          <div className="filter-tags">
             {filters.status && (
               <span className="filter-tag">
                 Status: {filters.status}
