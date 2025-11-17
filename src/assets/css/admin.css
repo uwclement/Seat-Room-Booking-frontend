@@ -384,7 +384,7 @@
     color: #6b7280;
   }
   
-  /* Modal */
+  /* Modal - Updated for wider forms */
   .modal-backdrop {
     position: fixed;
     top: 0;
@@ -401,9 +401,15 @@
   .modal-container {
     background-color: white;
     border-radius: 0.5rem;
-    width: 100%;
-    max-width: 500px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .modal-container.large {
+    max-width: 1000px;
   }
   
   .modal-header {
@@ -436,9 +442,29 @@
     display: flex;
     justify-content: flex-end;
     gap: 0.75rem;
-    padding-top: 1rem;
+    padding: 1rem 1.5rem;
     border-top: 1px solid #e5e7eb;
-    margin-top: 1rem;
+  }
+  
+  /* Form layout improvements for wider modals */
+  .form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .form-section {
+    margin-bottom: 2rem;
+  }
+  
+  .form-section h4 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #1f2937;
+    border-bottom: 1px solid #e5e7eb;
+    padding-bottom: 0.5rem;
   }
   
   /* Schedule Management */
@@ -489,6 +515,11 @@
     .admin-content {
       margin-left: 200px;
     }
+    
+    .modal-container {
+      width: 95%;
+      max-width: 700px;
+    }
   }
   
   @media (max-width: 768px) {
@@ -520,6 +551,16 @@
     .action-buttons {
       width: 100%;
       justify-content: space-between;
+    }
+    
+    .modal-container {
+      width: 95%;
+      max-width: none;
+      margin: 1rem;
+    }
+    
+    .form-row {
+      grid-template-columns: 1fr;
     }
   }
 

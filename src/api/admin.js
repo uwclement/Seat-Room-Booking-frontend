@@ -6,8 +6,6 @@ const safeApiCall = async (apiCall) => {
     const response = await apiCall();
     return response.data;
   } catch (error) {
-    // Let the interceptor in axiosConfig handle 401 errors
-    // Just re-throw the error for the caller to handle
     throw error;
   }
 };

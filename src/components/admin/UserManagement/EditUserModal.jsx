@@ -18,7 +18,7 @@ const EditUserModal = ({ show, user, onClose }) => {
     location: '',
     workingDay: '',
     activeToday: false,
-    isDefault: false
+    defaultLibrarian: false
   });
 
   // Password display state
@@ -44,7 +44,7 @@ const EditUserModal = ({ show, user, onClose }) => {
         location: user.location || '',
         workingDay: user.workingDay || '',
         activeToday: user.activeToday || false,
-        isDefault: user.isDefault || false
+        defaultLibrarian: user.defaultLibrarian || false
       });
 
       // Fetch password if user must change password
@@ -371,8 +371,8 @@ const EditUserModal = ({ show, user, onClose }) => {
                   <label className="checkbox-label">
                     <input
                       type="checkbox"
-                      checked={formData.isDefault}
-                      onChange={(e) => setFormData({...formData, isDefault: e.target.checked})}
+                      checked={formData.defaultLibrarian}
+                      onChange={(e) => setFormData({...formData, defaultLibrarian: e.target.checked})}
                     />
                     Default Librarian
                   </label>

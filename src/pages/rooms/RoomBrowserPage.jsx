@@ -231,19 +231,19 @@ const RoomBrowser = () => {
                     Book Room
                   </button>
                   
-                  <button
+                  {/* <button
                     onClick={() => handleQuickBook(room.id)}
                     className="btn btn-secondary"
                   >
                     Quick Book
-                  </button>
+                  </button> */}
                   
-                  <button
+                  {/* <button
                     onClick={() => navigate(`/rooms/${room.id}`)}
                     className="btn btn-outline"
                   >
                     <span><i className="fas fa-calendar"></i> View Details</span>
-                  </button>
+                  </button> */}
                 </div>
               </div>
             );

@@ -83,3 +83,8 @@ export const extendBooking = async (id, additionalHours) => {
   });
   return response.data;
 };
+
+export const updateBooking = async (id, bookingData) => {
+  const response = await api.put(`/bookings/${id}`, bookingData);
+  return response.data;
+};
