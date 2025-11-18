@@ -28,7 +28,7 @@ export const createAuthenticatedSSEConnection = (onMessage, onError, onOpen) => 
     }
 
     // Pass JWT token as query parameter since SSE doesn't support headers
-    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8080';
+    const baseUrl = process.env.REACT_APP_API_URL || 'http://librarybackend.up.railway.app';
     const sseUrl = `${baseUrl}/api/notifications/stream?token=${encodeURIComponent(token)}`;
     
     try {
