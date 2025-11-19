@@ -36,6 +36,7 @@ const SeatActions = () => {
   return (
     <div className="seat-actions">
       {/* Primary Actions */}
+      {/* Seat are onlu created by Librarians only  */}
        {!isAdmin() && (
       <div className="primary-actions">
         
