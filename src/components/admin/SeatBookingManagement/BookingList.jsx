@@ -45,7 +45,7 @@ const BookingList = () => {
       case 'CANCELLED':
         return 'red';
       case 'NO_SHOW':
-        return 'gray';
+        return 'red';
       default:
         return 'gray';
     }
