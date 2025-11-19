@@ -34,7 +34,9 @@ const SeatActions = () => {
   return (
     <div className="seat-actions">
       {/* Primary Actions */}
+       {!isAdmin() && (
       <div className="primary-actions">
+        
         <button 
           className="btn btn-primary create-btn"
           onClick={() => setShowCreateModal(true)}
@@ -50,7 +52,9 @@ const SeatActions = () => {
           <i className="fas fa-layer-group"></i>
           Bulk Create Seats
         </button>
+      
       </div>
+       )}
 
       {/* Selection Tools */}
       <div className="selection-tools">
