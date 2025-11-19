@@ -5,6 +5,7 @@ import SeatModal from './SeatModal';
 import BulkSeatModal from './BulkSeatModal';
 import DisableSeatModal from './DisableSeatModal';
 import BulkQRModal from '../qr/BulkQRModal';
+import { useAuth } from '../../../hooks/useAuth';
 
 const SeatActions = () => {
   const { 
@@ -22,6 +23,7 @@ const SeatActions = () => {
   const [showBulkUpdateModal, setShowBulkUpdateModal] = useState(false);
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
+  const { user, isAdmin } = useAuth();
 
   const handleToggleDesktopBulk = () => {
     handleBulkToggleDesktop(); 
