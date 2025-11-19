@@ -142,7 +142,7 @@ const SeatModal = ({ isOpen, onClose, seatToEdit = null }) => {
         <div className="modal-header">
           <h2 className="modal-title">
             <i className="fas fa-chair"></i>
-            {seatToEdit ? 'Edit Seat' : 'Create New Seat'}
+            {seatToEdit ? 'Edit Seat' : 'Create New Seat (Seat can only be created by Librarian)'}
           </h2>
           <button 
             className="close-button" 
